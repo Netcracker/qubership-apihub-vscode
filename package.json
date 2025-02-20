@@ -1,0 +1,115 @@
+{
+  "name": "qubership-apihub-vscode",
+  "displayName": "Qubership APIHUB",
+  "description": "Publish API specifications to APIHUB Portal",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.96.0"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [],
+  "main": "./out/extension.js",
+  "icon": "resources/icons/extension.png",
+  "contributes": {
+    "commands": [
+      {
+        "command": "apihubExtension.publish",
+        "title": "Publish Apispec",
+        "category": "File"
+      },
+      {
+        "command": "apihubExtension.explorer.openFile",
+        "title": "Open Api Specification",
+        "category": "File"
+      },
+      {
+        "command": "apihubExtension.explorer.clean",
+        "title": "APIHUB Clean checkboxes",
+        "category": "File"
+      }
+    ],
+    "configuration": {
+      "title": "Publish APIHUB Settings",
+      "properties": {
+        "APIHUB.apiToken": {
+          "type": "string",
+          "description": "API Token to Authenticate in APIHUB Portal"
+        },
+        "APIHUB.portalURL": {
+          "type": "string",
+          "description": "URL to APIHUB Portal where the files will be published"
+        },
+        "APIHUB.portalPackage": {
+          "type": "string",
+          "description": "Portal package ID where the files will be published"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "apihub",
+          "title": "QUBERSHIP APIHUBAPIHUB ENVIRONMENT",
+          "icon": "resources/media/openapi-icon.svg",
+          "contextualTitle": "OpenAPI Specifications"
+        }
+      ]
+    },
+    "views": {
+      "apihub": [
+        {
+          "id": "apihubExtension.environmentView",
+          "name": "APIHUB environment",
+          "type": "webview"
+        },
+        {
+          "id": "apihubExtension.explorer",
+          "name": "DOCUMENTS TO PUBLISHPUBLISH TO APIHUB PORTAL"
+        },
+        {
+          "id": "apihubExtension.publishView",
+          "name": "Publish to APIHUB Portal",
+          "type": "webview"
+        }
+      ]
+    },
+    "viewsWelcome": [
+      {
+        "view": "apihubExtension.explorer",
+        "contents": "There are no apispec files for publishing. [read our docs](https://aka.ms/vscode-scm)."
+      }
+    ]
+  },
+  "scripts": {
+    "package": "vsce package",
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src",
+    "test": "vscode-test",
+    "start-server": "node server/server.js"
+  },
+  "devDependencies": {
+    "@types/node": "20.x",
+    "@types/vscode": "^1.96.0",
+    "@typescript-eslint/eslint-plugin": "^8.17.0",
+    "@typescript-eslint/parser": "^8.17.0",
+    "@vscode/test-cli": "^0.0.10",
+    "@vscode/test-electron": "^2.4.1",
+    "@vscode/vsce": "^3.2.2",
+    "eslint": "^9.16.0",
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "@vscode-elements/elements": "^1.11.0",
+    "@vscode/codicons": "^0.0.36",
+    "api-ref-bundler": "^0.4.3",
+    "jszip": "^3.10.1",
+    "openapi-types": "^12.1.3",
+    "uuid": "^11.0.5",
+    "yaml": "^2.7.0"
+  }
+}

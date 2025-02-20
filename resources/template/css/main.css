@@ -1,0 +1,7 @@
+vscode-textfield,
+vscode-single-select {
+	width: 100%;
+}
+vscode-button {
+	width: calc(100% - 28px);
+}
