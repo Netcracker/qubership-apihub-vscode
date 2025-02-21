@@ -32,7 +32,7 @@
         packageId.addEventListener('input', () => sendFieldValue(PublishFields.PACKAGE_ID, packageId));
     }
     if (version) {
-        version.addEventListener('input', () => sendFieldValue(PublishFields.VERSION, version));
+        version.addEventListener('input', () => sendVersionValue());
     }
     if (status) {
         status.addEventListener('change', () => sendFieldValue(PublishFields.STATUS, status));
@@ -140,6 +140,27 @@
             }
         });
     }
+
+    function debounce(callback, timeout) {
+        let timer;
+        return () => {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                callback.apply(this);
+            }, timeout);
+        };
+    }
+
+    const sendVersionValue = debounce(() => {
+        const value = version?.value?.trim();
+        vscode.postMessage({
+            command: PublishWebviewMessages.UPDATE_FIELD,
+            payload: {
+                field: PublishFields.VERSION,
+                value
+            }
+        });
+    }, 800);
 
     function requestVersions() {
         vscode.postMessage({

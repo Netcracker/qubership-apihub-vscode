@@ -24,9 +24,17 @@ export class CrudService {
         page: '0'
     }).toString();
 
-    public getVersions(baseUrl: string, packageId: PackageId, authorization: string): Promise<PublishVersionDto> {
+    public getVersions(baseUrl: string, authorization: string, packageId: PackageId, ): Promise<PublishVersionDto> {
         const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
         url.search = this.VERSION_SERACH_PARAMS;
+        return this.sendGet(url, authorization);
+    }    
+    
+    public getLabels(baseUrl: string, authorization: string, packageId: PackageId, version: VersionId): Promise<PublishVersionDto> {
+        const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
+        url.search = new URLSearchParams({
+            textFilter: version
+        }).toString();
         return this.sendGet(url, authorization);
     }
 

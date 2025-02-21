@@ -20,7 +20,7 @@ import {
 } from '../common/constants/specification.constants';
 import { FilePath, WorkfolderPath } from '../common/models/common.model';
 import { ConfigurationFileLike, ConfigurationId } from '../common/models/configuration.model';
-import { SpecificationItem } from '../common/models/specification-item';
+import { SpecificationItem, SpecificationTreeData } from '../common/models/specification-item';
 import { ItemCheckboxService } from '../common/services/Item-checkbox.service';
 import { ConfigurationFileService } from '../common/services/configuration-file.service';
 import { WorkspaceService } from '../common/services/workspace.service';
@@ -33,9 +33,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     private _disposables: Disposable[] = [];
     private readonly _watcher: FileSystemWatcher;
 
-    private readonly _localFiles: Map<WorkfolderPath, Set<FilePath>> = new Map();
-    private readonly _configFiles: Map<WorkfolderPath, Set<FilePath>> = new Map();
-    private readonly _configId: Map<WorkfolderPath, ConfigurationId> = new Map();
+    private readonly _specificationFileData: Map<WorkfolderPath, SpecificationTreeData> = new Map();
 
     constructor(
         private readonly workspaceFolderService: WorkspaceService,
@@ -45,12 +43,12 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         super(() => this.dispose());
         const apispecFileExtensions: string = [...SPECS_MAIN_EXTENSIONS, ...SPECS_ADDITIONAL_EXTENSIONS].join(',');
         this._watcher = workspace.createFileSystemWatcher(`**/*.{${apispecFileExtensions}}`);
-        this.setFilesFromConfig(this.workspaceFolderService.activeWorkspace);
+        this.setFilesFromConfig(this.workspaceFolderService.activeWorkfolderPath);
     }
 
     public activate(active: boolean): void {
         if (active) {
-            const activeWorkspace = this.workspaceFolderService.activeWorkspace;
+            const activeWorkspace = this.workspaceFolderService.activeWorkfolderPath;
             this.setFilesFromConfig(activeWorkspace);
             this.subscribeChanges();
             this.refresh();
@@ -64,7 +62,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     }
 
     public getChildren(): Thenable<SpecificationItem[]> {
-        const workspace = this.workspaceFolderService.activeWorkspace;
+        const workspace = this.workspaceFolderService.activeWorkfolderPath;
         return this.getChildrenFromWorkspace(workspace);
     }
 
@@ -73,10 +71,14 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     }
 
     public async getFilesForPublish(): Promise<SpecificationItem[]> {
-        const activeWorkspace = this.workspaceFolderService.activeWorkspace;
+        const activeWorkspace = this.workspaceFolderService.activeWorkfolderPath;
         this.setFilesFromConfig(activeWorkspace);
         const items = await this.getChildrenFromWorkspace(activeWorkspace);
-        return await Promise.all(items.filter(async (item: SpecificationItem) => isPathExists(item.uri.fsPath)));
+        return await Promise.all(
+            items
+                .filter((item) => item.checkboxState === TreeItemCheckboxState.Checked)
+                .filter(async (item: SpecificationItem) => isPathExists(item.uri.fsPath))
+        );
     }
 
     public dispose() {
@@ -95,8 +97,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
             window.showInformationMessage(`Invalid path for ${workspace}`);
             return Promise.resolve([]);
         }
-        const configFiles: Set<FilePath> = this._configFiles.get(workspace) ?? new Set();
-        const localFiles: Set<FilePath> = this.getLocalFiles(workspace);
+        const { configFiles, localFiles } = this.getSpecificationFileData(workspace);
         const configFileExist = !!configFiles?.size;
         return Promise.resolve(
             this.readSpecificationFiles(workspace, workspace, localFiles, configFiles, configFileExist)
@@ -197,7 +198,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
 
         this.configurationFileService.subscribe(SPECIFICATION_TREE, (workspacePath: WorkfolderPath) => {
             this.setFilesFromConfig(workspacePath);
-            if (this.workspaceFolderService.activeWorkspace === workspacePath) {
+            if (this.workspaceFolderService.activeWorkfolderPath === workspacePath) {
                 this.refresh();
             }
         });
@@ -207,37 +208,42 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     private cleanCheckboxAfterDelete(deletedFile: Uri): void {
         const filePath = deletedFile.fsPath;
         this.itemCheckboxService.deleteAll(filePath);
-        this.getLocalFiles(this.workspaceFolderService.activeWorkspace).delete(filePath);
+
+        const { localFiles } = this.getSpecificationFileData(this.workspaceFolderService.activeWorkfolderPath);
+        localFiles.delete(filePath);
+
         this.refresh();
     }
 
     private setFilesFromConfig(workfolderPath: WorkfolderPath): void {
-        const configFile: ConfigurationFileLike | undefined =
+        const configurationFileData: ConfigurationFileLike | undefined =
             this.configurationFileService.getConfigurationFile(workfolderPath);
 
-        const oldConfigFileId: string | undefined = this._configId.get(workfolderPath);
-        if (!configFile || configFile.id === oldConfigFileId) {
+        const specificationTreeData: SpecificationTreeData = this.getSpecificationFileData(this.workspaceFolderService.activeWorkfolderPath);
+        if (!configurationFileData || configurationFileData.id === specificationTreeData.configId) {
             return;
         }
-        this._configId.set(workfolderPath, configFile.id);
-        this.itemCheckboxService.clear(workfolderPath);
-        this._configFiles.delete(workfolderPath);
+        specificationTreeData.configId = configurationFileData.id;
 
-        const files: Set<FilePath> = new Set();
-        configFile.files.forEach((filePath) => {
+        this.itemCheckboxService.clear(workfolderPath);
+
+        const {configFiles} = specificationTreeData;
+        configFiles.clear();
+
+        configurationFileData.files.forEach((filePath) => {
             const fullFilePath = path.join(workfolderPath, filePath);
             this.itemCheckboxService.add(workfolderPath, fullFilePath);
-            files.add(fullFilePath);
+            configFiles.add(fullFilePath);
         });
-        this._configFiles.set(workfolderPath, files);
     }
 
-    private getLocalFiles(workspace: WorkfolderPath): Set<FilePath> {
-        if (!this._localFiles.has(workspace)) {
-            const filesArray = new Set<FilePath>();
-            this._localFiles.set(workspace, filesArray);
-            return filesArray;
+    private getSpecificationFileData(workfolderPath: WorkfolderPath): SpecificationTreeData {
+        let treeData = this._specificationFileData.get(workfolderPath);
+        if (treeData) {
+            return treeData;
         }
-        return this._localFiles.get(workspace) as Set<FilePath>;
+        treeData = new SpecificationTreeData();
+        this._specificationFileData.set(workfolderPath, treeData);
+        return treeData;
     }
 }

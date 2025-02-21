@@ -5,7 +5,13 @@ import {
     convertBundleDataToFiles,
     createBuildConfigFiles
 } from '../../utils/document.utils';
-import { isItemApispecFile, packToZip, specificationItemToFile, splitVersion } from '../../utils/files.utils';
+import {
+    getFilePath,
+    isItemApispecFile,
+    packToZip,
+    specificationItemToFile,
+    splitVersion
+} from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
 import { PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_TEXT } from '../constants/publish.constants';
@@ -95,7 +101,7 @@ export class PublishService implements Disposable {
     public async publish(
         host: string,
         authorization: string,
-        publishingFiles: SpecificationItem[],
+        items: SpecificationItem[],
         publishData: PublishDto
     ): Promise<PublishStatusDto> {
         if (!host) {
@@ -114,7 +120,7 @@ export class PublishService implements Disposable {
                 'https://github.com/'
             );
         }
-        if (!publishingFiles?.length) {
+        if (!items?.length) {
             throw new PublishError(
                 'Please select some files',
                 PublishErrorTypes.INFO,
@@ -122,68 +128,63 @@ export class PublishService implements Disposable {
                 'https://github.com/'
             );
         }
-        const packageId = publishData.packageId;
-        const version = publishData?.version;
-        const status = publishData?.status;
-        const previousVersion = publishData?.previousVersion;
+        const { packageId, version, status, previousVersion } = publishData;
 
         if (!packageId || !version || !status || !previousVersion) {
             throw new Error('Fill all required fields');
         }
 
-        const bundleErrors: string[] = [];
-        const dataWithDependencies: BundleData[] = await Promise.all(
-            publishingFiles
-                .filter(isItemApispecFile)
-                .map((path) => bundledFileDataWithDependencies(path, (err) => bundleErrors.push(err)))
-        );
+        const apiSpecItems: SpecificationItem[] = items.filter(isItemApispecFile);
+        const additionalItems: SpecificationItem[] = items.filter((item) => !isItemApispecFile(item));
 
-        if (bundleErrors.length) {
-            throw new Error('Errors: ' + bundleErrors.join(', '));
-        }
-
-        if (!dataWithDependencies) {
-            throw new Error('Internal error');
-        }
-
-        let files: File[] = convertBundleDataToFiles(dataWithDependencies);
-        const publishFileNames: string[] = dataWithDependencies.map((data) => data.fileName);
-
-        const noApispecFiles: File[] = publishingFiles
-            .filter((item) => !isItemApispecFile(item))
-            .map(specificationItemToFile);
-        files.push(...noApispecFiles);
-        //todo fix
-        publishFileNames.push(...noApispecFiles.map((data) => data.name));
+        const publishingfiles: File[] = await this.bundlingItems(apiSpecItems);
+        publishingfiles.push(...additionalItems.map(specificationItemToFile));
 
         let zipData: Blob;
         try {
-            zipData = await packToZip(files);
+            zipData = await packToZip(publishingfiles);
         } catch (error) {
             console.error(error);
             throw new Error('Pack to zip error');
         }
 
-        const allFileNames: string[] = files.map((file) => file.name);
-        const normalizePreviousVersion = this.convertPreviousVersion(previousVersion);
+        const publishFileNames: string[] = items.map((item) =>
+            getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? '')
+        );
+        const additionalFileNames: string[] = publishingfiles.map((file) => file.name);
 
         const publishConfig: PublishConfig = await this.publishApispec(
             host,
-            createBuildConfigFiles(publishFileNames, allFileNames),
+            publishFileNames,
+            additionalFileNames,
             zipData,
             packageId,
             status,
             version,
-            normalizePreviousVersion,
+            previousVersion,
             authorization
         );
 
         return this.getPublishStatus(host, packageId, publishConfig.publishId, authorization);
     }
 
+    private async bundlingItems(items: SpecificationItem[]): Promise<File[]> {
+        const bundleErrors: string[] = [];
+        const dataWithDependencies: BundleData[] = await Promise.all(
+            items.map((path) => bundledFileDataWithDependencies(path, (err) => bundleErrors.push(err)))
+        );
+
+        if (bundleErrors.length) {
+            throw new Error('Errors: ' + bundleErrors.join(', '));
+        }
+
+        return convertBundleDataToFiles(dataWithDependencies);
+    }
+
     private publishApispec(
         host: string,
-        buildConfig: BuildConfigFile[],
+        publishFileNames: string[],
+        allFileNames: string[],
         blobData: Blob,
         packageId: PackageId,
         status: VersionStatus,
@@ -191,6 +192,8 @@ export class PublishService implements Disposable {
         previousVersion: VersionId,
         authorization: string
     ): Promise<PublishConfig> {
+        const buildConfig: BuildConfigFile[] = createBuildConfigFiles(publishFileNames, allFileNames);
+        const normalizePreviousVersion = this.convertPreviousVersion(previousVersion);
         return this._crudService.publishApispec(
             host,
             buildConfig,
@@ -198,7 +201,7 @@ export class PublishService implements Disposable {
             packageId,
             status,
             versionId,
-            previousVersion,
+            normalizePreviousVersion,
             authorization
         );
     }

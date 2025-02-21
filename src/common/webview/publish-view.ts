@@ -22,10 +22,11 @@ import {
 } from '../constants/publish.constants';
 import { CrudService } from '../cruds/publish.crud';
 import { WorkfolderPath } from '../models/common.model';
-import { ConfigurationFileLike, ConfigurationId } from '../models/configuration.model';
+import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
     PublishDto,
+    PublishViewData,
     PublishWebviewDto,
     PublishFields as PublishWebviewFields,
     PublishWebviewMessages,
@@ -42,12 +43,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
     private _view?: WebviewView;
     private _disposables: Disposable[] = [];
     private readonly _crudService: CrudService;
-    private readonly _localPackageIds: Map<WorkfolderPath, PackageId> = new Map();
-    private readonly _versions: Map<WorkfolderPath, VersionId> = new Map();
-    private readonly _labels: Map<WorkfolderPath, string> = new Map();
-    private readonly _satatuses: Map<WorkfolderPath, VersionStatus> = new Map();
-    private readonly _previousVersions: Map<WorkfolderPath, VersionId> = new Map();
-    private readonly _configId: Map<WorkfolderPath, ConfigurationId> = new Map();
+    private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
 
     constructor(
         private readonly context: ExtensionContext,
@@ -93,7 +89,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
     private activate(active: boolean): void {
         if (active) {
             this.subscribeChanges();
-            this.restoreLocalFields(this.workfolderService.activeWorkspace);
+            this.restoreLocalFields(this.workfolderService.activeWorkfolderPath);
         } else {
             this.dispose();
         }
@@ -142,67 +138,75 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
 
     private restoreLocalFields(workfolderPath: WorkfolderPath): void {
         this.restoreConfigPackageId(workfolderPath, this.configurationFileService.getConfigurationFile(workfolderPath));
-        this.updateWebviewField(PublishWebviewFields.VERSION, this._versions.get(workfolderPath) ?? '');
+        const { version, status, previousVersion, labels } = this.getPublishViewData(workfolderPath);
 
-        const status = this._satatuses.get(workfolderPath) ?? VersionStatus.DRAFT;
+        this.updateWebviewField(PublishWebviewFields.VERSION, version);
         this.updateWebviewField(PublishWebviewFields.STATUS, status);
         this.updateVersionPattern(status);
 
-        const previousVersion = this._previousVersions.get(workfolderPath) ?? '';
         const options = Array.from(new Set([PUBLISH_NO_PREVIOUS_VERSION, previousVersion])).filter((value) => !!value);
         this.updateWebviewOptions(PublishWebviewFields.PREVIOUS_VERSION, options);
         this.updateWebviewField(PublishWebviewFields.PREVIOUS_VERSION, previousVersion);
-
-        this.updateWebviewField(PublishWebviewFields.LABELS, this._labels.get(workfolderPath) ?? '');
+        this.updateWebviewField(PublishWebviewFields.LABELS, labels);
     }
 
     private updateField(payload: PublishWebviewPayload): void {
-        const activeWorkspace = this.workfolderService.activeWorkspace;
+        const workfolderPath = this.workfolderService.activeWorkfolderPath;
+        const pulbishViewData = this.getPublishViewData(workfolderPath);
         switch (payload.field) {
             case PublishWebviewFields.PACKAGE_ID: {
-                this._localPackageIds.set(activeWorkspace, payload.value as string);
+                pulbishViewData.packageId = payload.value as PackageId;
                 break;
             }
             case PublishWebviewFields.VERSION: {
-                this._versions.set(activeWorkspace, payload.value as VersionId);
+                const version = payload.value as VersionId;
+                pulbishViewData.version = version;
+                this.updateLabels(version);
                 break;
             }
             case PublishWebviewFields.STATUS: {
                 const status: VersionStatus = payload.value as VersionStatus;
-                this._satatuses.set(activeWorkspace, status);
+                pulbishViewData.status = status;
                 this.updateVersionPattern(status);
                 break;
             }
             case PublishWebviewFields.PREVIOUS_VERSION: {
-                this._previousVersions.set(activeWorkspace, payload.value as string);
+                pulbishViewData.previousVersion = payload.value as string;
                 break;
             }
             case PublishWebviewFields.LABELS: {
-                this._labels.set(activeWorkspace, payload.value as string);
+                pulbishViewData.labels = payload.value as string;
                 break;
             }
         }
     }
 
     private restoreLocalPackageId(workfolderPath: WorkfolderPath): void {
-        const localPacageId = this._localPackageIds.get(workfolderPath) ?? '';
-        this.updatePacakgeId(workfolderPath, localPacageId);
+        const { packageId } = this.getPublishViewData(workfolderPath);
+        this.updatePacakgeId(workfolderPath, packageId);
     }
 
-    private restoreConfigPackageId(workfolderPath: WorkfolderPath, configFile: ConfigurationFileLike | undefined): void {
-        const oldConfigFileId = this._configId.get(workfolderPath) ?? '';
+    private restoreConfigPackageId(
+        workfolderPath: WorkfolderPath,
+        configFile: ConfigurationFileLike | undefined
+    ): void {
+        const pulbishViewData = this.getPublishViewData(workfolderPath);
+
         const newConfigFileId = configFile?.id ?? '';
-        if (oldConfigFileId === newConfigFileId) {
+        if (pulbishViewData.configId === newConfigFileId) {
             this.restoreLocalPackageId(workfolderPath);
         }
-        this._configId.set(workfolderPath, newConfigFileId);
+
+        pulbishViewData.configId = newConfigFileId;
         const pacakgeId: PackageId = configFile?.pacakgeId ?? '';
         this.updatePacakgeId(workfolderPath, pacakgeId);
     }
 
     private updatePacakgeId(workfolderPath: WorkfolderPath, value: PackageId): void {
-        this._localPackageIds.set(workfolderPath, value);
-        if (workfolderPath === this.workfolderService.activeWorkspace) {
+        const pulbishViewData = this.getPublishViewData(workfolderPath);
+        pulbishViewData.packageId = value;
+
+        if (workfolderPath === this.workfolderService.activeWorkfolderPath) {
             this.updateWebviewField(PublishWebviewFields.PACKAGE_ID, value);
         }
     }
@@ -250,9 +254,9 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
     }
 
     private async loadVersions(): Promise<void> {
-        const pacakgeId: PackageId | undefined = this._localPackageIds.get(this.workfolderService.activeWorkspace);
-        if (!pacakgeId) {
-            showErrorNotification('Pacage ID is empty');
+        const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
+        if (!packageId) {
+            showErrorNotification('Packag ID is empty');
             return;
         }
         const host: string = configurationService.hostUrl ?? '';
@@ -263,7 +267,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         }
         const options = [PUBLISH_NO_PREVIOUS_VERSION];
         try {
-            const versions = await this._crudService.getVersions(host, pacakgeId, token);
+            const versions = await this._crudService.getVersions(host, token, packageId);
             options.push(...versions.versions.map((ver) => splitVersion(ver.version).version));
         } catch (error) {}
 
@@ -284,8 +288,38 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         }
     }
 
+    private async updateLabels(version: VersionId): Promise<void> {
+        if (!version) {
+            return;
+        }
+        const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
+        if (!packageId) {
+            return;
+        }
+        const host: string = configurationService.hostUrl ?? '';
+        const token: string = (await this.secretStorageService.getToken()) ?? '';
+        if (!host || !token) {
+            showErrorNotification('Host or token is empty');
+            return;
+        }
+        try {
+            const versions = await this._crudService.getLabels(host, token, packageId, version);
+            const labels = versions.versions.map((version) => version.versionLabels);
+        } catch (error) {}
+    }
+
     private publish(dto: PublishDto): void {
         commands.executeCommand(EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME, dto);
+    }
+
+    private getPublishViewData(workfolderPath: WorkfolderPath): PublishViewData {
+        let publishData = this._publishViewData.get(workfolderPath);
+        if (publishData) {
+            return publishData;
+        }
+        publishData = new PublishViewData();
+        this._publishViewData.set(workfolderPath, publishData);
+        return publishData;
     }
 
     private getHtmlForWebview(webview: Webview): string {

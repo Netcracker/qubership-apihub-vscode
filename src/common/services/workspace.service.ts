@@ -2,9 +2,8 @@ import { Disposable, Event, EventEmitter, TextEditor, Uri, window, workspace } f
 import { WorkfolderPath } from '../models/common.model';
 
 export class WorkspaceService extends Disposable {
-    private _active: boolean = false;
     private _disposables: Disposable[] = [];
-    private _activeWorkspace: WorkfolderPath;
+    private _activeWorkfolderPath: WorkfolderPath;
     private _listeners = new Map<string, Disposable>;
     private readonly _onDidChangeActiveWorkspace: EventEmitter<WorkfolderPath> = new EventEmitter();
     private readonly onDidChangeActiveWorkspace: Event<WorkfolderPath> = this._onDidChangeActiveWorkspace.event;
@@ -12,7 +11,7 @@ export class WorkspaceService extends Disposable {
     constructor(private readonly workfolderPaths: WorkfolderPath[]) {
         super(() => this.dispose());
 
-        this._activeWorkspace = this.getActiveWorkspace();
+        this._activeWorkfolderPath = this.getActiveWorkspace();
         this.subscribeChanges();
     }
 
@@ -39,8 +38,8 @@ export class WorkspaceService extends Disposable {
         }
     }
 
-    public get activeWorkspace(): WorkfolderPath {
-        return this._activeWorkspace;
+    public get activeWorkfolderPath(): WorkfolderPath {
+        return this._activeWorkfolderPath;
     }
 
     public dispose() {
@@ -57,8 +56,8 @@ export class WorkspaceService extends Disposable {
                 if (!data || this.workfolderPaths.length === 1) {
                     return;
                 }
-                this._activeWorkspace = this.getActiveWorkspace();
-                this._onDidChangeActiveWorkspace.fire(this._activeWorkspace);
+                this._activeWorkfolderPath = this.getActiveWorkspace();
+                this._onDidChangeActiveWorkspace.fire(this._activeWorkfolderPath);
             },
             this,
             this._disposables

@@ -53,7 +53,7 @@ export function activate(context: ExtensionContext): void {
 
     context.subscriptions.push(
         apihubTreeView.onDidChangeCheckboxState(({ items }: TreeCheckboxChangeEvent<SpecificationItem>) => {
-            const workspace = workspaceFolderService.activeWorkspace;
+            const workspace = workspaceFolderService.activeWorkfolderPath;
             items.forEach(([item, checked]) =>
                 checked === TreeItemCheckboxState.Checked
                     ? itemCheckboxService.add(workspace, item.uri.fsPath)
@@ -64,7 +64,7 @@ export function activate(context: ExtensionContext): void {
 
     context.subscriptions.push(
         commands.registerCommand(EXTENSION_EXPLORER_CLEAN_ACTION_NAME, () => {
-            itemCheckboxService.clear(workspaceFolderService.activeWorkspace);
+            itemCheckboxService.clear(workspaceFolderService.activeWorkfolderPath);
             fileTreeProvider.refresh();
         })
     );

@@ -1,4 +1,5 @@
 import { WorkfolderPath } from './common.model';
+import { ConfigurationId } from './configuration.model';
 import { WebviewMessage } from './webview.model';
 
 export type PackageId = string;
@@ -39,7 +40,7 @@ export enum PublishStatus {
 }
 
 export interface PublishDto {
-    workfolderPath: WorkfolderPath
+    workfolderPath: WorkfolderPath;
     packageId: PackageId;
     version: VersionId;
     status: VersionStatus;
@@ -88,4 +89,23 @@ export interface PublishWebviewPayload {
     value: string | string[];
 }
 
-export interface PublishWebviewDto extends WebviewMessage<PublishWebviewMessages, PublishWebviewPayload | PublishDto | void> {}
+export interface PublishWebviewDto
+    extends WebviewMessage<PublishWebviewMessages, PublishWebviewPayload | PublishDto | void> {}
+
+export class PublishViewData {
+    public packageId: PackageId;
+    public version: VersionId;
+    public labels: string;
+    public status: VersionStatus;
+    public previousVersion: VersionId;
+    public configId: ConfigurationId;
+
+    constructor() {
+        this.packageId = '';
+        this.version = '';
+        this.labels = '';
+        this.status = VersionStatus.DRAFT;
+        this.previousVersion = '';
+        this.configId = '';
+    }
+}

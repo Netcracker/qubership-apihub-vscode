@@ -1,6 +1,8 @@
 import { TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, Uri } from 'vscode';
 import { EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME } from '../constants/common.constants';
 import { getMiddlePath } from '../../utils/files.utils';
+import { FilePath } from './common.model';
+import { ConfigurationId } from './configuration.model';
 
 export class SpecificationItem extends TreeItem {
     constructor(
@@ -15,11 +17,23 @@ export class SpecificationItem extends TreeItem {
         this.tooltip = label;
         this.resourceUri = uri;
         this.checkboxState = checkboxState;
-        this.description = getMiddlePath(workspacePath, uri.fsPath),
-        this.command = {
-            command: EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
-            title: 'Open Api Specification',
-            arguments: [uri]
-        };
+        (this.description = getMiddlePath(workspacePath, uri.fsPath)),
+            (this.command = {
+                command: EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
+                title: 'Open Api Specification',
+                arguments: [uri]
+            });
+    }
+}
+
+export class SpecificationTreeData {
+    public readonly localFiles: Set<FilePath>;
+    public readonly configFiles: Set<FilePath>;
+    public configId: ConfigurationId;
+
+    constructor(){
+        this.localFiles = new Set<FilePath>;
+        this.configFiles = new Set<FilePath>;
+        this.configId = "";
     }
 }
