@@ -7,6 +7,10 @@ export function normalize(path: string): string {
     return path.normalize(path);
 }
 
+export function join(path1: string, path2: string): string {
+    return path.join(path1, path2);
+}
+
 export function getFilePath(workfolderPath: WorkfolderPath, filePath: string): string {
     return path.posix.normalize(relative(workfolderPath, filePath));
 }
@@ -22,16 +26,6 @@ export function getMiddlePath(workfolderPath: WorkfolderPath, filePath: string):
 export function getFileDirectory(filePath: string): string {
     return path.dirname(filePath) + path.sep;
 }
-
-export const getName = (path: string): string => {
-    if (!path) {
-        return 'undefined';
-    }
-    if (path.includes('\\')) {
-        return path.split('\\').pop() ?? '';
-    }
-    return '';
-};
 
 export function capitalize(str: string): string {
     if (!str) {

@@ -45,7 +45,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
     private _disposables: Disposable[] = [];
     private readonly _crudService: CrudService;
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
-    private readonly debouncedUpdateLabels = debounce(this.updateLabels);
+    private readonly debouncedUpdateLabels = debounce((data, version)=>this.updateLabels(data, version));
 
     constructor(
         private readonly context: ExtensionContext,

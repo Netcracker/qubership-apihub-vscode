@@ -17,12 +17,12 @@ export class SpecificationItem extends TreeItem {
         this.tooltip = label;
         this.resourceUri = uri;
         this.checkboxState = checkboxState;
-        (this.description = getMiddlePath(workspacePath, uri.fsPath)),
-            (this.command = {
-                command: EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
-                title: 'Open Api Specification',
-                arguments: [uri]
-            });
+        this.description = getMiddlePath(workspacePath, uri.fsPath);
+        this.command = {
+            command: EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
+            title: 'Open Api Specification',
+            arguments: [uri]
+        };
     }
 }
 

@@ -1,5 +1,4 @@
 import fs, { Dirent } from 'fs';
-import path, { normalize } from 'path';
 import {
     Disposable,
     Event,
@@ -19,14 +18,14 @@ import {
     SPECS_EXTENSIONS as SPECS_MAIN_EXTENSIONS
 } from '../common/constants/specification.constants';
 import { FilePath, WorkfolderPath } from '../common/models/common.model';
-import { ConfigurationFileLike, ConfigurationId } from '../common/models/configuration.model';
+import { ConfigurationFileLike } from '../common/models/configuration.model';
 import { SpecificationItem, SpecificationTreeData } from '../common/models/specification-item';
 import { ItemCheckboxService } from '../common/services/Item-checkbox.service';
 import { ConfigurationFileService } from '../common/services/configuration-file.service';
 import { WorkspaceService } from '../common/services/workspace.service';
-import { showInformationMessage } from '../utils/notification.urils';
 import { isPathExists } from '../utils/files.utils';
-import { getExtension, isApispecFile } from '../utils/path.utils';
+import { showInformationMessage } from '../utils/notification.urils';
+import { getExtension, isApispecFile, join } from '../utils/path.utils';
 
 export class SpecificationFileTreeProvider extends Disposable implements TreeDataProvider<SpecificationItem> {
     private readonly _onDidChangeTreeData: EventEmitter<void> = new EventEmitter();
@@ -116,7 +115,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         const dirents: Dirent[] = fs.readdirSync(dirPath, { withFileTypes: true });
         dirents.forEach((dirent) => {
             const { name, parentPath } = dirent;
-            const path = normalize(`${parentPath}\\${name}`);
+            const path = join(parentPath, name);
 
             if (IGNORE_DIRS.includes(name)) {
                 return;
@@ -220,7 +219,9 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         const configurationFileData: ConfigurationFileLike | undefined =
             this.configurationFileService.getConfigurationFile(workfolderPath);
 
-        const specificationTreeData: SpecificationTreeData = this.getSpecificationFileData(this.workspaceFolderService.activeWorkfolderPath);
+        const specificationTreeData: SpecificationTreeData = this.getSpecificationFileData(
+            this.workspaceFolderService.activeWorkfolderPath
+        );
         if (!configurationFileData || configurationFileData.id === specificationTreeData.configId) {
             return;
         }
@@ -228,11 +229,11 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
 
         this.itemCheckboxService.clear(workfolderPath);
 
-        const {configFiles} = specificationTreeData;
+        const { configFiles } = specificationTreeData;
         configFiles.clear();
 
         configurationFileData.files.forEach((filePath) => {
-            const fullFilePath = path.join(workfolderPath, filePath);
+            const fullFilePath = join(workfolderPath, filePath);
             this.itemCheckboxService.add(workfolderPath, fullFilePath);
             configFiles.add(fullFilePath);
         });
