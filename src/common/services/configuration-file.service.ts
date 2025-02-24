@@ -2,11 +2,12 @@ import fs from 'fs';
 import path from 'path';
 import { Disposable, Event, EventEmitter, Uri, workspace } from 'vscode';
 import YAML from 'yaml';
-import { convertConfigurationFileToLike, getFilePath, sortStrings } from '../../utils/files.utils';
+import { convertConfigurationFileToLike } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
 import { PackageId } from '../models/publish.model';
+import { getFilePath, sortStrings } from '../../utils/path.utils';
 
 const CONFIG_FILE_NAME = '.apihub-config.yaml';
 

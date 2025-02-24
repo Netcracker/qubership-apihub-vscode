@@ -15,12 +15,17 @@ export interface BuildConfigFile {
     fileId: FileId;
     publish: boolean;
 }
+export interface BuildConfigMetadata{
+    versionLabels: string[];
+}
+
 export interface BuildConfig {
     packageId: PackageId;
     version: VersionId;
     status: VersionStatus;
     previousVersion: VersionId;
     files: BuildConfigFile[];
+    metadata: BuildConfigMetadata | {};
 }
 
 export type Key = Readonly<string>;
@@ -45,7 +50,7 @@ export interface PublishDto {
     version: VersionId;
     status: VersionStatus;
     previousVersion: string;
-    labels: string;
+    labels: string[];
 }
 
 export enum PublishWebviewMessages {
@@ -53,7 +58,8 @@ export enum PublishWebviewMessages {
     UPDATE_OPTIONS = 'updateOptions',
     UPDATE_FIELD = 'updateField',
     UPDATE_PATTERN = 'updatePattern',
-    REQUEST_VERSIONS = 'requestVersions'
+    REQUEST_VERSIONS = 'requestVersions',
+    DELETE = 'delete'
 }
 
 export enum PublishFields {
@@ -95,7 +101,7 @@ export interface PublishWebviewDto
 export class PublishViewData {
     public packageId: PackageId;
     public version: VersionId;
-    public labels: string;
+    public labels: Set<string>;
     public status: VersionStatus;
     public previousVersion: VersionId;
     public configId: ConfigurationId;
@@ -103,7 +109,7 @@ export class PublishViewData {
     constructor() {
         this.packageId = '';
         this.version = '';
-        this.labels = '';
+        this.labels = new Set();
         this.status = VersionStatus.DRAFT;
         this.previousVersion = '';
         this.configId = '';

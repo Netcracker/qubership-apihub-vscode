@@ -26,9 +26,6 @@ export function getNonce(): string {
 export function getElements(extensionUri: Uri): Uri {
     return Uri.joinPath(extensionUri, NODE_MODULES_PATH, '@vscode-elements/elements', 'dist', 'bundled.js');
 }
-export function getElements2(extensionUri: Uri, str: string): Uri {
-    return Uri.joinPath(extensionUri, NODE_MODULES_PATH, '@vscode-elements/elements', 'dist', str, 'index.js');
-}
 
 export function getJsScript(extensionUri: Uri, jsName: string): Uri {
     return Uri.joinPath(extensionUri, RESOURCES_PATH, 'template', 'js', jsName);

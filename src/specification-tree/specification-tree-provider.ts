@@ -1,5 +1,5 @@
 import fs, { Dirent } from 'fs';
-import path from 'path';
+import path, { normalize } from 'path';
 import {
     Disposable,
     Event,
@@ -24,8 +24,9 @@ import { SpecificationItem, SpecificationTreeData } from '../common/models/speci
 import { ItemCheckboxService } from '../common/services/Item-checkbox.service';
 import { ConfigurationFileService } from '../common/services/configuration-file.service';
 import { WorkspaceService } from '../common/services/workspace.service';
-import { getExtension as getFileExtension, isApispecFile, isPathExists } from '../utils/files.utils';
 import { showInformationMessage } from '../utils/notification.urils';
+import { isPathExists } from '../utils/files.utils';
+import { getExtension, isApispecFile } from '../utils/path.utils';
 
 export class SpecificationFileTreeProvider extends Disposable implements TreeDataProvider<SpecificationItem> {
     private readonly _onDidChangeTreeData: EventEmitter<void> = new EventEmitter();
@@ -115,7 +116,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         const dirents: Dirent[] = fs.readdirSync(dirPath, { withFileTypes: true });
         dirents.forEach((dirent) => {
             const { name, parentPath } = dirent;
-            const path = `${parentPath}\\${name}`;
+            const path = normalize(`${parentPath}\\${name}`);
 
             if (IGNORE_DIRS.includes(name)) {
                 return;
@@ -174,7 +175,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     }
 
     private isSpecificationFile(path: FilePath): boolean {
-        const extension = getFileExtension(path);
+        const extension = getExtension(path);
         if (!extension) {
             return false;
         }

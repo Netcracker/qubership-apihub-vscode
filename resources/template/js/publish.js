@@ -18,8 +18,12 @@
         UPDATE_OPTIONS: 'updateOptions',
         UPDATE_FIELD: 'updateField',
         UPDATE_PATTERN: 'updatePattern',
-        REQUEST_VERSIONS: 'requestVersions'
+        REQUEST_VERSIONS: 'requestVersions',
+        DELETE: 'delete'
     };
+
+    const LABELS_ID = 'labelForLables';
+    const LABELS_PLACEHOLDER = 'pulbish-labels-placeholder';
 
     const packageId = document.querySelector(`#${PublishFields.PACKAGE_ID}`);
     const version = document.querySelector(`#${PublishFields.VERSION}`);
@@ -32,13 +36,20 @@
         packageId.addEventListener('input', () => sendFieldValue(PublishFields.PACKAGE_ID, packageId));
     }
     if (version) {
-        version.addEventListener('input', () => sendVersionValue());
+        version.addEventListener('input', () => sendFieldValue(PublishFields.VERSION, version));
     }
     if (status) {
         status.addEventListener('change', () => sendFieldValue(PublishFields.STATUS, status));
     }
     if (labels) {
-        labels.addEventListener('input', () => sendFieldValue(PublishFields.LABELS, labels));
+        labels.addEventListener("focusout", (event) => {
+            updateLables();
+        });
+        labels.addEventListener('keyup', ({ key }) => {
+            if (key === 'Enter') {
+                updateLables();
+            }
+        });
     }
     if (previousVersion) {
         previousVersion.addEventListener('click', requestVersions);
@@ -69,6 +80,26 @@
         }
     });
 
+    function updateLables(){
+        if(!labels){
+            return;
+        }
+        const shadowRoot= labels.shadowRoot;
+        if(!shadowRoot){
+            return;
+        }
+        const input = shadowRoot.querySelector('input');
+        if(!input){
+            return;
+        }
+        if(!input.value?.trim()?.length){
+            return;
+        }
+        sendFieldValue(PublishFields.LABELS, labels);
+        // @ts-ignore
+        input.value = '';
+    }
+
     function updatePettern(fieldName, value) {
         const field = document.querySelector(`#${fieldName}`);
         if (!field) {
@@ -88,10 +119,10 @@
         // @ts-ignore
         field.innerHTML = null;
         values?.forEach((element) => {
-            var opt = document.createElement('vscode-option');
-            opt.value = element;
-            opt.innerHTML = element;
-            field?.appendChild(opt);
+            var optio = document.createElement('vscode-option');
+            optio.value = element;
+            optio.innerHTML = element;
+            field.appendChild(optio);
         });
     }
 
@@ -102,8 +133,7 @@
         }
         switch (fieldName) {
             case PublishFields.PACKAGE_ID:
-            case PublishFields.VERSION:
-            case PublishFields.LABELS: {
+            case PublishFields.VERSION: {
                 // @ts-ignore
                 const input = field.shadowRoot.querySelector('input');
                 if (!input) {
@@ -124,6 +154,39 @@
                 publishButton.disabled = value === 'true';
                 break;
             }
+            case PublishFields.LABELS: {
+                const oldLabelPlaceholeder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
+                if (oldLabelPlaceholeder) {
+                    oldLabelPlaceholeder.remove();
+                }
+                if (!value?.length) {
+                    return;
+                }
+                const label = document.querySelector(`#${LABELS_ID}`);
+                if (!label) {
+                    return;
+                }
+                const placeholder = document.createElement('div');
+                placeholder.setAttribute('id', LABELS_PLACEHOLDER);
+                placeholder.className = LABELS_PLACEHOLDER;
+
+                label?.append(placeholder);
+
+                value.forEach((label) => {
+                    const chip = document.createElement('vscode-button');
+                    chip.setAttribute('icon-after', 'close');
+                    chip.setAttribute('secondary', '');
+                    chip.innerHTML = label;
+                    chip.className = 'publish-chip';
+                    chip.addEventListener('click', (event) =>
+                        // @ts-ignore
+                        deleteFieldValue(PublishFields.LABELS, event?.target?.innerText)
+                    );
+                    placeholder.appendChild(chip);
+                });
+
+                break;
+            }
         }
     }
 
@@ -141,26 +204,18 @@
         });
     }
 
-    function debounce(callback, timeout) {
-        let timer;
-        return () => {
-            clearTimeout(timer);
-            timer = setTimeout(() => {
-                callback.apply(this);
-            }, timeout);
-        };
-    }
-
-    const sendVersionValue = debounce(() => {
-        const value = version?.value?.trim();
+    function deleteFieldValue(fieldName, value) {
+        if (!fieldName || !value) {
+            return;
+        }
         vscode.postMessage({
-            command: PublishWebviewMessages.UPDATE_FIELD,
+            command: PublishWebviewMessages.DELETE,
             payload: {
-                field: PublishFields.VERSION,
+                field: fieldName,
                 value
             }
         });
-    }, 800);
+    }
 
     function requestVersions() {
         vscode.postMessage({
@@ -168,17 +223,26 @@
         });
     }
 
+    function getInput(field){
+        if(!field){
+            return;
+        }
+        const shadowRoot = field.shadowRoot;
+        if(!shadowRoot){
+            return;
+        }
+        return shadowRoot.querySelector('input');
+    }
+
     function publish() {
-        // @ts-ignore
-        const packageIdValue = packageId?.shadowRoot.querySelector('input').value?.trim() ?? '';
+        const packageIdValue = getInput(packageId).value?.trim() ?? '';
         if (!packageIdValue) {
             // @ts-ignore
             packageId.required = true;
             return;
         }
 
-        // @ts-ignore
-        const versionValue = version?.shadowRoot.querySelector('input').value?.trim() ?? '';
+        const versionValue = getInput(version).value?.trim() ?? '';
         if (!versionValue) {
             // @ts-ignore
             version.required = true;
@@ -193,8 +257,12 @@
             previousVersion.required = true;
             return;
         }
-        // @ts-ignore
-        const labelsValue = labels?.shadowRoot.querySelector('input').value?.trim() ?? '';
+
+        let labelsValue = [];
+        const labels = document.querySelector(`#${LABELS_PLACEHOLDER}`);
+        if(labels){
+            labelsValue = Array.from(labels.children).map(chip=> chip.innerHTML);
+        }
 
         vscode.postMessage({
             command: PublishWebviewMessages.PUBLISH,

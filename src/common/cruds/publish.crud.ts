@@ -55,6 +55,7 @@ export class CrudService {
         status: VersionStatus,
         version: VersionId,
         previousVersion: VersionId,
+        versionLabels: string[],
         authorization: string
     ): Promise<PublishConfig> {
         const config: BuildConfig = {
@@ -62,7 +63,9 @@ export class CrudService {
             status,
             version,
             previousVersion,
-            files: buildConfigFile
+            files: buildConfigFile,
+            metadata: versionLabels?.length ? 
+                {versionLabels} : {}
         };
         const formData = new FormData();
 

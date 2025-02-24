@@ -1,7 +1,19 @@
 vscode-textfield,
+vscode-textarea,
 vscode-single-select {
-	width: 100%;
+    width: 100%;
 }
-vscode-button {
-	width: calc(100% - 28px);
+.publish-button {
+    width: calc(100% - 28px);
+}
+.pulbish-labels-placeholder {
+    display: flex;
+	gap: 4px;
+	flex-wrap: wrap;
+    margin-top: 4px;
+}
+.publish-chip {
+    --vscode-button-secondaryForeground: #1d1d1d;
+    --vscode-button-secondaryBackground: #dfe0e2;
+	--vscode-button-secondaryHoverBackground: #a5a6a8;
 }

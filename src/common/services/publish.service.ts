@@ -6,8 +6,6 @@ import {
     createBuildConfigFiles
 } from '../../utils/document.utils';
 import {
-    getFilePath,
-    isItemApispecFile,
     packToZip,
     specificationItemToFile,
     splitVersion
@@ -33,6 +31,7 @@ import { PublishViewProvider } from '../webview/publish-view';
 import { ConfigurationFileService } from './configuration-file.service';
 import { configurationService } from './configuration.service';
 import { SecretStorageService } from './secret-storage.service';
+import { isItemApispecFile, getFilePath } from '../../utils/path.utils';
 
 export class PublishService implements Disposable {
     private readonly _crudService: CrudService;
@@ -128,7 +127,7 @@ export class PublishService implements Disposable {
                 'https://github.com/'
             );
         }
-        const { packageId, version, status, previousVersion } = publishData;
+        const { packageId, version, status, previousVersion, labels } = publishData;
 
         if (!packageId || !version || !status || !previousVersion) {
             throw new Error('Fill all required fields');
@@ -162,6 +161,7 @@ export class PublishService implements Disposable {
             status,
             version,
             previousVersion,
+            labels,
             authorization
         );
 
@@ -190,6 +190,7 @@ export class PublishService implements Disposable {
         status: VersionStatus,
         versionId: VersionId,
         previousVersion: VersionId,
+        versionLabels: string[],
         authorization: string
     ): Promise<PublishConfig> {
         const buildConfig: BuildConfigFile[] = createBuildConfigFiles(publishFileNames, allFileNames);
@@ -202,6 +203,7 @@ export class PublishService implements Disposable {
             status,
             versionId,
             normalizePreviousVersion,
+            versionLabels,
             authorization
         );
     }

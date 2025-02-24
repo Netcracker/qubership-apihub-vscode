@@ -1,8 +1,8 @@
 import { TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, Uri } from 'vscode';
 import { EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME } from '../constants/common.constants';
-import { getMiddlePath } from '../../utils/files.utils';
 import { FilePath } from './common.model';
 import { ConfigurationId } from './configuration.model';
+import { getMiddlePath } from '../../utils/path.utils';
 
 export class SpecificationItem extends TreeItem {
     constructor(
@@ -31,9 +31,9 @@ export class SpecificationTreeData {
     public readonly configFiles: Set<FilePath>;
     public configId: ConfigurationId;
 
-    constructor(){
-        this.localFiles = new Set<FilePath>;
-        this.configFiles = new Set<FilePath>;
-        this.configId = "";
+    constructor() {
+        this.localFiles = new Set<FilePath>();
+        this.configFiles = new Set<FilePath>();
+        this.configId = '';
     }
 }

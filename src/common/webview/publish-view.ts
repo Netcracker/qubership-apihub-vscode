@@ -8,7 +8,7 @@ import {
     WebviewViewProvider,
     WebviewViewResolveContext
 } from 'vscode';
-import { capitalize, splitVersion } from '../../utils/files.utils';
+import {  debounce, splitVersion } from '../../utils/files.utils';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
@@ -26,9 +26,9 @@ import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
     PublishDto,
+    PublishFields,
     PublishViewData,
     PublishWebviewDto,
-    PublishFields as PublishWebviewFields,
     PublishWebviewMessages,
     PublishWebviewPayload,
     VersionId,
@@ -38,12 +38,14 @@ import { ConfigurationFileService } from '../services/configuration-file.service
 import { configurationService } from '../services/configuration.service';
 import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
+import { capitalize } from '../../utils/path.utils';
 
 export class PublishViewProvider extends Disposable implements WebviewViewProvider {
     private _view?: WebviewView;
     private _disposables: Disposable[] = [];
     private readonly _crudService: CrudService;
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
+    private readonly debouncedUpdateLabels = debounce(this.updateLabels);
 
     constructor(
         private readonly context: ExtensionContext,
@@ -121,6 +123,10 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
                         this.loadVersions();
                         break;
                     }
+                    case PublishWebviewMessages.DELETE: {
+                        this.deleteWebviewLabels((message.payload as PublishWebviewPayload).value as string);
+                        break;
+                    }
                 }
             },
             this,
@@ -140,42 +146,44 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         this.restoreConfigPackageId(workfolderPath, this.configurationFileService.getConfigurationFile(workfolderPath));
         const { version, status, previousVersion, labels } = this.getPublishViewData(workfolderPath);
 
-        this.updateWebviewField(PublishWebviewFields.VERSION, version);
-        this.updateWebviewField(PublishWebviewFields.STATUS, status);
+        this.updateWebviewField(PublishFields.VERSION, version);
+        this.updateWebviewField(PublishFields.STATUS, status);
         this.updateVersionPattern(status);
 
         const options = Array.from(new Set([PUBLISH_NO_PREVIOUS_VERSION, previousVersion])).filter((value) => !!value);
-        this.updateWebviewOptions(PublishWebviewFields.PREVIOUS_VERSION, options);
-        this.updateWebviewField(PublishWebviewFields.PREVIOUS_VERSION, previousVersion);
-        this.updateWebviewField(PublishWebviewFields.LABELS, labels);
+        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, options);
+        this.updateWebviewField(PublishFields.PREVIOUS_VERSION, previousVersion);
+        this.updateWebviewLabels(labels);
     }
 
     private updateField(payload: PublishWebviewPayload): void {
         const workfolderPath = this.workfolderService.activeWorkfolderPath;
         const pulbishViewData = this.getPublishViewData(workfolderPath);
         switch (payload.field) {
-            case PublishWebviewFields.PACKAGE_ID: {
+            case PublishFields.PACKAGE_ID: {
                 pulbishViewData.packageId = payload.value as PackageId;
                 break;
             }
-            case PublishWebviewFields.VERSION: {
+            case PublishFields.VERSION: {
                 const version = payload.value as VersionId;
                 pulbishViewData.version = version;
-                this.updateLabels(version);
+                this.debouncedUpdateLabels(pulbishViewData, version);
                 break;
             }
-            case PublishWebviewFields.STATUS: {
+            case PublishFields.STATUS: {
                 const status: VersionStatus = payload.value as VersionStatus;
                 pulbishViewData.status = status;
                 this.updateVersionPattern(status);
                 break;
             }
-            case PublishWebviewFields.PREVIOUS_VERSION: {
+            case PublishFields.PREVIOUS_VERSION: {
                 pulbishViewData.previousVersion = payload.value as string;
                 break;
             }
-            case PublishWebviewFields.LABELS: {
-                pulbishViewData.labels = payload.value as string;
+            case PublishFields.LABELS: {
+                const labels = pulbishViewData.labels;
+                labels.add(payload.value as string);
+                this.updateWebviewLabels(labels);
                 break;
             }
         }
@@ -207,7 +215,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         pulbishViewData.packageId = value;
 
         if (workfolderPath === this.workfolderService.activeWorkfolderPath) {
-            this.updateWebviewField(PublishWebviewFields.PACKAGE_ID, value);
+            this.updateWebviewField(PublishFields.PACKAGE_ID, value);
         }
     }
 
@@ -220,30 +228,22 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
     }
 
     private updateWebviewLoading(isLoading: boolean): void {
-        this.updateWebview(
-            PublishWebviewMessages.UPDATE_FIELD,
-            PublishWebviewFields.PUBLISH_BUTTON,
-            isLoading.toString()
-        );
+        this.updateWebview(PublishWebviewMessages.UPDATE_FIELD, PublishFields.PUBLISH_BUTTON, isLoading.toString());
     }
 
-    private updateWebviewField(field: PublishWebviewFields, value: string): void {
+    private updateWebviewField(field: PublishFields, value: string | string[]): void {
         this.updateWebview(PublishWebviewMessages.UPDATE_FIELD, field, value);
     }
 
-    private updateWebviewOptions(field: PublishWebviewFields, value: string[]): void {
+    private updateWebviewOptions(field: PublishFields, value: string[]): void {
         this.updateWebview(PublishWebviewMessages.UPDATE_OPTIONS, field, value);
     }
 
-    private updateWebviewPattern(field: PublishWebviewFields, value: string): void {
+    private updateWebviewPattern(field: PublishFields, value: string): void {
         this.updateWebview(PublishWebviewMessages.UPDATE_PATTERN, field, value);
     }
 
-    private updateWebview(
-        command: PublishWebviewMessages,
-        field: PublishWebviewFields,
-        value: string | string[]
-    ): void {
+    private updateWebview(command: PublishWebviewMessages, field: PublishFields, value: string | string[]): void {
         this._view?.webview.postMessage({
             command: command,
             payload: {
@@ -271,29 +271,40 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
             options.push(...versions.versions.map((ver) => splitVersion(ver.version).version));
         } catch (error) {}
 
-        this.updateWebviewOptions(PublishWebviewFields.PREVIOUS_VERSION, options);
+        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, options);
     }
 
     private updateVersionPattern(status: VersionStatus): void {
         switch (status) {
             case VersionStatus.ARCHIVED:
             case VersionStatus.DRAFT: {
-                this.updateWebviewPattern(PublishWebviewFields.VERSION, PUBLISH_INPUT_DRAFT_PATTERN);
+                this.updateWebviewPattern(PublishFields.VERSION, PUBLISH_INPUT_DRAFT_PATTERN);
                 break;
             }
             case VersionStatus.RELEASE: {
-                this.updateWebviewPattern(PublishWebviewFields.VERSION, PUBLISH_INPUT_RELEASE_PATTERN);
+                this.updateWebviewPattern(PublishFields.VERSION, PUBLISH_INPUT_RELEASE_PATTERN);
                 break;
             }
         }
     }
 
-    private async updateLabels(version: VersionId): Promise<void> {
+    private deleteWebviewLabels(label: string): void {
+        const workfolderPath = this.workfolderService.activeWorkfolderPath;
+        const { labels } = this.getPublishViewData(workfolderPath);
+        labels.delete(label);
+        this.updateWebviewField(PublishFields.LABELS, Array.from(labels));
+    }
+
+    private updateWebviewLabels(labels: Set<string>): void {
+        this.updateWebviewField(PublishFields.LABELS, Array.from(labels));
+    }
+
+    private async updateLabels(data: PublishViewData, version: VersionId): Promise<void> {
         if (!version) {
             return;
         }
-        const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
-        if (!packageId) {
+        const { packageId, labels } = data;
+        if (!packageId || labels.size) {
             return;
         }
         const host: string = configurationService.hostUrl ?? '';
@@ -304,7 +315,11 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         }
         try {
             const versions = await this._crudService.getLabels(host, token, packageId, version);
-            const labels = versions.versions.map((version) => version.versionLabels);
+            versions.versions
+                .map((version) => version.versionLabels)
+                .flat()
+                .forEach((version) => labels.add(version));
+            this.updateWebviewLabels(labels);
         } catch (error) {}
     }
 
@@ -359,8 +374,8 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
                         <vscode-single-select id="status">${statusOptions}</vscode-single-select>
                     </p>
                     <p>
-                        <vscode-label for="labels">Labels:</vscode-label>
-                        <vscode-textfield id="labels"/>
+                        <vscode-label for="labels" id="labelForLables">Labels:</vscode-label>
+                        <vscode-textfield id="labels" placeholder="↵"></vscode-textfield>
                     </p>
                     <p>
                         <vscode-label for="previousVersion" required>Previous release version:</vscode-label>
@@ -369,7 +384,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
                         </vscode-single-select>
                     </p>
                     <p>
-                        <vscode-button id="publish-button">Publish</vscode-button>
+                        <vscode-button class="publish-button" id="publish-button">Publish</vscode-button>
                     </p>
                 </vscode-form-group>
                 <script nonce="${nonce}"
