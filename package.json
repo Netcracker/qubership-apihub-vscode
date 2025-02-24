@@ -9,6 +9,10 @@
   "categories": [
     "Other"
   ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Netcracker/qubership-apihub-vscode.git"
+  },
   "activationEvents": [],
   "main": "./out/extension.js",
   "icon": "resources/icons/extension.png",
