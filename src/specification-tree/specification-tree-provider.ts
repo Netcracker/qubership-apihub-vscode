@@ -43,7 +43,6 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         super(() => this.dispose());
         const apispecFileExtensions: string = [...SPECS_MAIN_EXTENSIONS, ...SPECS_ADDITIONAL_EXTENSIONS].join(',');
         this._watcher = workspace.createFileSystemWatcher(`**/*.{${apispecFileExtensions}}`);
-        this.setFilesFromConfig(this.workspaceFolderService.activeWorkfolderPath);
     }
 
     public activate(active: boolean): void {

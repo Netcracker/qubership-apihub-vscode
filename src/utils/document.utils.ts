@@ -5,7 +5,7 @@ import YAML from 'yaml';
 import { BundleData } from '../common/models/bundle.model';
 import { BuildConfigFile } from '../common/models/publish.model';
 import { SpecificationItem } from '../common/models/specification-item';
-import { getFilePath, getFileDirectory } from './path.utils';
+import { getFileDirectory, getFilePath } from './path.utils';
 
 export const bundledFileDataWithDependencies = async (
     item: SpecificationItem,
@@ -15,19 +15,22 @@ export const bundledFileDataWithDependencies = async (
     const dependencies: string[] = [];
     const errorMessages: string[] = [];
 
+    const workspacePath = item.workspacePath;
     const rootApispecPath = item.uri.fsPath;
-    const rootApispecName = getFilePath(item.workspacePath, rootApispecPath);
+    const rootApispecName = getFilePath(workspacePath, rootApispecPath);
     const rootApicpecDirectory = getFileDirectory(rootApispecPath);
 
     const resolver: Resolver = async (sourcePath: string) => {
         let normalizePath = sourcePath;
 
         if (sourcePath !== rootApispecPath) {
-            normalizePath = path.join(rootApicpecDirectory, sourcePath);
+            if (!path.isAbsolute(sourcePath)) {
+                normalizePath = path.join(rootApicpecDirectory, sourcePath);
+            }
             dependencies.push(normalizePath);
         }
 
-        const apispecName = getFilePath(item.workspacePath, normalizePath);
+        const apispecName = getFilePath(workspacePath, normalizePath);
         try {
             const apispecData = await fs.readFile(normalizePath, 'utf8');
             const apispecFile = new File([apispecData], apispecName);

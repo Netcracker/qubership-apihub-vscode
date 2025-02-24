@@ -12,7 +12,7 @@ import {
 } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
-import { PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_TEXT } from '../constants/publish.constants';
+import { PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_TEXT, STATUS_REFETCH_INTERVAL, STATUS_REFETCH_MAX_ATTEMPTS } from '../constants/publish.constants';
 import { CrudService } from '../cruds/publish.crud';
 import { BundleData } from '../models/bundle.model';
 import { PublishError, PublishErrorTypes } from '../models/publish-error.model';
@@ -213,7 +213,7 @@ export class PublishService implements Disposable {
         packageId: PackageId,
         publishId: string,
         authorization: string,
-        maxAttempts = 10
+        maxAttempts = STATUS_REFETCH_MAX_ATTEMPTS,
     ): Promise<PublishStatusDto> {
         let attempts = 0;
         while (attempts < maxAttempts) {
@@ -227,7 +227,7 @@ export class PublishService implements Disposable {
                 return publishStatus;
             }
             attempts++;
-            await new Promise((resolve) => setTimeout(resolve, 2000));
+            await new Promise((resolve) => setTimeout(resolve, STATUS_REFETCH_INTERVAL));
         }
         throw new Error('Waiting time exceeded');
     }

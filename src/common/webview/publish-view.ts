@@ -203,6 +203,7 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         const newConfigFileId = configFile?.id ?? '';
         if (pulbishViewData.configId === newConfigFileId) {
             this.restoreLocalPackageId(workfolderPath);
+            return;
         }
 
         pulbishViewData.configId = newConfigFileId;
