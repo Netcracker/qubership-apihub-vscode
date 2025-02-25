@@ -15,7 +15,7 @@ export interface BuildConfigFile {
     fileId: FileId;
     publish: boolean;
 }
-export interface BuildConfigMetadata{
+export interface BuildConfigMetadata {
     versionLabels: string[];
 }
 
@@ -45,12 +45,16 @@ export enum PublishStatus {
 }
 
 export interface PublishDto {
-    workfolderPath: WorkfolderPath;
     packageId: PackageId;
     version: VersionId;
     status: VersionStatus;
     previousVersion: string;
     labels: string[];
+}
+
+export interface PublishCommandData {
+    workfolderPath: WorkfolderPath;
+    data: PublishDto;
 }
 
 export enum PublishWebviewMessages {

@@ -8,9 +8,10 @@ import {
     WebviewViewProvider,
     WebviewViewResolveContext
 } from 'vscode';
-import {  debounce, splitVersion } from '../../utils/files.utils';
+import { debounce, splitVersion } from '../../utils/files.utils';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
 import { showErrorNotification } from '../../utils/notification.urils';
+import { capitalize } from '../../utils/path.utils';
 import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
 import {
     PUBLISH_INPUT_DRAFT_PATTERN,
@@ -25,6 +26,7 @@ import { WorkfolderPath } from '../models/common.model';
 import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
+    PublishCommandData,
     PublishDto,
     PublishFields,
     PublishViewData,
@@ -38,14 +40,13 @@ import { ConfigurationFileService } from '../services/configuration-file.service
 import { configurationService } from '../services/configuration.service';
 import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
-import { capitalize } from '../../utils/path.utils';
 
 export class PublishViewProvider extends Disposable implements WebviewViewProvider {
     private _view?: WebviewView;
     private _disposables: Disposable[] = [];
     private readonly _crudService: CrudService;
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
-    private readonly debouncedUpdateLabels = debounce((data, version)=>this.updateLabels(data, version));
+    private readonly debouncedUpdateLabels = debounce((data, version) => this.updateLabels(data, version));
 
     constructor(
         private readonly context: ExtensionContext,
@@ -324,8 +325,11 @@ export class PublishViewProvider extends Disposable implements WebviewViewProvid
         } catch (error) {}
     }
 
-    private publish(dto: PublishDto): void {
-        commands.executeCommand(EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME, dto);
+    private publish(data: PublishDto): void {
+        commands.executeCommand(EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME, {
+            data,
+            workfolderPath: this.workfolderService.activeWorkfolderPath
+        } as PublishCommandData);
     }
 
     private getPublishViewData(workfolderPath: WorkfolderPath): PublishViewData {

@@ -5,20 +5,23 @@ import {
     convertBundleDataToFiles,
     createBuildConfigFiles
 } from '../../utils/document.utils';
-import {
-    packToZip,
-    specificationItemToFile,
-    splitVersion
-} from '../../utils/files.utils';
+import { packToZip, specificationItemToFile, splitVersion } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
+import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
 import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
-import { PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_TEXT, STATUS_REFETCH_INTERVAL, STATUS_REFETCH_MAX_ATTEMPTS } from '../constants/publish.constants';
+import {
+    PUBLISH_NO_PREVIOUS_VERSION,
+    STATUS_BAR_TEXT,
+    STATUS_REFETCH_INTERVAL,
+    STATUS_REFETCH_MAX_ATTEMPTS
+} from '../constants/publish.constants';
 import { CrudService } from '../cruds/publish.crud';
 import { BundleData } from '../models/bundle.model';
 import { PublishError, PublishErrorTypes } from '../models/publish-error.model';
 import {
     BuildConfigFile,
     PackageId,
+    PublishCommandData,
     PublishConfig,
     PublishDto,
     PublishStatus,
@@ -31,7 +34,6 @@ import { PublishViewProvider } from '../webview/publish-view';
 import { ConfigurationFileService } from './configuration-file.service';
 import { configurationService } from './configuration.service';
 import { SecretStorageService } from './secret-storage.service';
-import { isItemApispecFile, getFilePath } from '../../utils/path.utils';
 
 export class PublishService implements Disposable {
     private readonly _crudService: CrudService;
@@ -53,42 +55,45 @@ export class PublishService implements Disposable {
 
     private registerPublishCommand(): void {
         this._disposables.push(
-            commands.registerCommand(EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME, async (data: PublishDto) => {
-                this.publishViewProvider.showLoading();
-                this._statusBarItem.show();
+            commands.registerCommand(
+                EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME,
+                async (publishData: PublishCommandData) => {
+                    this.publishViewProvider.showLoading();
+                    this._statusBarItem.show();
 
-                const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
-                const host = configurationService.hostUrl;
-                const token = await this.secretStorageService.getToken();
-
-                this.publish(host, token, values, data)
-                    .then((value: PublishStatusDto) => {
-                        const { workfolderPath, packageId, version } = data;
-                        this.configurationFileService.updateConfigurationFile(
-                            workfolderPath,
-                            packageId,
-                            values.map((value) => value.uri.fsPath)
-                        );
-                        window
-                            .showInformationMessage(
-                                'Package version was successfully published in APIHUB Portal. Check it out.',
-                                'Check it out'
-                            )
-                            .then((selection) => {
-                                if (selection === 'Check it out') {
-                                    env.openExternal(Uri.parse(`${host}/portal/packages/${packageId}/${version}/`));
-                                }
-                            });
-                    })
-                    .catch((err) => {
-                        console.error(err.message, err.stack);
-                        showErrorNotification(err.message);
-                    })
-                    .finally(() => {
-                        this._statusBarItem.hide();
-                        this.publishViewProvider.hideLoading();
-                    });
-            })
+                    const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
+                    const host = configurationService.hostUrl;
+                    const token = await this.secretStorageService.getToken();
+                    const { data, workfolderPath } = publishData;
+                    this.publish(host, token, values, data)
+                        .then((value: PublishStatusDto) => {
+                            const { packageId, version } = data;
+                            this.configurationFileService.updateConfigurationFile(
+                                workfolderPath,
+                                packageId,
+                                values.map((value) => value.uri.fsPath)
+                            );
+                            window
+                                .showInformationMessage(
+                                    'Package version was successfully published in APIHUB Portal. Check it out.',
+                                    'Check it out'
+                                )
+                                .then((selection) => {
+                                    if (selection === 'Check it out') {
+                                        env.openExternal(Uri.parse(`${host}/portal/packages/${packageId}/${version}/`));
+                                    }
+                                });
+                        })
+                        .catch((err) => {
+                            console.error(err.message, err.stack);
+                            showErrorNotification(err.message);
+                        })
+                        .finally(() => {
+                            this._statusBarItem.hide();
+                            this.publishViewProvider.hideLoading();
+                        });
+                }
+            )
         );
     }
 
@@ -213,7 +218,7 @@ export class PublishService implements Disposable {
         packageId: PackageId,
         publishId: string,
         authorization: string,
-        maxAttempts = STATUS_REFETCH_MAX_ATTEMPTS,
+        maxAttempts = STATUS_REFETCH_MAX_ATTEMPTS
     ): Promise<PublishStatusDto> {
         let attempts = 0;
         while (attempts < maxAttempts) {
