@@ -1,12 +1,12 @@
 import { BodyInit } from 'undici-types';
+import { Disposable } from 'vscode';
 import { API_V2, API_V3 } from '../constants/common.constants';
 import {
-    BuildConfig,
-    BuildConfigFile,
     PackageId,
     PublishConfig,
     PublishStatusDto,
     PublishVersionDto,
+    PublishViewPackageIdData,
     VersionId,
     VersionStatus
 } from '../models/publish.model';
@@ -15,98 +15,134 @@ const enum CrudMethod {
     GET = 'GET',
     POST = 'POST'
 }
-const CRUD_TIMEOUT = 10000;
+const PAT_HEADER = 'X-Personal-Access-Token';
 
-export class CrudService {
+const enum RequestNames {
+    GET_VERSIONS,
+    GET_PACKAGE_ID,
+    GET_LABELS,
+    GET_STATUS,
+    PUBLISH
+}
+
+export class CrudService extends Disposable {
+    private readonly abortControllers: Map<RequestNames, AbortController> = new Map();
     private readonly VERSION_SERACH_PARAMS = new URLSearchParams({
         status: VersionStatus.RELEASE,
         limit: '100',
         page: '0'
     }).toString();
 
-    public getVersions(baseUrl: string, authorization: string, packageId: PackageId, ): Promise<PublishVersionDto> {
+    constructor() {
+        super(() => this.dispose());
+    }
+
+    public dispose() {
+        this.abortControllers.forEach((controller) => controller.abort());
+    }
+
+    public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishVersionDto> {
         const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
         url.search = this.VERSION_SERACH_PARAMS;
-        return this.sendGet(url, authorization);
-    }    
-    
-    public getLabels(baseUrl: string, authorization: string, packageId: PackageId, version: VersionId): Promise<PublishVersionDto> {
+        return this.get(RequestNames.GET_VERSIONS, url, authorization);
+    }
+
+    public getPackageId(
+        baseUrl: string,
+        authorization: string,
+        packageId: PackageId
+    ): Promise<PublishViewPackageIdData> {
+        return this.get(RequestNames.GET_PACKAGE_ID, `${baseUrl}${API_V2}/packages/${packageId}`, authorization);
+    }
+
+    public getLabels(
+        baseUrl: string,
+        authorization: string,
+        packageId: PackageId,
+        version: VersionId
+    ): Promise<PublishVersionDto> {
         const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
         url.search = new URLSearchParams({
             textFilter: version
         }).toString();
-        return this.sendGet(url, authorization);
+        return this.get(RequestNames.GET_LABELS, url, authorization);
     }
 
     public getStatus(
         baseUrl: string,
+        authorization: string,
         packageId: PackageId,
-        publishId: string,
-        authorization: string
+        publishId: string
     ): Promise<PublishStatusDto> {
-        return this.sendGet(`${baseUrl}${API_V2}/packages/${packageId}/publish/${publishId}/status`, authorization);
+        return this.get(
+            RequestNames.GET_STATUS,
+            `${baseUrl}${API_V2}/packages/${packageId}/publish/${publishId}/status`,
+            authorization
+        );
     }
 
     public publishApispec(
         baseUrl: string,
-        buildConfigFile: BuildConfigFile[],
-        data: Blob,
-        packageId: string,
-        status: VersionStatus,
-        version: VersionId,
-        previousVersion: VersionId,
-        versionLabels: string[],
-        authorization: string
+        packageId: PackageId,
+        authorization: string,
+        formData: Blob | FormData
     ): Promise<PublishConfig> {
-        const config: BuildConfig = {
-            packageId,
-            status,
-            version,
-            previousVersion,
-            files: buildConfigFile,
-            metadata: versionLabels?.length ? 
-                {versionLabels} : {}
-        };
-        const formData = new FormData();
-
-        data && formData.append('sources', data, 'package.zip');
-
-        const publishConfig = {
-            ...config,
-            sources: undefined
-        };
-
-        formData.append('config', JSON.stringify(publishConfig));
-
-        return this.sendPost(`${baseUrl}${API_V2}/packages/${packageId}/publish`, formData, authorization);
+        return this.post(
+            RequestNames.PUBLISH,
+            `${baseUrl}${API_V2}/packages/${packageId}/publish`,
+            formData,
+            authorization
+        );
     }
 
-    private sendPost<T>(url: string | URL, body: BodyInit | undefined, authorization: string): Promise<T> {
-        return this.send(url, CrudMethod.POST, authorization, body);
+    private post<T>(
+        name: RequestNames,
+        url: string | URL,
+        body: BodyInit | undefined,
+        authorization: string
+    ): Promise<T> {
+        return this.send(name, url, CrudMethod.POST, authorization, body);
     }
 
-    private sendGet<T>(url: string | URL, authorization: string): Promise<T> {
-        return this.send(url, CrudMethod.GET, authorization);
+    private get<T>(name: RequestNames, url: string | URL, authorization: string): Promise<T> {
+        return this.send(name, url, CrudMethod.GET, authorization);
     }
 
     private async send<T>(
+        requestName: RequestNames,
         url: string | URL,
         method: CrudMethod,
         authorization: string,
         body?: BodyInit | undefined
     ): Promise<T> {
-        const response = await fetch(url, {
-            method,
-            headers: {
-                authorization
-            },
-            ...(method === CrudMethod.POST && { body }),
-            signal: AbortSignal.timeout(CRUD_TIMEOUT)
-        });
-        if (!response.ok) {
-            throw new Error(response.statusText);
-        }
+        const controller = new AbortController();
+        this.deleteController(requestName);
+        this.addController(requestName, controller);
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    [PAT_HEADER]: authorization
+                },
+                ...(method === CrudMethod.POST && { body }),
+                signal: controller.signal
+            });
+            
+            if (!response.ok) {
+                throw new Error(response.statusText);
+            }
 
-        return (await response.json()) as T;
+            return (await response.json()) as T;
+        } finally {
+            this.deleteController(requestName);
+        }
+    }
+
+    private addController(requestName: RequestNames, controller: AbortController): void {
+        this.abortControllers.set(requestName, controller);
+    }
+    private deleteController(requestName: RequestNames): void {
+        this.abortControllers.get(requestName)?.abort();
+        this.abortControllers.delete(requestName);
     }
 }

@@ -1,1 +1,4 @@
-export type EnvironmentWebviewTypes = string;
+export enum EnvironmentWebviewFields {
+    URL = 'url',
+    TOKEN = 'token'
+}

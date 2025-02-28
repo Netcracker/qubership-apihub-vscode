@@ -70,7 +70,7 @@
         },
         {
           "id": "apihubExtension.explorer",
-          "name": "DOCUMENTS TO PUBLISHPUBLISH TO APIHUB PORTAL"
+          "name": "Documents to publish to apihub portal"
         },
         {
           "id": "apihubExtension.publishView",
@@ -110,6 +110,7 @@
   "dependencies": {
     "@vscode-elements/elements": "^1.11.0",
     "@vscode/codicons": "^0.0.36",
+    "ajv": "^8.17.1",
     "api-ref-bundler": "^0.4.3",
     "jszip": "^3.10.1",
     "openapi-types": "^12.1.3",

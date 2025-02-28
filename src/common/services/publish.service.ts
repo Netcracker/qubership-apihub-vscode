@@ -5,12 +5,15 @@ import {
     convertBundleDataToFiles,
     createBuildConfigFiles
 } from '../../utils/document.utils';
-import { packToZip, specificationItemToFile, splitVersion } from '../../utils/files.utils';
+import { convertPreviousVersion, packToZip, specificationItemToFile } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
-import { EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME } from '../constants/common.constants';
 import {
-    PUBLISH_NO_PREVIOUS_VERSION,
+    EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
+    EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME
+} from '../constants/common.constants';
+import {
+    PUBLISH_DATA_NAME,
     STATUS_BAR_TEXT,
     STATUS_REFETCH_INTERVAL,
     STATUS_REFETCH_MAX_ATTEMPTS
@@ -19,6 +22,7 @@ import { CrudService } from '../cruds/publish.crud';
 import { BundleData } from '../models/bundle.model';
 import { PublishError, PublishErrorTypes } from '../models/publish-error.model';
 import {
+    BuildConfig,
     BuildConfigFile,
     PackageId,
     PublishCommandData,
@@ -35,7 +39,7 @@ import { ConfigurationFileService } from './configuration-file.service';
 import { configurationService } from './configuration.service';
 import { SecretStorageService } from './secret-storage.service';
 
-export class PublishService implements Disposable {
+export class PublishService extends Disposable {
     private readonly _crudService: CrudService;
     private _disposables: Disposable[] = [];
     private _statusBarItem: StatusBarItem;
@@ -46,7 +50,9 @@ export class PublishService implements Disposable {
         private readonly secretStorageService: SecretStorageService,
         private readonly configurationFileService: ConfigurationFileService
     ) {
+        super(() => this.dispose());
         this._crudService = new CrudService();
+        this._disposables.push(this._crudService);
         this._statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
         this._statusBarItem.text = STATUS_BAR_TEXT;
 
@@ -109,6 +115,7 @@ export class PublishService implements Disposable {
         publishData: PublishDto
     ): Promise<PublishStatusDto> {
         if (!host) {
+            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             throw new PublishError(
                 'Please enter APIHUB Url',
                 PublishErrorTypes.INFO,
@@ -117,6 +124,7 @@ export class PublishService implements Disposable {
             );
         }
         if (!authorization) {
+            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             throw new PublishError(
                 'Please enter Token',
                 PublishErrorTypes.INFO,
@@ -193,24 +201,34 @@ export class PublishService implements Disposable {
         blobData: Blob,
         packageId: PackageId,
         status: VersionStatus,
-        versionId: VersionId,
+        version: VersionId,
         previousVersion: VersionId,
         versionLabels: string[],
         authorization: string
     ): Promise<PublishConfig> {
         const buildConfig: BuildConfigFile[] = createBuildConfigFiles(publishFileNames, allFileNames);
-        const normalizePreviousVersion = this.convertPreviousVersion(previousVersion);
-        return this._crudService.publishApispec(
-            host,
-            buildConfig,
-            blobData,
+        const normalizePreviousVersion = convertPreviousVersion(previousVersion);
+
+        const config: BuildConfig = {
             packageId,
             status,
-            versionId,
-            normalizePreviousVersion,
-            versionLabels,
-            authorization
-        );
+            version,
+            previousVersion: normalizePreviousVersion,
+            files: buildConfig,
+            metadata: versionLabels?.length ? { versionLabels } : {}
+        };
+        const formData = new FormData();
+
+        blobData && formData.append('sources', blobData, PUBLISH_DATA_NAME);
+
+        const publishConfig = {
+            ...config,
+            sources: undefined
+        };
+
+        formData.append('config', JSON.stringify(publishConfig));
+
+        return this._crudService.publishApispec(host, packageId, authorization, formData);
     }
 
     private async getPublishStatus(
@@ -224,9 +242,9 @@ export class PublishService implements Disposable {
         while (attempts < maxAttempts) {
             const publishStatus: PublishStatusDto = await this._crudService.getStatus(
                 host,
+                authorization,
                 packageId,
-                publishId,
-                authorization
+                publishId
             );
             if (publishStatus.status === PublishStatus.COMPLETE) {
                 return publishStatus;
@@ -235,12 +253,5 @@ export class PublishService implements Disposable {
             await new Promise((resolve) => setTimeout(resolve, STATUS_REFETCH_INTERVAL));
         }
         throw new Error('Waiting time exceeded');
-    }
-
-    private convertPreviousVersion(version: VersionId): string {
-        if (version === PUBLISH_NO_PREVIOUS_VERSION) {
-            return '';
-        }
-        return splitVersion(version).version;
     }
 }

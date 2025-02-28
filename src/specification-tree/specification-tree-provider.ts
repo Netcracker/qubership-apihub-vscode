@@ -99,7 +99,9 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         const { configFiles, localFiles } = this.getSpecificationFileData(workspace);
         const configFileExist = !!configFiles?.size;
         return Promise.resolve(
-            this.readSpecificationFiles(workspace, workspace, localFiles, configFiles, configFileExist)
+            this.sortSpecificationItems(
+                this.readSpecificationFiles(workspace, workspace, localFiles, configFiles, configFileExist)
+            )
         );
     }
 
@@ -132,7 +134,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
                 return;
             }
 
-            let selectd = this.calculateItemSelected(workfolderPath, path, localFiles, configFiles, configFileExist);
+            const selectd = this.calculateItemSelected(workfolderPath, path, localFiles, configFiles, configFileExist);
             specItems.push(
                 new SpecificationItem(
                     name,
@@ -142,9 +144,10 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
                     selectd ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked
                 )
             );
+            localFiles.add(path);
         });
 
-        return this.sortSpecificationItems(specItems);
+        return specItems;
     }
 
     private calculateItemSelected(
@@ -160,7 +163,6 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         if (localFiles.has(path)) {
             return false;
         }
-        localFiles.add(path);
         const selected = configFileExist ? configFiles.has(path) : true;
         if (selected) {
             this.itemCheckboxService.add(workfolderPath, path);
@@ -169,7 +171,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     }
 
     private sortSpecificationItems(specItems: SpecificationItem[]): SpecificationItem[] {
-        return specItems.sort((firstValue, secondValue) => secondValue.label.localeCompare(firstValue.label));
+        return specItems.sort((firstValue, secondValue) => firstValue.label.localeCompare(secondValue.label));
     }
 
     private isSpecificationFile(path: FilePath): boolean {

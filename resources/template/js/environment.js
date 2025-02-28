@@ -7,49 +7,34 @@
     const EYE_ICON = 'eye';
     const ACTIVE_CLASS = 'active';
 
-    const UPDATE_URL_ACTION = 'updateUrl';
-    const UPDATE_TOKEN_ACTION = 'updateToken';
+    const EnvironmentWebviewFields = {
+        URL: 'url',
+        TOKEN: 'token'
+    };
 
-    const REQUEST_TOKEN_ACTION = 'requestToken';
-    const REQUEST_URL_ACTION = 'requestUrl';
-
-    // @ts-ignore
-    const vscode = acquireVsCodeApi();
     const inputUrl = document.querySelector('#url');
     const inputToken = document.querySelector('#token');
     const togglePasswordButton = document.querySelector('#eye-icon');
 
+    fieldMapper.set(EnvironmentWebviewFields.URL, inputUrl);
+    fieldMapper.set(EnvironmentWebviewFields.TOKEN, inputToken);
+
     if (inputUrl) {
-        inputUrl.addEventListener('input', updateUrlValue);
+        inputUrl.addEventListener('input', () => sendFieldValue(EnvironmentWebviewFields.URL, inputUrl));
     }
     if (inputToken) {
-        inputToken.addEventListener('input', updateTokenValue);
+        inputToken.addEventListener('input', () => sendFieldValue(EnvironmentWebviewFields.TOKEN, inputToken));
     }
     if (togglePasswordButton) {
         togglePasswordButton.addEventListener('click', updateTogglePasswordButton);
     }
 
-    function updateUrlValue() {
-        if (!inputUrl) {
-            return;
-        }
-        vscode.postMessage({
-            command: UPDATE_URL_ACTION,
-            // @ts-ignore
-            payload: inputUrl.value
-        });
-    }
-
-    function updateTokenValue() {
-        if (!inputToken) {
-            return;
-        }
-        vscode.postMessage({
-            command: UPDATE_TOKEN_ACTION,
-            // @ts-ignore
-            payload: inputToken.value
-        });
-    }
+    fieldUpdateMapper.set(EnvironmentWebviewFields.URL, (value) => {
+        getInput(inputUrl).value = value;
+    });    
+    fieldUpdateMapper.set(EnvironmentWebviewFields.TOKEN, (value) => {
+        getInput(inputToken).value = value;
+    });
 
     function updateTogglePasswordButton() {
         if (!inputToken || !togglePasswordButton) {
@@ -71,34 +56,9 @@
         }
     }
 
-    window.addEventListener('message', (event) => {
-        const message = event.data;
-        if (message.command === UPDATE_URL_ACTION) {
-            if (!inputUrl) {
-                return;
-            }
-            // @ts-ignore
-            inputUrl.value = message.payload;
-        }
-        if (message.command === UPDATE_TOKEN_ACTION) {
-            if (!inputToken) {
-                return;
-            }
-            // @ts-ignore
-            inputToken.value = message.payload;
-        }
-    });
-
     function requestDefaultValues() {
-        vscode.postMessage({
-            command: REQUEST_TOKEN_ACTION,
-            payload: {}
-        });
-
-        vscode.postMessage({
-            command: REQUEST_URL_ACTION,
-            payload: {}
-        });
+        requestField(EnvironmentWebviewFields.URL);
+        requestField(EnvironmentWebviewFields.TOKEN);
     }
     requestDefaultValues();
 })();

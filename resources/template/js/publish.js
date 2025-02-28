@@ -1,9 +1,6 @@
 // @ts-check
 
 (function () {
-    // @ts-ignore
-    const vscode = acquireVsCodeApi();
-
     const PublishFields = {
         PACKAGE_ID: 'packageId',
         VERSION: 'version',
@@ -11,15 +8,6 @@
         PREVIOUS_VERSION: 'previousVersion',
         LABELS: 'labels',
         PUBLISH_BUTTON: 'publish-button'
-    };
-
-    const PublishWebviewMessages = {
-        PUBLISH: 'publish',
-        UPDATE_OPTIONS: 'updateOptions',
-        UPDATE_FIELD: 'updateField',
-        UPDATE_PATTERN: 'updatePattern',
-        REQUEST_VERSIONS: 'requestVersions',
-        DELETE: 'delete'
     };
 
     const LABELS_ID = 'labelForLables';
@@ -32,6 +20,63 @@
     const labels = document.querySelector(`#${PublishFields.LABELS}`);
     const publishButton = document.querySelector(`#${PublishFields.PUBLISH_BUTTON}`);
 
+    fieldMapper.set(PublishFields.PACKAGE_ID, packageId);
+    fieldMapper.set(PublishFields.VERSION, version);
+    fieldMapper.set(PublishFields.STATUS, status);
+    fieldMapper.set(PublishFields.PREVIOUS_VERSION, previousVersion);
+    fieldMapper.set(PublishFields.LABELS, labels);
+    fieldMapper.set(PublishFields.PUBLISH_BUTTON, publishButton);
+
+    fieldUpdateMapper.set(PublishFields.PACKAGE_ID, (value) => {
+        getInput(packageId).value = value;
+    });
+
+    fieldUpdateMapper.set(PublishFields.VERSION, (value) => {
+        getInput(version).value = value;
+    });
+
+    fieldUpdateMapper.set(PublishFields.PREVIOUS_VERSION, (value) => {
+        previousVersion.selectedIndex = previousVersion.options.findIndex((option) => option.value === value);
+    });
+
+    fieldUpdateMapper.set(PublishFields.STATUS, (value) => {
+        status.selectedIndex = status.options.findIndex((option) => option.value === value);
+    });
+    fieldUpdateMapper.set(PublishFields.PUBLISH_BUTTON, (value) => {
+        publishButton.disabled = value === 'true';
+    });
+    fieldUpdateMapper.set(PublishFields.LABELS, (value) => {
+        const oldLabelPlaceholeder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
+        if (oldLabelPlaceholeder) {
+            oldLabelPlaceholeder.remove();
+        }
+        if (!value?.length) {
+            return;
+        }
+        const label = document.querySelector(`#${LABELS_ID}`);
+        if (!label) {
+            return;
+        }
+        const placeholder = document.createElement('div');
+        placeholder.setAttribute('id', LABELS_PLACEHOLDER);
+        placeholder.className = LABELS_PLACEHOLDER;
+
+        label?.append(placeholder);
+
+        value.forEach((label) => {
+            const chip = document.createElement('vscode-button');
+            chip.setAttribute('icon-after', 'close');
+            chip.setAttribute('secondary', '');
+            chip.innerHTML = label;
+            chip.className = 'publish-chip';
+            chip.addEventListener('click', (event) =>
+                // @ts-ignore
+                deleteFieldValue(PublishFields.LABELS, event?.target?.innerText)
+            );
+            placeholder.appendChild(chip);
+        });
+    });
+
     if (packageId) {
         packageId.addEventListener('input', () => sendFieldValue(PublishFields.PACKAGE_ID, packageId));
     }
@@ -42,7 +87,7 @@
         status.addEventListener('change', () => sendFieldValue(PublishFields.STATUS, status));
     }
     if (labels) {
-        labels.addEventListener("focusout", (event) => {
+        labels.addEventListener('focusout', (event) => {
             updateLables();
         });
         labels.addEventListener('keyup', ({ key }) => {
@@ -61,38 +106,19 @@
         publishButton.addEventListener('click', publish);
     }
 
-    window.addEventListener('message', (event) => {
-        const message = event.data;
-        const payload = message.payload;
-        switch (message.command) {
-            case PublishWebviewMessages.UPDATE_FIELD: {
-                updateField(payload.field, payload.value);
-                break;
-            }
-            case PublishWebviewMessages.UPDATE_OPTIONS: {
-                updateOptions(payload.field, payload.value);
-                break;
-            }
-            case PublishWebviewMessages.UPDATE_PATTERN: {
-                updatePettern(payload.field, payload.value);
-                break;
-            }
-        }
-    });
-
-    function updateLables(){
-        if(!labels){
+    function updateLables() {
+        if (!labels) {
             return;
         }
-        const shadowRoot= labels.shadowRoot;
-        if(!shadowRoot){
+        const shadowRoot = labels.shadowRoot;
+        if (!shadowRoot) {
             return;
         }
         const input = shadowRoot.querySelector('input');
-        if(!input){
+        if (!input) {
             return;
         }
-        if(!input.value?.trim()?.length){
+        if (!input.value?.trim()?.length) {
             return;
         }
         sendFieldValue(PublishFields.LABELS, labels);
@@ -100,172 +126,31 @@
         input.value = '';
     }
 
-    function updatePettern(fieldName, value) {
-        const field = document.querySelector(`#${fieldName}`);
-        if (!field) {
-            return;
-        }
-        field?.setAttribute('pattern', value);
-        field?.setAttribute('placeholder', value);
-        // @ts-ignore
-        field?.reportValidity();
-    }
-
-    function updateOptions(fieldName, values) {
-        const field = document.querySelector(`#${fieldName}`);
-        if (!field) {
-            return;
-        }
-        // @ts-ignore
-        field.innerHTML = null;
-        values?.forEach((element) => {
-            var optio = document.createElement('vscode-option');
-            optio.value = element;
-            optio.innerHTML = element;
-            field.appendChild(optio);
-        });
-    }
-
-    function updateField(fieldName, value) {
-        const field = document.querySelector(`#${fieldName}`);
-        if (!field) {
-            return;
-        }
-        switch (fieldName) {
-            case PublishFields.PACKAGE_ID:
-            case PublishFields.VERSION: {
-                // @ts-ignore
-                const input = field.shadowRoot.querySelector('input');
-                if (!input) {
-                    return;
-                }
-                // @ts-ignore
-                input.value = value;
-                break;
-            }
-            case PublishFields.PREVIOUS_VERSION:
-            case PublishFields.STATUS: {
-                // @ts-ignore
-                field.selectedIndex = field.options.findIndex((option) => option.value === value);
-                break;
-            }
-            case PublishFields.PUBLISH_BUTTON: {
-                // @ts-ignore
-                publishButton.disabled = value === 'true';
-                break;
-            }
-            case PublishFields.LABELS: {
-                const oldLabelPlaceholeder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
-                if (oldLabelPlaceholeder) {
-                    oldLabelPlaceholeder.remove();
-                }
-                if (!value?.length) {
-                    return;
-                }
-                const label = document.querySelector(`#${LABELS_ID}`);
-                if (!label) {
-                    return;
-                }
-                const placeholder = document.createElement('div');
-                placeholder.setAttribute('id', LABELS_PLACEHOLDER);
-                placeholder.className = LABELS_PLACEHOLDER;
-
-                label?.append(placeholder);
-
-                value.forEach((label) => {
-                    const chip = document.createElement('vscode-button');
-                    chip.setAttribute('icon-after', 'close');
-                    chip.setAttribute('secondary', '');
-                    chip.innerHTML = label;
-                    chip.className = 'publish-chip';
-                    chip.addEventListener('click', (event) =>
-                        // @ts-ignore
-                        deleteFieldValue(PublishFields.LABELS, event?.target?.innerText)
-                    );
-                    placeholder.appendChild(chip);
-                });
-
-                break;
-            }
-        }
-    }
-
-    function sendFieldValue(fieldName, field) {
-        if (!fieldName || !field) {
-            return;
-        }
-        const value = field.value?.trim();
-        vscode.postMessage({
-            command: PublishWebviewMessages.UPDATE_FIELD,
-            payload: {
-                field: fieldName,
-                value
-            }
-        });
-    }
-
-    function deleteFieldValue(fieldName, value) {
-        if (!fieldName || !value) {
-            return;
-        }
-        vscode.postMessage({
-            command: PublishWebviewMessages.DELETE,
-            payload: {
-                field: fieldName,
-                value
-            }
-        });
-    }
-
     function requestVersions() {
         vscode.postMessage({
-            command: PublishWebviewMessages.REQUEST_VERSIONS
+            command: PublishWebviewMessages.REQUEST_OPTIONS,
+            payload: {
+                field: PublishFields.VERSION
+            }
         });
-    }
-
-    function getInput(field){
-        if(!field){
-            return;
-        }
-        const shadowRoot = field.shadowRoot;
-        if(!shadowRoot){
-            return;
-        }
-        return shadowRoot.querySelector('input');
     }
 
     function publish() {
         const packageIdValue = getInput(packageId).value?.trim() ?? '';
-        if (!packageIdValue) {
-            // @ts-ignore
-            packageId.required = true;
-            return;
-        }
-
         const versionValue = getInput(version).value?.trim() ?? '';
-        if (!versionValue) {
-            // @ts-ignore
-            version.required = true;
-            return;
-        }
         // @ts-ignore
         const statusValue = status?.value?.trim() ?? '';
         // @ts-ignore
         const previousVersionValue = previousVersion?.value?.trim() ?? '';
-        if (!previousVersionValue) {
-            // @ts-ignore
-            previousVersion.required = true;
-            return;
-        }
 
         let labelsValue = [];
         const labels = document.querySelector(`#${LABELS_PLACEHOLDER}`);
-        if(labels){
-            labelsValue = Array.from(labels.children).map(chip=> chip.innerHTML);
+        if (labels) {
+            labelsValue = Array.from(labels.children).map((chip) => chip.innerHTML);
         }
 
         vscode.postMessage({
-            command: PublishWebviewMessages.PUBLISH,
+            command: 'publish',
             payload: {
                 packageId: packageIdValue,
                 version: versionValue,

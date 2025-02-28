@@ -1,28 +1,19 @@
-import {
-    CancellationToken,
-    ExtensionContext,
-    Webview,
-    WebviewView,
-    WebviewViewProvider,
-    WebviewViewResolveContext
-} from 'vscode';
+import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, WebviewViewResolveContext } from 'vscode';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
-import {
-    ENVIRONMENT_JS_PATH,
-    ENVIRONMENT_URL_PATTERN,
-    EnvironmentWebviewMessages
-} from '../constants/enviroment.constants';
-import { EnvironmentWebviewTypes } from '../models/enviroment.model';
-import { WebviewMessage } from '../models/webview.model';
+import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, MAIN_JS_PATH } from '../constants/common.constants';
+import { ENVIRONMENT_JS_PATH } from '../constants/enviroment.constants';
+import { EnvironmentWebviewFields } from '../models/enviroment.model';
+import { WebviewMessage, WebviewMessages, WebviewPayload, WebviewPayloadType } from '../models/webview.model';
 import { configurationService } from '../services/configuration.service';
 import { SecretStorageService } from '../services/secret-storage.service';
+import { WebviewBase } from './webview-base';
 
-export class EnvironmentViewProvider implements WebviewViewProvider {
-    public _view?: WebviewView;
+export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
     private readonly _context: ExtensionContext;
     private readonly _secretStorageService: SecretStorageService;
 
     constructor(readonly context: ExtensionContext, readonly secretStorageService: SecretStorageService) {
+        super();
         this._context = context;
         this._secretStorageService = secretStorageService;
     }
@@ -41,60 +32,66 @@ export class EnvironmentViewProvider implements WebviewViewProvider {
 
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
-        webviewView.webview.onDidReceiveMessage(
-            (data: WebviewMessage<EnvironmentWebviewMessages, EnvironmentWebviewTypes>) => {
-                switch (data.command) {
-                    case EnvironmentWebviewMessages.UDPATE_URL: {
-                        this.updateHost(data.payload);
-                        break;
-                    }
-                    case EnvironmentWebviewMessages.UPDATE_TOKEN: {
-                        this.updateToken(data.payload);
-                        break;
-                    }
-                    case EnvironmentWebviewMessages.REQUEST_URL: {
-                        this.requestHost();
-                        break;
-                    }
-                    case EnvironmentWebviewMessages.REQUEST_TOKEN: {
-                        this.requestToken();
-                        break;
-                    }
+        webviewView.webview.onDidReceiveMessage((data: WebviewMessage<WebviewMessages, WebviewPayloadType>) => {
+            switch (data.command) {
+                case WebviewMessages.UPDATE_FIELD: {
+                    this.updateField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
+                    break;
+                }
+                case WebviewMessages.REQUEST_FIELD: {
+                    this.requestField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
+                    break;
                 }
             }
+        });
+        this._disposables.push(
+            commands.registerCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, () => {
+                this.updateWebviewRequired(EnvironmentWebviewFields.URL);
+                this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
+            })
         );
     }
 
-    private updateHost(host: string): void {
-        const fixedHost = host ? host.replace(/\/$/, '') : '';
-        configurationService.hostUrl = fixedHost;
+    private updateField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
+        switch (payload.field) {
+            case EnvironmentWebviewFields.URL: {
+                const host = payload.value as string;
+                const fixedHost = host ? host.replace(/\/$/, '') : '';
+                configurationService.hostUrl = fixedHost;
+                break;
+            }
+            case EnvironmentWebviewFields.TOKEN: {
+                this._secretStorageService.storeToken(payload.value as string ?? '');
+                break;
+            }
+        }
     }
 
-    private updateToken(token: string): void {
-        this._secretStorageService.storeToken(token ?? '');
+    private requestField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
+        switch (payload.field) {
+            case EnvironmentWebviewFields.URL: {
+                this.requestHost();
+                break;
+            }
+            case EnvironmentWebviewFields.TOKEN: {
+                this.requestToken();
+                break;
+            }
+        }
     }
 
     private requestHost(): void {
         const host: string = configurationService.hostUrl ?? '';
-        this.postMessage({
-            command: EnvironmentWebviewMessages.UDPATE_URL,
-            payload: host
-        });
+        this.updateWebviewField(EnvironmentWebviewFields.URL, host);
     }
 
     private async requestToken(): Promise<void> {
         const token: string = (await this._secretStorageService.getToken()) ?? '';
-        this.postMessage({
-            command: EnvironmentWebviewMessages.UPDATE_TOKEN,
-            payload: token
-        });
-    }
-
-    public postMessage(data: WebviewMessage<EnvironmentWebviewMessages, EnvironmentWebviewTypes>): void {
-        this._view?.webview.postMessage(data);
+        this.updateWebviewField(EnvironmentWebviewFields.TOKEN, token);
     }
 
     private getHtmlForWebview(webview: Webview): string {
+        const mainJsUrl = webview.asWebviewUri(getJsScript(this.context.extensionUri, MAIN_JS_PATH));
         const scriptUri = webview.asWebviewUri(getJsScript(this._context.extensionUri, ENVIRONMENT_JS_PATH));
         const styleUri = webview.asWebviewUri(getStyle(this._context.extensionUri));
         const elementsUri = webview.asWebviewUri(getElements(this._context.extensionUri));
@@ -115,12 +112,12 @@ export class EnvironmentViewProvider implements WebviewViewProvider {
             <body>
                 <vscode-form-group variant="vertical">
                     <p>
-                        <vscode-label for="url" required>APIHUB URL:</vscode-label>
-                        <vscode-textfield id="url" placeholder="${ENVIRONMENT_URL_PATTERN}" pattern="${ENVIRONMENT_URL_PATTERN}"/>
+                        <vscode-label for="${EnvironmentWebviewFields.URL}" required>APIHUB URL:</vscode-label>
+                        <vscode-textfield id="${EnvironmentWebviewFields.URL}"/>
                     </p>
                     <p>
-                        <vscode-label for="token" required>Authentication Token:</vscode-label>
-                        <vscode-textfield id="token" type="password">
+                        <vscode-label for="${EnvironmentWebviewFields.TOKEN}" required>Authentication Token:</vscode-label>
+                        <vscode-textfield id="${EnvironmentWebviewFields.TOKEN}" type="password">
                             <vscode-icon
                                 id="eye-icon"
                                 slot="content-after"
@@ -135,6 +132,7 @@ export class EnvironmentViewProvider implements WebviewViewProvider {
                     src="${elementsUri}"
                     type="module"
                 ></script>
+                <script nonce="${nonce}" src="${mainJsUrl}"></script>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>
         </html>`;

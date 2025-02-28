@@ -2,15 +2,27 @@ import fs from 'fs';
 import path from 'path';
 import { Disposable, Event, EventEmitter, Uri, workspace } from 'vscode';
 import YAML from 'yaml';
-import { convertConfigurationFileToLike } from '../../utils/files.utils';
+import { convertConfigurationFileToLike, validateYAML } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
 import { PackageId } from '../models/publish.model';
 import { getFilePath, sortStrings } from '../../utils/path.utils';
+import { JSONSchemaType } from 'ajv';
 
 const CONFIG_FILE_NAME = '.apihub-config.yaml';
-
+const CONFIG_FILE_SCHEMA: JSONSchemaType<{ packageId: string; files: string[]; version: number }> = {
+    type: 'object',
+    properties: {
+        packageId: { type: 'string' },
+        files: {
+            type: 'array',
+            items: { type: 'string' }
+        },
+        version: { type: 'number' }
+    },
+    required: ['packageId', 'files', 'version']
+};
 export class ConfigurationFileService extends Disposable {
     private readonly _configurationFileDates = new Map<WorkfolderPath, ConfigurationData>();
     private readonly _onDidChangeConfigFile: EventEmitter<WorkfolderPath> = new EventEmitter();
@@ -84,13 +96,13 @@ export class ConfigurationFileService extends Disposable {
         return configurationData?.config;
     }
 
-    public updateConfigurationFile(workfolderPath: WorkfolderPath, pacakgeId: PackageId, filePaths: FilePath[]): void {
-        if (!workfolderPath || !pacakgeId || !filePaths) {
+    public updateConfigurationFile(workfolderPath: WorkfolderPath, packageId: PackageId, filePaths: FilePath[]): void {
+        if (!workfolderPath || !packageId || !filePaths) {
             return;
         }
         const files = sortStrings(filePaths.map((path) => getFilePath(workfolderPath, path)));
         const configFile: ConfigurationFile = {
-            pacakgeId,
+            packageId: packageId,
             files,
             version: 1
         };
@@ -130,7 +142,9 @@ export class ConfigurationFileService extends Disposable {
             showErrorNotification(String(e));
             return false;
         }
-
+        if (!validateYAML(configurationFile, CONFIG_FILE_SCHEMA)) {
+            return false;
+        }
         const configurationData: ConfigurationData = {
             config: convertConfigurationFileToLike(configurationFile),
             filePath: Uri.file(configFilePath),

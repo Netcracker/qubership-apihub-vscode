@@ -1,10 +1,12 @@
+import { PUBLISH_INPUT_RELEASE_PATTERN } from '../constants/publish.constants';
 import { WorkfolderPath } from './common.model';
 import { ConfigurationId } from './configuration.model';
-import { WebviewMessage } from './webview.model';
+import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
 export type PackageId = string;
 export type VersionId = string | `${string}@${number}`;
 export type FileId = string;
+export type PublishWebviewValueType = string | string[];
 
 export enum VersionStatus {
     RELEASE = 'release',
@@ -58,12 +60,7 @@ export interface PublishCommandData {
 }
 
 export enum PublishWebviewMessages {
-    PUBLISH = 'publish',
-    UPDATE_OPTIONS = 'updateOptions',
-    UPDATE_FIELD = 'updateField',
-    UPDATE_PATTERN = 'updatePattern',
-    REQUEST_VERSIONS = 'requestVersions',
-    DELETE = 'delete'
+    PUBLISH = 'publish'
 }
 
 export enum PublishFields {
@@ -94,13 +91,8 @@ export interface PublishVersionDto {
     versions: PublishVersion[];
 }
 
-export interface PublishWebviewPayload {
-    field: PublishFields;
-    value: string | string[];
-}
-
 export interface PublishWebviewDto
-    extends WebviewMessage<PublishWebviewMessages, PublishWebviewPayload | PublishDto | void> {}
+    extends WebviewMessage<WebviewMessages | PublishWebviewMessages, WebviewPayload<PublishFields> | PublishDto | void> {}
 
 export class PublishViewData {
     public packageId: PackageId;
@@ -109,6 +101,7 @@ export class PublishViewData {
     public status: VersionStatus;
     public previousVersion: VersionId;
     public configId: ConfigurationId;
+    public releaseVersionPattern: string;
 
     constructor() {
         this.packageId = '';
@@ -117,5 +110,24 @@ export class PublishViewData {
         this.status = VersionStatus.DRAFT;
         this.previousVersion = '';
         this.configId = '';
+        this.releaseVersionPattern = PUBLISH_INPUT_RELEASE_PATTERN;
     }
+}
+
+export interface PublishViewPackageIdData{
+    packageId: PackageId,
+    alias: string,
+    parentId: string,
+    kind: string,
+    name: string,
+    description: string,
+    isFavorite: boolean,
+    imageUrl: string,
+    parents: string[],
+    defaultRole: string,
+    permissions: string[],
+    defaultReleaseVersion: string,
+    defaultVersion: string,
+    releaseVersionPattern: string,
+    excludeFromSearch: boolean
 }

@@ -4,3 +4,25 @@ export interface WebviewMessage<C extends WebviewCommandName, T extends WebviewP
     command: C;
     payload: T;
 }
+
+export enum WebviewMessages {
+    UPDATE_OPTIONS = 'updateOptions',
+    UPDATE_FIELD = 'updateField',
+    UPDATE_PATTERN = 'updatePattern',
+    REQUEST_FIELD = 'requestField',
+    REQUEST_OPTIONS = 'requestOptions',
+    DELETE = 'delete',
+    UPDATE_DISABLE = 'updateDisable',
+    UPDATE_REQUIRED = 'updateRequired',
+    UPDATE_INVALID = 'updateInvalid',
+}
+
+export interface WebviewOption {
+    name: string;
+    disabled: boolean;
+}
+
+export interface WebviewPayload<T> {
+    field: T;
+    value: string | string[] | void;
+}

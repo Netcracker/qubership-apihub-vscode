@@ -1,12 +1,11 @@
+import Ajv, { JSONSchemaType } from 'ajv';
 import fs from 'fs';
 import JSZip from 'jszip';
-
-import { SPECS_EXTENSIONS } from '../common/constants/specification.constants';
+import { v4 as uuidv4 } from 'uuid';
+import { PUBLISH_NO_PREVIOUS_VERSION } from '../common/constants/publish.constants';
+import { ConfigurationFile, ConfigurationFileLike } from '../common/models/configuration.model';
 import { VersionId } from '../common/models/publish.model';
 import { SpecificationItem } from '../common/models/specification-item';
-import { WorkfolderPath } from '../common/models/common.model';
-import { ConfigurationFile, ConfigurationFileLike } from '../common/models/configuration.model';
-import { v4 as uuidv4 } from 'uuid';
 import { getFilePath } from './path.utils';
 
 export const packToZip = (files: File[]): Promise<Blob> => {
@@ -21,29 +20,29 @@ export const packToZip = (files: File[]): Promise<Blob> => {
     });
 };
 
-export function specificationItemToFile(item: SpecificationItem): File {
+export const specificationItemToFile = (item: SpecificationItem): File => {
     return new File([fs.readFileSync(item.uri.fsPath)], getFilePath(item.workspacePath, item.uri.fsPath));
-}
+};
 
-export function isPathExists(path: string): boolean {
+export const isPathExists = (path: string): boolean => {
     try {
         fs.accessSync(path);
     } catch {
         return false;
     }
     return true;
-}
+};
 
-export function convertConfigurationFileToLike(config: ConfigurationFile): ConfigurationFileLike {
+export const convertConfigurationFileToLike = (config: ConfigurationFile): ConfigurationFileLike => {
     return {
         files: new Set(config.files ?? []),
-        pacakgeId: config?.pacakgeId ?? '',
+        packageId: config?.packageId ?? '',
         version: config?.version ?? 1,
         id: uuidv4()
     };
-}
+};
 
-export function splitVersion(version: VersionId): { version: string; revision: string } {
+export const splitVersion = (version: VersionId): { version: string; revision: string } => {
     if (!version) {
         return { revision: '', version: '' };
     }
@@ -52,7 +51,14 @@ export function splitVersion(version: VersionId): { version: string; revision: s
         version: versionKey,
         revision: revisionKey ?? ''
     };
-}
+};
+
+export const convertPreviousVersion = (version: VersionId): string => {
+    if (version === PUBLISH_NO_PREVIOUS_VERSION) {
+        return '';
+    }
+    return splitVersion(version).version;
+};
 
 export function debounce<T extends (...args: any[]) => void>(
     func: T,
@@ -66,3 +72,15 @@ export function debounce<T extends (...args: any[]) => void>(
         timer = setTimeout(() => func(...args), delay);
     };
 }
+
+export const validateYAML = <T>(yamlData: Object, schema: JSONSchemaType<T>): boolean => {
+    const ajv = new Ajv();
+    try {
+        const validate = ajv.compile(schema);
+        const valid = validate(yamlData);
+
+        return valid;
+    } catch (error) {
+        throw new Error('Errors: ' + String(error));
+    }
+};
