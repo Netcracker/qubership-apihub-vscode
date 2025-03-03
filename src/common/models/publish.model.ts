@@ -1,5 +1,4 @@
 import { PUBLISH_INPUT_RELEASE_PATTERN } from '../constants/publish.constants';
-import { WorkfolderPath } from './common.model';
 import { ConfigurationId } from './configuration.model';
 import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
@@ -52,11 +51,6 @@ export interface PublishDto {
     status: VersionStatus;
     previousVersion: string;
     labels: string[];
-}
-
-export interface PublishCommandData {
-    workfolderPath: WorkfolderPath;
-    data: PublishDto;
 }
 
 export enum PublishWebviewMessages {

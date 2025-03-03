@@ -43,6 +43,14 @@ export abstract class WebviewBase<T> extends Disposable implements WebviewViewPr
         this.updateWebview(WebviewMessages.UPDATE_REQUIRED, field, value.toString());
     }
 
+    protected updateWebviewSpin(field: T, value: boolean = true): void {
+        this.updateWebview(WebviewMessages.UPDATE_SPIN, field, value.toString());
+    }
+
+    protected updateWebviewIcon(field: T, value: string): void {
+        this.updateWebview(WebviewMessages.UPDATE_ICON, field, value);
+    }
+
     protected updateWebviewInvalid(field: T, value: boolean = true): void {
         this.updateWebview(WebviewMessages.UPDATE_INVALID, field, value.toString());
     }

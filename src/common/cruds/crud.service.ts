@@ -1,6 +1,6 @@
 import { BodyInit } from 'undici-types';
 import { Disposable } from 'vscode';
-import { API_V2, API_V3 } from '../constants/common.constants';
+import { API_V1, API_V2, API_V3, PACKAGES } from '../constants/common.constants';
 import {
     PackageId,
     PublishConfig,
@@ -10,6 +10,7 @@ import {
     VersionId,
     VersionStatus
 } from '../models/publish.model';
+import { CrudError, CrudResponse, DefaultError, ServerStatusDto } from '../models/common.model';
 
 const enum CrudMethod {
     GET = 'GET',
@@ -22,6 +23,7 @@ const enum RequestNames {
     GET_PACKAGE_ID,
     GET_LABELS,
     GET_STATUS,
+    GET_SYSTEM_INFO,
     PUBLISH
 }
 
@@ -41,8 +43,12 @@ export class CrudService extends Disposable {
         this.abortControllers.forEach((controller) => controller.abort());
     }
 
+    public getSystemInfo(baseUrl: string, authorization: string): Promise<ServerStatusDto> {
+        return this.get(RequestNames.GET_SYSTEM_INFO, `${baseUrl}${API_V1}/system/info`, authorization);
+    }
+
     public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishVersionDto> {
-        const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
+        const url = new URL(`${baseUrl}${API_V3}/${PACKAGES}/${packageId}/versions`);
         url.search = this.VERSION_SERACH_PARAMS;
         return this.get(RequestNames.GET_VERSIONS, url, authorization);
     }
@@ -52,7 +58,7 @@ export class CrudService extends Disposable {
         authorization: string,
         packageId: PackageId
     ): Promise<PublishViewPackageIdData> {
-        return this.get(RequestNames.GET_PACKAGE_ID, `${baseUrl}${API_V2}/packages/${packageId}`, authorization);
+        return this.get(RequestNames.GET_PACKAGE_ID, `${baseUrl}${API_V2}/${PACKAGES}/${packageId}`, authorization);
     }
 
     public getLabels(
@@ -61,7 +67,7 @@ export class CrudService extends Disposable {
         packageId: PackageId,
         version: VersionId
     ): Promise<PublishVersionDto> {
-        const url = new URL(`${baseUrl}${API_V3}/packages/${packageId}/versions`);
+        const url = new URL(`${baseUrl}${API_V3}/${PACKAGES}/${packageId}/versions`);
         url.search = new URLSearchParams({
             textFilter: version
         }).toString();
@@ -76,7 +82,7 @@ export class CrudService extends Disposable {
     ): Promise<PublishStatusDto> {
         return this.get(
             RequestNames.GET_STATUS,
-            `${baseUrl}${API_V2}/packages/${packageId}/publish/${publishId}/status`,
+            `${baseUrl}${API_V2}/${PACKAGES}/${packageId}/publish/${publishId}/status`,
             authorization
         );
     }
@@ -89,7 +95,7 @@ export class CrudService extends Disposable {
     ): Promise<PublishConfig> {
         return this.post(
             RequestNames.PUBLISH,
-            `${baseUrl}${API_V2}/packages/${packageId}/publish`,
+            `${baseUrl}${API_V2}/${PACKAGES}/${packageId}/publish`,
             formData,
             authorization
         );
@@ -119,20 +125,35 @@ export class CrudService extends Disposable {
         this.deleteController(requestName);
         this.addController(requestName, controller);
         try {
-            const response = await fetch(url, {
+            const response = (await fetch(url, {
                 method,
                 headers: {
                     [PAT_HEADER]: authorization
                 },
                 ...(method === CrudMethod.POST && { body }),
                 signal: controller.signal
-            });
-            
+            })) as CrudResponse;
+
             if (!response.ok) {
-                throw new Error(response.statusText);
+                throw new CrudError(
+                    response.statusText,
+                    response?.code || response?.status?.toString() || '',
+                    response?.debug ?? '',
+                    response.status
+                );
             }
 
             return (await response.json()) as T;
+        } catch (error) {
+            if (error instanceof CrudError) {
+                throw error;
+            }
+            const defaultError = error as DefaultError;
+            throw new CrudError(
+                defaultError.message,
+                defaultError?.code || defaultError.cause?.code || '',
+                defaultError.stack
+            );
         } finally {
             this.deleteController(requestName);
         }

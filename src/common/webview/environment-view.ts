@@ -2,20 +2,25 @@ import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, We
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
 import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, MAIN_JS_PATH } from '../constants/common.constants';
 import { ENVIRONMENT_JS_PATH } from '../constants/enviroment.constants';
-import { EnvironmentWebviewFields } from '../models/enviroment.model';
-import { WebviewMessage, WebviewMessages, WebviewPayload, WebviewPayloadType } from '../models/webview.model';
-import { configurationService } from '../services/configuration.service';
-import { SecretStorageService } from '../services/secret-storage.service';
+import { CrudService } from '../cruds/crud.service';
+import { CrudError } from '../models/common.model';
+import {
+    EnvironmentWebviewDto,
+    EnvironmentWebviewFields,
+    EnvironmentWebviewMessages,
+    EnvironmentWebviewTestConnectionDto
+} from '../models/enviroment.model';
+import { WebviewMessages, WebviewPayload } from '../models/webview.model';
+import { ConfigurationService } from '../services/configuration.service';
 import { WebviewBase } from './webview-base';
 
 export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
-    private readonly _context: ExtensionContext;
-    private readonly _secretStorageService: SecretStorageService;
-
-    constructor(readonly context: ExtensionContext, readonly secretStorageService: SecretStorageService) {
+    constructor(
+        private readonly context: ExtensionContext,
+        private readonly crudService: CrudService,
+        private readonly configurationService: ConfigurationService
+    ) {
         super();
-        this._context = context;
-        this._secretStorageService = secretStorageService;
     }
 
     public resolveWebviewView(
@@ -27,12 +32,12 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
 
         webviewView.webview.options = {
             enableScripts: true,
-            localResourceRoots: [this._context.extensionUri]
+            localResourceRoots: [this.context.extensionUri]
         };
 
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
-        webviewView.webview.onDidReceiveMessage((data: WebviewMessage<WebviewMessages, WebviewPayloadType>) => {
+        webviewView.webview.onDidReceiveMessage((data: EnvironmentWebviewDto) => {
             switch (data.command) {
                 case WebviewMessages.UPDATE_FIELD: {
                     this.updateField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
@@ -40,6 +45,10 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                 }
                 case WebviewMessages.REQUEST_FIELD: {
                     this.requestField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
+                    break;
+                }
+                case EnvironmentWebviewMessages.TEST_CONNECTION: {
+                    this.testConnection(data.payload as EnvironmentWebviewTestConnectionDto);
                     break;
                 }
             }
@@ -52,19 +61,49 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         );
     }
 
+    private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
+        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, false);
+        this.updateWebviewInvalid(EnvironmentWebviewFields.URL, false);
+        this.cleanTestConnection();
+
+        const { host, token } = data;
+        try {
+            await this.crudService.getSystemInfo(host, token);
+            this.setSuccessfulTestConnection();
+        } catch (e) {
+            const error = e as CrudError;
+            switch (error.code) {
+                case '401': {
+                    this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
+                    break;
+                }
+                case 'ERR_INVALID_URL': {
+                    this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
+                    break;
+                }
+            }
+        }
+    }
+
     private updateField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
                 const host = payload.value as string;
-                const fixedHost = host ? host.replace(/\/$/, '') : '';
-                configurationService.hostUrl = fixedHost;
+                const fixedHost = host ? host?.trim().replace(/\/$/, '') : '';
+                this.configurationService.hostUrl = fixedHost;
+
+                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !fixedHost?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {
-                this._secretStorageService.storeToken(payload.value as string ?? '');
+                const token = (payload.value as string)?.trim();
+                this.configurationService.storeToken(token ?? '');
+
+                this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, !token?.length);
                 break;
             }
         }
+        this.cleanTestConnection();
     }
 
     private requestField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
@@ -81,21 +120,31 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     }
 
     private requestHost(): void {
-        const host: string = configurationService.hostUrl ?? '';
+        const host: string = this.configurationService.hostUrl ?? '';
         this.updateWebviewField(EnvironmentWebviewFields.URL, host);
     }
 
     private async requestToken(): Promise<void> {
-        const token: string = (await this._secretStorageService.getToken()) ?? '';
+        const token: string = (await this.configurationService.getToken()) ?? '';
         this.updateWebviewField(EnvironmentWebviewFields.TOKEN, token);
     }
 
+    private cleanTestConnection(): void {
+        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, '');
+    }
+
+    private setSuccessfulTestConnection(): void {
+        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'check');
+    }
+
     private getHtmlForWebview(webview: Webview): string {
-        const mainJsUrl = webview.asWebviewUri(getJsScript(this.context.extensionUri, MAIN_JS_PATH));
-        const scriptUri = webview.asWebviewUri(getJsScript(this._context.extensionUri, ENVIRONMENT_JS_PATH));
-        const styleUri = webview.asWebviewUri(getStyle(this._context.extensionUri));
-        const elementsUri = webview.asWebviewUri(getElements(this._context.extensionUri));
-        const codiconsUri = webview.asWebviewUri(getCodicon(this._context.extensionUri));
+        const extensionUri = this.context.extensionUri;
+
+        const mainJsUrl = webview.asWebviewUri(getJsScript(extensionUri, MAIN_JS_PATH));
+        const scriptUri = webview.asWebviewUri(getJsScript(extensionUri, ENVIRONMENT_JS_PATH));
+        const styleUri = webview.asWebviewUri(getStyle(extensionUri));
+        const elementsUri = webview.asWebviewUri(getElements(extensionUri));
+        const codiconsUri = webview.asWebviewUri(getCodicon(extensionUri));
         const nonce = getNonce();
 
         return `<!DOCTYPE html>
@@ -126,6 +175,10 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                                 action-icon
                             ></vscode-icon>
                         </vscode-textfield>
+                    </p>
+                    <p class="environment-connection">
+                        <a href="" id="${EnvironmentWebviewFields.TEST_CONNECTION_BUTTON}">Test Connection</a>
+                        <vscode-icon class='environment-connection-icon' id="${EnvironmentWebviewFields.TEST_CONNECTION_ICON}"></vscode-icon>
                     </p>
                 </vscode-form-group>
                 <script nonce="${nonce}"

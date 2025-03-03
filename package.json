@@ -37,17 +37,9 @@
     "configuration": {
       "title": "Publish APIHUB Settings",
       "properties": {
-        "APIHUB.apiToken": {
-          "type": "string",
-          "description": "API Token to Authenticate in APIHUB Portal"
-        },
         "APIHUB.portalURL": {
           "type": "string",
           "description": "URL to APIHUB Portal where the files will be published"
-        },
-        "APIHUB.portalPackage": {
-          "type": "string",
-          "description": "Portal package ID where the files will be published"
         }
       }
     },

@@ -10,6 +10,8 @@ const PublishWebviewMessages = {
     REQUEST_FIELD: 'requestField',
     REQUEST_OPTIONS: 'requestOptions',
     UPDATE_INVALID: 'updateInvalid',
+    UPDATE_ICON: 'updateIcon',
+    UPDATE_SPIN: 'updateSpin',
 };
 const DISABLED_ATTRIBUTE = 'disabled';
 
@@ -42,6 +44,14 @@ window.addEventListener('message', (event) => {
         }        
         case PublishWebviewMessages.UPDATE_INVALID: {
             updateInvalid(payload.field, payload.value);
+            break;
+        }        
+        case PublishWebviewMessages.UPDATE_ICON: {
+            updateIcon(payload.field, payload.value);
+            break;
+        }        
+        case PublishWebviewMessages.UPDATE_SPIN: {
+            updateSpin(payload.field, payload.value);
             break;
         }
     }
@@ -148,6 +158,26 @@ const updateInvalid = (fieldName, disabled) => {
     } else {
         field.removeAttribute('invalid');
     }
+};
+
+const updateSpin = (fieldName, value) => {
+    const field = fieldMapper.get(fieldName);
+    if (!field) {
+        return;
+    }
+    if (value === 'true') {
+        field.setAttribute('spin', '');
+    } else {
+        field.removeAttribute('spin');
+    }
+};
+
+const updateIcon = (fieldName, value) => {
+    const field = fieldMapper.get(fieldName);
+    if (!field) {
+        return;
+    }
+    field.setAttribute('name', value);
 };
 
 const requestField = (fieldName) => {

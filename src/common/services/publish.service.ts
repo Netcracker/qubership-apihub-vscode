@@ -1,4 +1,4 @@
-import { commands, Disposable, env, StatusBarAlignment, StatusBarItem, Uri, window } from 'vscode';
+import { commands, Disposable, env, Event, EventEmitter, StatusBarAlignment, StatusBarItem, Uri, window } from 'vscode';
 import { SpecificationFileTreeProvider } from '../../specification-tree/specification-tree-provider';
 import {
     bundledFileDataWithDependencies,
@@ -8,24 +8,22 @@ import {
 import { convertPreviousVersion, packToZip, specificationItemToFile } from '../../utils/files.utils';
 import { showErrorNotification } from '../../utils/notification.urils';
 import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
+import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, PACKAGES } from '../constants/common.constants';
 import {
-    EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
-    EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME
-} from '../constants/common.constants';
-import {
+    PUBLISH_BUTTON_LINK_MESSAGE,
     PUBLISH_DATA_NAME,
+    PUBLISH_SUCCESSFUL_MESSAGE,
     STATUS_BAR_TEXT,
     STATUS_REFETCH_INTERVAL,
     STATUS_REFETCH_MAX_ATTEMPTS
 } from '../constants/publish.constants';
-import { CrudService } from '../cruds/publish.crud';
+import { CrudService } from '../cruds/crud.service';
 import { BundleData } from '../models/bundle.model';
-import { PublishError, PublishErrorTypes } from '../models/publish-error.model';
+import { WorkfolderPath } from '../models/common.model';
 import {
     BuildConfig,
     BuildConfigFile,
     PackageId,
-    PublishCommandData,
     PublishConfig,
     PublishDto,
     PublishStatus,
@@ -34,20 +32,20 @@ import {
     VersionStatus
 } from '../models/publish.model';
 import { SpecificationItem } from '../models/specification-item';
-import { PublishViewProvider } from '../webview/publish-view';
 import { ConfigurationFileService } from './configuration-file.service';
-import { configurationService } from './configuration.service';
-import { SecretStorageService } from './secret-storage.service';
+import { ConfigurationService } from './configuration.service';
 
 export class PublishService extends Disposable {
     private readonly _crudService: CrudService;
+    private readonly _statusBarItem: StatusBarItem;
     private _disposables: Disposable[] = [];
-    private _statusBarItem: StatusBarItem;
+    private readonly _onPublish: EventEmitter<boolean> = new EventEmitter();
+    public readonly onPublish: Event<boolean> = this._onPublish.event;
+    private _isPublishProgress = false;
 
     constructor(
-        private readonly publishViewProvider: PublishViewProvider,
         private readonly fileTreeProvider: SpecificationFileTreeProvider,
-        private readonly secretStorageService: SecretStorageService,
+        private readonly configurationService: ConfigurationService,
         private readonly configurationFileService: ConfigurationFileService
     ) {
         super(() => this.dispose());
@@ -55,52 +53,45 @@ export class PublishService extends Disposable {
         this._disposables.push(this._crudService);
         this._statusBarItem = window.createStatusBarItem(StatusBarAlignment.Left, 100);
         this._statusBarItem.text = STATUS_BAR_TEXT;
-
-        this.registerPublishCommand();
     }
 
-    private registerPublishCommand(): void {
-        this._disposables.push(
-            commands.registerCommand(
-                EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME,
-                async (publishData: PublishCommandData) => {
-                    this.publishViewProvider.showLoading();
-                    this._statusBarItem.show();
+    public get isPublishProgress(): boolean{
+        return this._isPublishProgress;
+    }
 
-                    const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
-                    const host = configurationService.hostUrl;
-                    const token = await this.secretStorageService.getToken();
-                    const { data, workfolderPath } = publishData;
-                    this.publish(host, token, values, data)
-                        .then((value: PublishStatusDto) => {
-                            const { packageId, version } = data;
-                            this.configurationFileService.updateConfigurationFile(
-                                workfolderPath,
-                                packageId,
-                                values.map((value) => value.uri.fsPath)
-                            );
-                            window
-                                .showInformationMessage(
-                                    'Package version was successfully published in APIHUB Portal. Check it out.',
-                                    'Check it out'
-                                )
-                                .then((selection) => {
-                                    if (selection === 'Check it out') {
-                                        env.openExternal(Uri.parse(`${host}/portal/packages/${packageId}/${version}/`));
-                                    }
-                                });
-                        })
-                        .catch((err) => {
-                            console.error(err.message, err.stack);
-                            showErrorNotification(err.message);
-                        })
-                        .finally(() => {
-                            this._statusBarItem.hide();
-                            this.publishViewProvider.hideLoading();
-                        });
-                }
-            )
-        );
+    public async publish(workfolderPath: WorkfolderPath, data: PublishDto): Promise<void> {
+        this._onPublish.fire(true);
+        this._isPublishProgress = true;
+        this._statusBarItem.show();
+
+        const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
+        const host = this.configurationService.hostUrl;
+        const token = await this.configurationService.getToken();
+        this.validateAndPulbish(host, token, values, data)
+            .then(() => {
+                const { packageId, version } = data;
+                this.configurationFileService.updateConfigurationFile(
+                    workfolderPath,
+                    packageId,
+                    values.map((value) => value.uri.fsPath)
+                );
+                window
+                    .showInformationMessage(PUBLISH_SUCCESSFUL_MESSAGE, PUBLISH_BUTTON_LINK_MESSAGE)
+                    .then((selection) => {
+                        if (selection === PUBLISH_BUTTON_LINK_MESSAGE) {
+                            env.openExternal(Uri.parse(`${host}/portal/${PACKAGES}/${packageId}/${version}/`));
+                        }
+                    });
+            })
+            .catch((err) => {
+                console.error(err.message, err.stack);
+                showErrorNotification(err.message);
+            })
+            .finally(() => {
+                this._statusBarItem.hide();
+                this._onPublish.fire(false);
+                this._isPublishProgress = false;
+            });
     }
 
     public dispose() {
@@ -108,7 +99,7 @@ export class PublishService extends Disposable {
         this._disposables = [];
     }
 
-    public async publish(
+    private async validateAndPulbish(
         host: string,
         authorization: string,
         items: SpecificationItem[],
@@ -116,29 +107,14 @@ export class PublishService extends Disposable {
     ): Promise<PublishStatusDto> {
         if (!host) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
-            throw new PublishError(
-                'Please enter APIHUB Url',
-                PublishErrorTypes.INFO,
-                'Go to documentation',
-                'https://github.com/'
-            );
+            throw new Error('Error: Empty Url');
         }
         if (!authorization) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
-            throw new PublishError(
-                'Please enter Token',
-                PublishErrorTypes.INFO,
-                'Go to documentation',
-                'https://github.com/'
-            );
+            throw new Error('Error: Empty Token');
         }
         if (!items?.length) {
-            throw new PublishError(
-                'Please select some files',
-                PublishErrorTypes.INFO,
-                'Go to documentation',
-                'https://github.com/'
-            );
+            throw new Error('Error: Files not selected for publishing');
         }
         const { packageId, version, status, previousVersion, labels } = publishData;
 

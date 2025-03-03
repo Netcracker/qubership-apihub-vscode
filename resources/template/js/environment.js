@@ -9,15 +9,21 @@
 
     const EnvironmentWebviewFields = {
         URL: 'url',
-        TOKEN: 'token'
+        TOKEN: 'token',
+        TEST_CONNECTION_BUTTON: 'testConnectionButton',
+        TEST_CONNECTION_ICON: 'testConnectionIcon'
     };
 
     const inputUrl = document.querySelector('#url');
     const inputToken = document.querySelector('#token');
     const togglePasswordButton = document.querySelector('#eye-icon');
+    const testConnectionButton = document.querySelector('#testConnectionButton');
+    const testConnectionIcon = document.querySelector('#testConnectionIcon');
 
     fieldMapper.set(EnvironmentWebviewFields.URL, inputUrl);
     fieldMapper.set(EnvironmentWebviewFields.TOKEN, inputToken);
+    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, testConnectionButton);
+    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_ICON, testConnectionIcon);
 
     if (inputUrl) {
         inputUrl.addEventListener('input', () => sendFieldValue(EnvironmentWebviewFields.URL, inputUrl));
@@ -27,11 +33,15 @@
     }
     if (togglePasswordButton) {
         togglePasswordButton.addEventListener('click', updateTogglePasswordButton);
+    }    
+    
+    if (testConnectionButton) {
+        testConnectionButton.addEventListener('click', testConnection);
     }
 
     fieldUpdateMapper.set(EnvironmentWebviewFields.URL, (value) => {
         getInput(inputUrl).value = value;
-    });    
+    });
     fieldUpdateMapper.set(EnvironmentWebviewFields.TOKEN, (value) => {
         getInput(inputToken).value = value;
     });
@@ -59,6 +69,16 @@
     function requestDefaultValues() {
         requestField(EnvironmentWebviewFields.URL);
         requestField(EnvironmentWebviewFields.TOKEN);
+    }
+
+    function testConnection(){
+        vscode.postMessage({
+            command: 'testConnection',
+            payload: {
+                token: getInput(inputToken).value,
+                host: getInput(inputUrl).value,
+            }
+        });
     }
     requestDefaultValues();
 })();

@@ -15,7 +15,6 @@ import { convertOptionsToDto } from '../../utils/publish.utils';
 import {
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
     EXTENSION_PUBLISH_VIEW_NAME,
-    EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME,
     MAIN_JS_PATH
 } from '../constants/common.constants';
 import {
@@ -26,12 +25,11 @@ import {
     PUBLISH_STATUSES,
     PUBLISH_WEBVIEW
 } from '../constants/publish.constants';
-import { CrudService } from '../cruds/publish.crud';
+import { CrudService } from '../cruds/crud.service';
 import { WorkfolderPath } from '../models/common.model';
 import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
-    PublishCommandData,
     PublishDto,
     PublishFields,
     PublishViewData,
@@ -43,30 +41,30 @@ import {
 } from '../models/publish.model';
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
-import { configurationService } from '../services/configuration.service';
-import { SecretStorageService } from '../services/secret-storage.service';
+import { ConfigurationService } from '../services/configuration.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
+import { PublishService } from '../services/publish.service';
 
 export class PublishViewProvider extends WebviewBase<PublishFields> {
-    private readonly _crudService: CrudService;
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
-    private readonly debouncedUpdateLabels = debounce((data: PublishViewData, version: VersionId) =>
+    private readonly updateLabelsDebounced = debounce((data: PublishViewData, version: VersionId) =>
         this.updateLabels(data, version)
     );
-    private readonly debouncedUpdatePackageId = debounce((workfolderPath: WorkfolderPath, packageId: PackageId) =>
-        this.wrapInProgress(async () => await this.loadPackageId(workfolderPath, packageId))
+    private readonly updatePackageIdDebounced = debounce((publishData: PublishViewData) =>
+        this.wrapInProgress(async () => await this.loadPackageId(publishData))
     );
 
     constructor(
         private readonly context: ExtensionContext,
+        private readonly crudService: CrudService,
         private readonly workfolderPaths: WorkfolderPath[],
-        private readonly secretStorageService: SecretStorageService,
+        private readonly configurationService: ConfigurationService,
         private readonly configurationFileService: ConfigurationFileService,
-        private readonly workfolderService: WorkspaceService
+        private readonly workfolderService: WorkspaceService,
+        private readonly publishService: PublishService
     ) {
         super(() => this.dispose());
-        this._crudService = new CrudService();
     }
 
     public resolveWebviewView(
@@ -149,6 +147,21 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 this.configurationFileService.getConfigurationFile(workfolderPath);
             this.restoreConfigPackageId(workfolderPath, configFile);
         });
+        this.configurationService.onDidChangeConfiguration(
+            () => {
+                this.disableDependentFields();
+                const activeWorkfolderPath = this.workfolderService.activeWorkfolderPath;
+                this.loadPackageId(this.getPublishViewData(activeWorkfolderPath));
+            },
+            this,
+            this._disposables
+        );
+        this.updateWebviewLoading(this.publishService.isPublishProgress);
+        this.publishService.onPublish(
+            (isPiblishProgress) => this.updateWebviewLoading(isPiblishProgress),
+            this,
+            this._disposables
+        );
     }
 
     private restoreLocalFields(workfolderPath: WorkfolderPath): void {
@@ -157,7 +170,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         const { packageId, version, status, previousVersion, labels } = publishData;
         this.disableDependentFields(true);
         if (packageId) {
-            this.debouncedUpdatePackageId(workfolderPath, packageId);
+            this.updatePackageIdDebounced(publishData);
         }
 
         this.updateWebviewField(PublishFields.VERSION, version);
@@ -177,13 +190,13 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             case PublishFields.PACKAGE_ID: {
                 pulbishViewData.packageId = payload.value as PackageId;
                 this.disableDependentFields(true);
-                this.debouncedUpdatePackageId(workfolderPath, pulbishViewData.packageId);
+                this.updatePackageIdDebounced(pulbishViewData);
                 break;
             }
             case PublishFields.VERSION: {
                 const version = payload.value as VersionId;
                 pulbishViewData.version = version;
-                this.debouncedUpdateLabels(pulbishViewData, version);
+                this.updateLabelsDebounced(pulbishViewData, version);
                 break;
             }
             case PublishFields.STATUS: {
@@ -205,12 +218,12 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
     }
 
-    private disableDependentFields(disable: boolean): void {
+    private disableDependentFields(disable: boolean = true): void {
         this.updateWebviewDisable(PublishFields.VERSION, disable);
         this.updateWebviewDisable(PublishFields.STATUS, disable);
         this.updateWebviewDisable(PublishFields.LABELS, disable);
         this.updateWebviewDisable(PublishFields.PREVIOUS_VERSION, disable);
-        this.updateWebviewDisable(PublishFields.PUBLISH_BUTTON, disable);
+        this.updateWebviewDisable(PublishFields.PUBLISH_BUTTON, this.publishService.isPublishProgress || disable);
     }
 
     private requestField(payload: WebviewPayload<PublishFields>): void {
@@ -252,42 +265,30 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewField(PublishFields.PACKAGE_ID, value);
             if (value) {
                 this.disableDependentFields(true);
-                this.debouncedUpdatePackageId(workfolderPath, value);
+                this.updatePackageIdDebounced(pulbishViewData);
             }
         }
-    }
-
-    public showLoading(): void {
-        this.updateWebviewLoading(true);
-    }
-
-    public hideLoading(): void {
-        this.updateWebviewLoading(false);
     }
 
     private updateWebviewLoading(isLoading: boolean): void {
         this.updateWebview(WebviewMessages.UPDATE_FIELD, PublishFields.PUBLISH_BUTTON, isLoading.toString());
     }
 
-    private async loadPackageId(workfolderPath: WorkfolderPath, packageId: PackageId): Promise<void> {
+    private async loadPackageId(publishData: PublishViewData): Promise<void> {
+        const { packageId } = publishData;
         if (!packageId) {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
             return;
         }
-        const host: string = configurationService.hostUrl ?? '';
-        const token: string = (await this.secretStorageService.getToken()) ?? '';
+        const host: string = this.configurationService.hostUrl ?? '';
+        const token: string = (await this.configurationService.getToken()) ?? '';
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
         try {
-            const packageIdData: PublishViewPackageIdData = await this._crudService.getPackageId(
-                host,
-                token,
-                packageId
-            );
+            const packageIdData: PublishViewPackageIdData = await this.crudService.getPackageId(host, token, packageId);
 
-            const publishData = this.getPublishViewData(workfolderPath);
             publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
 
             if (publishData.status === VersionStatus.RELEASE) {
@@ -296,7 +297,6 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
 
             this.disableDependentFields(false);
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
-            console.log();
         } catch (error) {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
         }
@@ -308,8 +308,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             showErrorNotification('Packag ID is empty');
             return;
         }
-        const host: string = configurationService.hostUrl ?? '';
-        const token: string = (await this.secretStorageService.getToken()) ?? '';
+        const host: string = this.configurationService.hostUrl ?? '';
+        const token: string = (await this.configurationService.getToken()) ?? '';
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -317,7 +317,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto([PUBLISH_LOADING_OPTION]));
         const options = [PUBLISH_NO_PREVIOUS_VERSION];
         try {
-            const versions = await this._crudService.getVersions(host, token, packageId);
+            const versions = await this.crudService.getVersions(host, token, packageId);
             options.push(...versions.versions.map((ver) => splitVersion(ver.version).version));
         } catch (error) {}
 
@@ -358,14 +358,14 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId || labels.size) {
             return;
         }
-        const host: string = configurationService.hostUrl ?? '';
-        const token: string = (await this.secretStorageService.getToken()) ?? '';
+        const host: string = this.configurationService.hostUrl ?? '';
+        const token: string = (await this.configurationService.getToken()) ?? '';
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
         try {
-            const versions = await this._crudService.getLabels(host, token, packageId, version);
+            const versions = await this.crudService.getLabels(host, token, packageId, version);
             versions.versions
                 .map((version) => version.versionLabels)
                 .flat()
@@ -396,10 +396,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewRequired(PublishFields.PREVIOUS_VERSION);
             return;
         }
-        commands.executeCommand(EXTENSION_PUBLISH_VIEW_PUBLISH_ACTION_NAME, {
-            data,
-            workfolderPath: this.workfolderService.activeWorkfolderPath
-        } as PublishCommandData);
+
+        this.publishService.publish(this.workfolderService.activeWorkfolderPath, data);
     }
 
     private getPublishViewData(workfolderPath: WorkfolderPath): PublishViewData {
@@ -420,11 +418,13 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private getHtmlForWebview(webview: Webview): string {
-        const mainJsUrl = webview.asWebviewUri(getJsScript(this.context.extensionUri, MAIN_JS_PATH));
-        const scriptUri = webview.asWebviewUri(getJsScript(this.context.extensionUri, PUBLISH_JS_PATH));
-        const elementsUri = webview.asWebviewUri(getElements(this.context.extensionUri));
-        const styleUri = webview.asWebviewUri(getStyle(this.context.extensionUri));
-        const codiconsUri = webview.asWebviewUri(getCodicon(this.context.extensionUri));
+        const extensionUri = this.context.extensionUri;
+
+        const mainJsUrl = webview.asWebviewUri(getJsScript(extensionUri, MAIN_JS_PATH));
+        const scriptUri = webview.asWebviewUri(getJsScript(extensionUri, PUBLISH_JS_PATH));
+        const elementsUri = webview.asWebviewUri(getElements(extensionUri));
+        const styleUri = webview.asWebviewUri(getStyle(extensionUri));
+        const codiconsUri = webview.asWebviewUri(getCodicon(extensionUri));
         const nonce = getNonce();
 
         const statusOptions = PUBLISH_STATUSES.map(

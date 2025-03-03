@@ -13,6 +13,6 @@ export class SecretStorageService {
     }
 
     public async deleteToken(): Promise<void> {
-        await this.context.secrets.delete(TOKEN_NAME);
+       return this.context.secrets.delete(TOKEN_NAME);
     }
 }

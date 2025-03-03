@@ -15,6 +15,8 @@ export enum WebviewMessages {
     UPDATE_DISABLE = 'updateDisable',
     UPDATE_REQUIRED = 'updateRequired',
     UPDATE_INVALID = 'updateInvalid',
+    UPDATE_ICON = 'updateIcon',
+    UPDATE_SPIN = 'updateSpin',
 }
 
 export interface WebviewOption {

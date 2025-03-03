@@ -1,5 +1,4 @@
 // @ts-check
-
 (function () {
     const PublishFields = {
         PACKAGE_ID: 'packageId',

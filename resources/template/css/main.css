@@ -17,3 +17,14 @@ vscode-single-select {
     --vscode-button-secondaryBackground: #dfe0e2;
 	--vscode-button-secondaryHoverBackground: #a5a6a8;
 }
+
+.environment-connection {
+    justify-content: start;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.environment-connection-icon {
+    --vscode-icon-foreground: #2e7d32;
+}
