@@ -11,12 +11,13 @@ const PublishWebviewMessages = {
     REQUEST_OPTIONS: 'requestOptions',
     UPDATE_INVALID: 'updateInvalid',
     UPDATE_ICON: 'updateIcon',
-    UPDATE_SPIN: 'updateSpin',
+    UPDATE_SPIN: 'updateSpin'
 };
 const DISABLED_ATTRIBUTE = 'disabled';
 
 const fieldMapper = new Map();
 const fieldUpdateMapper = new Map();
+const fieldIconMapper = new Map();
 
 window.addEventListener('message', (event) => {
     const message = event.data;
@@ -41,15 +42,15 @@ window.addEventListener('message', (event) => {
         case PublishWebviewMessages.UPDATE_DISABLE: {
             updateDisable(payload.field, payload.value);
             break;
-        }        
+        }
         case PublishWebviewMessages.UPDATE_INVALID: {
             updateInvalid(payload.field, payload.value);
             break;
-        }        
+        }
         case PublishWebviewMessages.UPDATE_ICON: {
             updateIcon(payload.field, payload.value);
             break;
-        }        
+        }
         case PublishWebviewMessages.UPDATE_SPIN: {
             updateSpin(payload.field, payload.value);
             break;
@@ -57,7 +58,7 @@ window.addEventListener('message', (event) => {
     }
 });
 
-const updateField = (fieldName, value)=> fieldUpdateMapper.get(fieldName)(value);
+const updateField = (fieldName, value) => fieldUpdateMapper.get(fieldName)(value);
 
 const updatePettern = (fieldName, value) => {
     const field = fieldMapper.get(fieldName);
@@ -177,7 +178,15 @@ const updateIcon = (fieldName, value) => {
     if (!field) {
         return;
     }
+    const clazz = fieldIconMapper.get(fieldName);
+    if (clazz) {
+        field.classList.remove(clazz);
+    }
     field.setAttribute('name', value);
+    if(value){
+        field.classList.add(value);
+        fieldIconMapper.set(fieldName, value);
+    }
 };
 
 const requestField = (fieldName) => {

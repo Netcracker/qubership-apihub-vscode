@@ -26,5 +26,10 @@ vscode-single-select {
 }
 
 .environment-connection-icon {
-    --vscode-icon-foreground: #2e7d32;
+    &.check{
+        --vscode-icon-foreground: #2e7d32;
+    }
+    &.close{
+        --vscode-icon-foreground: #ff5260;
+    }
 }

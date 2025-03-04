@@ -12,10 +12,7 @@ export abstract class WebviewBase<T> extends Disposable implements WebviewViewPr
     ): Thenable<void> | void;
 
     constructor(callOnDispose?: () => any) {
-        super(() => {
-            this.dispose();
-            callOnDispose?.();
-        });
+        super(() => callOnDispose?.());
     }
 
     public dispose() {

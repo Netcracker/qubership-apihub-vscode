@@ -74,7 +74,7 @@
     "viewsWelcome": [
       {
         "view": "apihubExtension.explorer",
-        "contents": "There are no apispec files for publishing. [read our docs](https://aka.ms/vscode-scm)."
+        "contents": "No documents found for publication. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem."
       }
     ]
   },
@@ -85,8 +85,7 @@
     "watch": "tsc -watch -p ./",
     "pretest": "npm run compile && npm run lint",
     "lint": "eslint src",
-    "test": "vscode-test",
-    "start-server": "node server/server.js"
+    "test": "vscode-test"
   },
   "devDependencies": {
     "@types/node": "20.x",

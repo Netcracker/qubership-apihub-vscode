@@ -110,7 +110,7 @@ export class ConfigurationFileService extends Disposable {
         try {
             fs.writeFileSync(configFilePath, YAML.stringify(configFile), 'utf8');
         } catch (e) {
-            console.log();
+            showErrorNotification("Unable to create/update configuration file. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem.");
         }
     }
 
@@ -139,7 +139,7 @@ export class ConfigurationFileService extends Disposable {
         try {
             configurationFile = YAML.parse(configFileString);
         } catch (e) {
-            showErrorNotification(String(e));
+            console.error(String(e));
             return false;
         }
         if (!validateYAML(configurationFile, CONFIG_FILE_SCHEMA)) {

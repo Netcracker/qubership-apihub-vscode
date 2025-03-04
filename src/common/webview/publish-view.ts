@@ -107,6 +107,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     public dispose() {
+        super.dispose();
         this.workfolderService.unsubscribe(PUBLISH_WEBVIEW);
         this.configurationFileService.unsubscribe(PUBLISH_WEBVIEW);
     }

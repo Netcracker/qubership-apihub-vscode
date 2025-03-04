@@ -62,22 +62,22 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     }
 
     private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
-        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, false);
-        this.updateWebviewInvalid(EnvironmentWebviewFields.URL, false);
-        this.cleanTestConnection();
+        this.cleanInvalidFields();
+        this.setLoadingTestConnection();
 
         const { host, token } = data;
         try {
             await this.crudService.getSystemInfo(host, token);
             this.setSuccessfulTestConnection();
         } catch (e) {
+            this.setFailureTestConnection();
             const error = e as CrudError;
             switch (error.code) {
                 case '401': {
                     this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
                     break;
                 }
-                case 'ERR_INVALID_URL': {
+                default: {
                     this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
                     break;
                 }
@@ -131,10 +131,28 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
 
     private cleanTestConnection(): void {
         this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, '');
+        this.updateWebviewSpin(EnvironmentWebviewFields.TEST_CONNECTION_ICON, false);
+    }
+
+    private cleanInvalidFields(): void {
+        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, false);
+        this.updateWebviewInvalid(EnvironmentWebviewFields.URL, false);
     }
 
     private setSuccessfulTestConnection(): void {
+        this.cleanTestConnection();
         this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'check');
+    }
+
+    private setLoadingTestConnection(): void {
+        this.cleanTestConnection();
+        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'loading');
+        this.updateWebviewSpin(EnvironmentWebviewFields.TEST_CONNECTION_ICON);
+    }
+
+    private setFailureTestConnection(): void {
+        this.cleanTestConnection();
+        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'close');
     }
 
     private getHtmlForWebview(webview: Webview): string {
