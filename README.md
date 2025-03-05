@@ -55,7 +55,7 @@ packageId: WS.GRP.PCKG1
 files: 
     - src/docs/pet.yaml
     - src/docs/shop.graphql
-    - scr/docs/readMe.md
+    - src/docs/readMe.md
 ```
 The configuration file is automatically created after your first publication. It stores packageId of published version and list of files (paths to the files) that were published. The next time you use the extension, these documents will be pre-selected and the package id will be pre-filled in the extension.
 
