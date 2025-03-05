@@ -34,7 +34,7 @@ After selecting the files and filling in all the required fields, click the **Pu
 <img src="/docs/img/qubership_apihub_extension.png" width="390" height="791">
 
 ### OpenAPI specifications with remote references
-OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the $ref keyword. These references can be either local or remote.  
+OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the ```$ref``` keyword. These references can be either local or remote.  
 If your OpenAPI specification includes remote references, you only need to select the main OpenAPI specification file in the extension — there is no need to select the referenced files. During publication, the extension will automatically locate all referenced files (if available in the current open repository), and APIHUB will use them to convert remote references into local ones. As a result, in APIHUB Portal, you will see only the OpenAPI specification with resolved references, but the separate files containing referenced resource definitions will not be visible.  
 If you directly select the referenced file with the resource definition along with the main OpenAPI specification file in the extension, APIHUB will process the OpenAPI specification file in the same way. However, in addition, the referenced file will appear as a separate artifact in the APIHUB Portal.
 
