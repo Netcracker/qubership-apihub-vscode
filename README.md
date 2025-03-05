@@ -5,7 +5,7 @@
 3. [Configuration file](#configuration-file)
 
 ## Overview
-Qubership APIHUB extension allows you to publish API specifications or other API-related documents from a Git reposiotry to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
+Qubership APIHUB extension allows you to publish API specifications or other API-related documents from a Git repository to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
 
 ## Usage
 After installing the extension, open Git repository and navigate to Qubership APIHUB extention, which is shown in the activity bar. If your repository contains at least one OpenAPI or GraphQL specification, you will see it in the "documents to publish" section.  
