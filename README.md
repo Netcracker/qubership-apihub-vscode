@@ -5,7 +5,7 @@
 3. [Configuration file](#configuration-file)
 
 ## Overview
-Qubership APIHUB extension allows you to publish your API specifications or other API-related documents from a Git reposiotry to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
+Qubership APIHUB extension allows you to publish API specifications or other API-related documents from a Git reposiotry to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
 
 ## Usage
 After installing the extension, open Git repository and navigate to Qubership APIHUB extention, which is shown in the activity bar. If your repository has at least one OpenAPI or GraphQL specifications, you will see them in the "documents to publish" section.  
@@ -31,7 +31,7 @@ Along with file selection, specify the following information:
 
 After selecting the files and filling in all the required fields, click the **Publish** button. The status bar will indicate the progress of the publication, and once it is complete, a notification will be displayed.
 
-![](/docs/img/qubership_apihub_extension.png)
+<img src="/docs/img/qubership_apihub_extension.png" width="390" height="791">
 
 ### OpenAPI specifications with remote references
 OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the $ref keyword. These references can be either local or remote.  
