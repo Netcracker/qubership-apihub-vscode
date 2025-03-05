@@ -9,7 +9,6 @@ import {
 } from 'vscode';
 import { debounce, splitVersion } from '../../utils/files.utils';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
-import { showErrorNotification } from '../../utils/notification.urils';
 import { capitalize } from '../../utils/path.utils';
 import { convertOptionsToDto } from '../../utils/publish.utils';
 import {
@@ -42,9 +41,9 @@ import {
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
 import { ConfigurationService } from '../services/configuration.service';
+import { PublishService } from '../services/publish.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
-import { PublishService } from '../services/publish.service';
 
 export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
@@ -306,7 +305,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     private async loadVersions(): Promise<void> {
         const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
         if (!packageId) {
-            showErrorNotification('Packag ID is empty');
+            window.showErrorMessage('Packag ID is empty');
             return;
         }
         const host: string = this.configurationService.hostUrl ?? '';

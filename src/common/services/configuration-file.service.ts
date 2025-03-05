@@ -1,14 +1,13 @@
+import { JSONSchemaType } from 'ajv';
 import fs from 'fs';
 import path from 'path';
-import { Disposable, Event, EventEmitter, Uri, workspace } from 'vscode';
+import { Disposable, Event, EventEmitter, Uri, window, workspace } from 'vscode';
 import YAML from 'yaml';
 import { convertConfigurationFileToLike, validateYAML } from '../../utils/files.utils';
-import { showErrorNotification } from '../../utils/notification.urils';
+import { getFilePath, sortStrings } from '../../utils/path.utils';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
 import { PackageId } from '../models/publish.model';
-import { getFilePath, sortStrings } from '../../utils/path.utils';
-import { JSONSchemaType } from 'ajv';
 
 const CONFIG_FILE_NAME = '.apihub-config.yaml';
 const CONFIG_FILE_SCHEMA: JSONSchemaType<{ packageId: string; files: string[]; version: number }> = {
@@ -23,6 +22,7 @@ const CONFIG_FILE_SCHEMA: JSONSchemaType<{ packageId: string; files: string[]; v
     },
     required: ['packageId', 'files', 'version']
 };
+
 export class ConfigurationFileService extends Disposable {
     private readonly _configurationFileDates = new Map<WorkfolderPath, ConfigurationData>();
     private readonly _onDidChangeConfigFile: EventEmitter<WorkfolderPath> = new EventEmitter();
@@ -110,7 +110,7 @@ export class ConfigurationFileService extends Disposable {
         try {
             fs.writeFileSync(configFilePath, YAML.stringify(configFile), 'utf8');
         } catch (e) {
-            showErrorNotification("Unable to create/update configuration file. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem.");
+            window.showErrorMessage("Unable to create/update configuration file. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem.");
         }
     }
 

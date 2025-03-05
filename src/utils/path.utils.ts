@@ -3,14 +3,6 @@ import { SPECS_EXTENSIONS } from '../common/constants/specification.constants';
 import { WorkfolderPath } from '../common/models/common.model';
 import { SpecificationItem } from '../common/models/specification-item';
 
-export const normalize = (path: string): string => {
-    return path.normalize(path);
-};
-
-export const join = (path1: string, path2: string): string => {
-    return path.join(path1, path2);
-};
-
 export const getFilePath = (workfolderPath: WorkfolderPath, filePath: string): string => {
     return path.posix.normalize(relative(workfolderPath, filePath));
 };

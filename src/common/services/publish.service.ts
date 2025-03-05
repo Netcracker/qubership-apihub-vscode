@@ -6,7 +6,6 @@ import {
     createBuildConfigFiles
 } from '../../utils/document.utils';
 import { convertPreviousVersion, packToZip, specificationItemToFile } from '../../utils/files.utils';
-import { showErrorNotification } from '../../utils/notification.urils';
 import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
 import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, PACKAGES } from '../constants/common.constants';
 import {
@@ -85,7 +84,7 @@ export class PublishService extends Disposable {
             })
             .catch((err) => {
                 console.error(err.message, err.stack);
-                showErrorNotification(err.message);
+                window.showErrorMessage(err.message);
             })
             .finally(() => {
                 this._statusBarItem.hide();

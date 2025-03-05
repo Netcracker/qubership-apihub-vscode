@@ -1,4 +1,5 @@
 import fs, { Dirent } from 'fs';
+import path from 'path';
 import {
     Disposable,
     Event,
@@ -24,8 +25,7 @@ import { ItemCheckboxService } from '../common/services/Item-checkbox.service';
 import { ConfigurationFileService } from '../common/services/configuration-file.service';
 import { WorkspaceService } from '../common/services/workspace.service';
 import { isPathExists } from '../utils/files.utils';
-import { showInformationMessage } from '../utils/notification.urils';
-import { getExtension, isApispecFile, join } from '../utils/path.utils';
+import { getExtension, isApispecFile } from '../utils/path.utils';
 
 export class SpecificationFileTreeProvider extends Disposable implements TreeDataProvider<SpecificationItem> {
     private readonly _onDidChangeTreeData: EventEmitter<void> = new EventEmitter();
@@ -89,7 +89,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
 
     private getChildrenFromWorkspace(workspace: WorkfolderPath): Thenable<SpecificationItem[]> {
         if (!workspace) {
-            showInformationMessage('No specifications in empty workspace');
+            window.showInformationMessage('No specifications in empty workspace');
             return Promise.resolve([]);
         }
         if (!isPathExists(workspace)) {
@@ -116,35 +116,35 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         const dirents: Dirent[] = fs.readdirSync(dirPath, { withFileTypes: true });
         dirents.forEach((dirent) => {
             const { name, parentPath } = dirent;
-            const path = join(parentPath, name);
+            const filePath = path.join(parentPath, name);
 
             if (IGNORE_DIRS.includes(name)) {
                 return;
             }
             if (dirent.isDirectory()) {
                 specItems.push(
-                    ...this.readSpecificationFiles(path, workfolderPath, localFiles, configFiles, configFileExist)
+                    ...this.readSpecificationFiles(filePath, workfolderPath, localFiles, configFiles, configFileExist)
                 );
                 return;
             }
             if (!dirent.isFile()) {
                 return;
             }
-            if (!configFiles.has(path) && !this.isSpecificationFile(path)) {
+            if (!configFiles.has(filePath) && !this.isSpecificationFile(filePath)) {
                 return;
             }
 
-            const selectd = this.calculateItemSelected(workfolderPath, path, localFiles, configFiles, configFileExist);
+            const selectd = this.calculateItemSelected(workfolderPath, filePath, localFiles, configFiles, configFileExist);
             specItems.push(
                 new SpecificationItem(
                     name,
                     dirent.parentPath,
-                    Uri.file(path),
+                    Uri.file(filePath),
                     workfolderPath,
                     selectd ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked
                 )
             );
-            localFiles.add(path);
+            localFiles.add(filePath);
         });
 
         return specItems;
@@ -234,7 +234,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         configFiles.clear();
 
         configurationFileData.files.forEach((filePath) => {
-            const fullFilePath = join(workfolderPath, filePath);
+            const fullFilePath = path.join(workfolderPath, filePath);
             this.itemCheckboxService.add(workfolderPath, fullFilePath);
             configFiles.add(fullFilePath);
         });
