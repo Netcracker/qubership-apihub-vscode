@@ -31,7 +31,7 @@ Along with file selection, specify the following information:
 
 After selecting the files and filling in all the required fields, click the **Publish** button. The status bar will indicate the progress of the publication, and once it is complete, a notification will be displayed.
 
-<img src="/docs/img/qubership_apihub_extension.png" width="390" height="791">
+<img src="/docs/img/qubership-apihub-extension.png" width="388" height="865">
 
 ### OpenAPI specifications with remote references
 OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the ```$ref``` keyword. These references can be either local or remote.  
