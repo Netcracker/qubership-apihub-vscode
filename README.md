@@ -1,13 +1,13 @@
 # Qubership APIHUB Extension
 1. [Overview](#overview)
 2. [Usage](#usage)
-    - [OpenAPI specifications with remote references](#remoteRefs)
-3. [Configuration file](#config-file)
+    - [OpenAPI specifications with remote references](#openapi-specifications-with-remote-references)
+3. [Configuration file](#configuration-file)
 
-## Overview {#overview}
+## Overview
 Qubership APIHUB extension allows you to publish your API specifications or other API-related documents from a Git reposiotry to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
 
-## Usage {#usage}
+## Usage
 After installing the extension, open Git repository and navigate to Qubership APIHUB extention, which is shown in the activity bar. If your repository has at least one OpenAPI or GraphQL specifications, you will see them in the "documents to publish" section.  
 ***Notes:*** 
 1. OpenAPI specification is file that meets one of the following conditions:
@@ -16,7 +16,7 @@ After installing the extension, open Git repository and navigate to Qubership AP
 2. GraphQL specification is file that meets one of the following conditions:
    - ```.graphql```/```.gql``` file
 
-Select the files that you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications, you can extend list of files for publications via [configuration file](#config-file). 	
+Select the files that you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications, you can extend list of files for publications via [configuration file](#configuration-file). 	
 
 Along with file selection, specify the following information:
 1. APIHUB environment:
@@ -33,12 +33,12 @@ After selecting the files and filling in all the required fields, click the **Pu
 
 ![](/docs/img/qubership_apihub_extension.png)
 
-### OpenAPI specifications with remote references {#remoteRefs}
+### OpenAPI specifications with remote references
 OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the $ref keyword. These references can be either local or remote.  
 If your OpenAPI specification includes remote references, you only need to select the main OpenAPI specification file in the extension — there is no need to select the referenced files. During publication, the extension will automatically locate all referenced files (if available in the current open repository), and APIHUB will use them to convert remote references into local ones. As a result, in APIHUB Portal, you will see only the OpenAPI specification with resolved references, but the separate files containing referenced resource definitions will not be visible.  
 If you directly select the referenced file with the resource definition along with the main OpenAPI specification file in the extension, APIHUB will process the OpenAPI specification file in the same way. However, in addition, the referenced file will appear as a separate artifact in the APIHUB Portal.
 
-## Configuration file {#config-file}
+## Configuration file
 Configuration file is file where APIHUB extension stores publication-related information. It is ```yaml``` file named ```.apihub-config.yaml```, located in the root of the repository.  
 Configuration file contains the following information:
 
