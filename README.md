@@ -1,29 +1,32 @@
 # Qubership APIHUB Extension
 1. [Overview](#overview)
 2. [Usage](#usage)
-    - [OpenAPI specifications with remote references](#openapi-specifications-with-remote-references)
 3. [Configuration file](#configuration-file)
 
 ## Overview
-Qubership APIHUB extension allows you to publish API specifications or other API-related documents from a Git repository to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
+Qubership APIHUB extension allows you to publish API specifications or other API-related documents from a folder to [APIHUB](https://github.com/Netcracker/qubership-apihub-ui).
+
+<img src="/docs/img/qubership-apihub-extension.png" width="388" height="690">
 
 ## Usage
-After installing the extension, open Git repository and navigate to Qubership APIHUB extension, which is shown in the activity bar. If your repository contains at least one OpenAPI or GraphQL specification, you will see it in the "documents to publish" section.  
+After installing the extension, open a folder and navigate to Qubership APIHUB extension, which is shown in the activity bar. If your folder contains at least one OpenAPI or GraphQL specification, you will see it in the "documents to publish" section.  
+
 ***Notes:*** 
 1. OpenAPI specification is file that meets one of the following conditions:
-   -  ```.yaml```/```.yml``` file that has "openapi" entrance
-   -  ```.json``` file that has "openapi" entrance
+   -  ```.yaml```/```.yml``` file that has "openapi" entry
+   -  ```.json``` file that has "openapi" entry
 2. GraphQL specification is file that meets one of the following conditions:
-   - ```.graphql```/```.gql``` file
+   - ```.graphql```/```.gql``` file  
 
-Select the files that you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications, you can extend list of files for publications via [configuration file](#configuration-file). 	
+
+Select the files you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications - such as PDF, Markdown or DOC files - you can extend list of files for publications via the [configuration file](#configuration-file). 	
 
 Along with file selection, specify the following information:
 1. APIHUB environment:
-    * **APIHUB URL** - URL to APIHUB server where you will publish documents.
+    * **APIHUB URL** - URL to APIHUB server where you will publish documents. The value is stored in the extension settings and will be reused across different folders and workspaces, so you will not need to enter it again.
     * **Authentication Token** - your personal access token issued in APIHUB.
 3. Publish to APIHUB:
-    * **Package Id** - package where you need to publish your files.
+    * **Package Id** - package where you need to publish your files. All selected files from the currently open root folder will be published in this package.
     * **Version** - version of the package.
     * **Status** - status of the package version.
     * **Labels** - any additional information, multiple values can be specified.
@@ -31,15 +34,12 @@ Along with file selection, specify the following information:
 
 After selecting the files and filling in all the required fields, click the **Publish** button. The status bar will indicate the progress of the publication, and once it is complete, a notification will be displayed.
 
-<img src="/docs/img/qubership-apihub-extension.png" width="388" height="865">
+If your published OpenAPI specifacation contains [remote references](https://swagger.io/docs/specification/v3_0/using-ref/) to other files, the extension will automatically gather all referenced files (if they are available in the current open folder) and include them in the publication. APIHUB merges these referenced files with the main OpenAPI specification file, converting external references into local ones.
 
-### OpenAPI specifications with remote references
-OpenAPI allows you to [reference resource definitions](https://swagger.io/docs/specification/v3_0/using-ref/) using the ```$ref``` keyword. These references can be either local or remote.  
-If your OpenAPI specification includes remote references, you only need to select the main OpenAPI specification file in the extension — there is no need to select the referenced files. During publication, the extension will automatically locate all referenced files (if available in the current open repository), and APIHUB will use them to convert remote references into local ones. As a result, in APIHUB Portal, you will see only the OpenAPI specification with resolved references, but the separate files containing referenced resource definitions will not be visible.  
-If you directly select the referenced file with the resource definition along with the main OpenAPI specification file in the extension, APIHUB will process the OpenAPI specification file in the same way. However, in addition, the referenced file will appear as a separate artifact in the APIHUB Portal.
+If you are working with multi-root workspaces, you need to publish files from each root folder separately. Each root folder will be associated with a different package id and have its own [configuration file](#configuration-file).
 
 ## Configuration file
-Configuration file is file where APIHUB extension stores publication-related information. It is ```yaml``` file named ```.apihub-config.yaml```, located in the root of the repository.  
+Configuration file is file where APIHUB extension stores publication-related information. It is ```yaml``` file named ```.apihub-config.yaml```, located in the root folder.  
 Configuration file contains the following information:
 
 | Field     | Type             | Description    |
@@ -57,6 +57,6 @@ files:
     - src/docs/shop.graphql
     - src/docs/readMe.md
 ```
-The configuration file is automatically created after your first publication. It stores packageId of published version and list of files (paths to the files) that were published. The next time you use the extension, these documents will be pre-selected and the package id will be pre-filled in the extension.
+The configuration file is automatically created after your first publication and updated with each subsequent publication. It stores packageId of published version and list of files (paths to the files) that were published. The next time you use the extension, these documents will be pre-selected and the package id will be pre-filled in the extension.
 
-If your open Git repository does not have a configuration file but you need to extend the list of files to publish, you can manually create it following the specified format.
+If your open folder does not have a configuration file but you need to extend the list of files to publish, you can manually create it following the specified format.
