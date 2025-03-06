@@ -27,7 +27,6 @@ const DOC = 'doc';
 const GQL = 'gql';
 const GRAPHQ = 'graphql';
 
-
 const WORKFOLDER_PATH = 'folder-name/workfolder';
 const FILE_DIRECTORY_PATH = 'folder-name/workfolder/src/docs';
 const FILE_YAML_PATH = 'folder-name/workfolder/src/docs/fileName.yaml';
@@ -42,6 +41,15 @@ suite('Utils', () => {
         assert.deepStrictEqual(optionsDto, [
             { name: OPTION_1, disabled: false },
             { name: OPTION_2, disabled: false }
+        ]);
+
+        optionsDto = convertOptionsToDto([PUBLISH_LOADING_OPTION]);
+        assert.deepStrictEqual(optionsDto, [{ name: PUBLISH_LOADING_OPTION, disabled: true }]);
+
+        optionsDto = convertOptionsToDto([OPTION_1, PUBLISH_LOADING_OPTION]);
+        assert.deepStrictEqual(optionsDto, [
+            { name: OPTION_1, disabled: false },
+            { name: PUBLISH_LOADING_OPTION, disabled: true }
         ]);
     });
 
