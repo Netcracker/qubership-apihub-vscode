@@ -12,7 +12,7 @@ export class SpecificationItem extends TreeItem {
         public readonly parentPath: string,
         public readonly uri: Uri,
         public readonly workspacePath: string,
-        public readonly checkboxState: TreeItemCheckboxState
+        public readonly checkboxState: TreeItemCheckboxState,
     ) {
         super(uri);
         this.tooltip = label;

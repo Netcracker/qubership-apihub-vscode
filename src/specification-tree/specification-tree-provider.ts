@@ -15,8 +15,8 @@ import {
     IGNORE_DIRS,
     OPENAPI_SPEC_KEY_REGEXP,
     SPECIFICATION_TREE,
-    SPECS_ADDITIONALS as SPECS_ADDITIONAL_EXTENSIONS,
-    SPECS_EXTENSIONS as SPECS_MAIN_EXTENSIONS
+    SPECS_ADDITIONAL_EXTENSIONS,
+    SPECS_MAIN_EXTENSIONS
 } from '../common/constants/specification.constants';
 import { FilePath, WorkfolderPath } from '../common/models/common.model';
 import { ConfigurationFileLike } from '../common/models/configuration.model';
@@ -47,9 +47,9 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
 
     public activate(active: boolean): void {
         if (active) {
+            this.subscribeChanges();
             const activeWorkspace = this.workspaceFolderService.activeWorkfolderPath;
             this.setFilesFromConfig(activeWorkspace);
-            this.subscribeChanges();
             this.refresh();
         } else {
             this.dispose();
@@ -80,7 +80,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         );
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
         this.workspaceFolderService.unsubscribe(SPECIFICATION_TREE);
@@ -134,14 +134,14 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
                 return;
             }
 
-            const selectd = this.calculateItemSelected(workfolderPath, filePath, localFiles, configFiles, configFileExist);
+            const selected = this.calculateItemSelected(workfolderPath, filePath, localFiles, configFiles, configFileExist);
             specItems.push(
                 new SpecificationItem(
                     name,
                     dirent.parentPath,
                     Uri.file(filePath),
                     workfolderPath,
-                    selectd ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked
+                    selected ? TreeItemCheckboxState.Checked : TreeItemCheckboxState.Unchecked
                 )
             );
             localFiles.add(filePath);

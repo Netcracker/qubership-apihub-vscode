@@ -1,6 +1,6 @@
 import fs from 'fs';
 import { Uri } from 'vscode';
-import { NODE_MODULES_PATH, RESOURCES_PATH, TEMPLATE_PATH } from '../common/constants/common.constants';
+import { RESOURCES_PATH, TEMPLATE_PATH } from '../common/constants/common.constants';
 
 export const getHtmlContent = (filePath: string, data: Record<string, string | Uri>): Promise<string> => {
     return new Promise<string>((resolve, reject) => {

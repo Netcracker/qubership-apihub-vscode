@@ -1,4 +1,3 @@
-// @ts-check
 // @ts-ignore
 const vscode = acquireVsCodeApi();
 
@@ -19,36 +18,41 @@ const WebviewMessages = {
 const FieldTypes = {
     INPUT: 'input',
     SINGLE_SELECT: 'single-select',
+    SINGLE_SELECT_COMBOBOX: 'single-select-combobox',
     BUTTON: 'button',
     LABELS: 'labels'
 };
 
 const DISABLED_ATTRIBUTE = 'disabled';
 
-const fieldMapper = new Map();
-const fieldIconMapper = new Map();
-const fieldUpdateMapper = new Map();
-const fieldListenersMapper = new Map();
+const typeFieldMapper = new Map();
+const iconFieldMapper = new Map();
+const updateFieldMapper = new Map();
+const defaultListenersMapper = new Map();
 
-const LABELS_ID = 'labelForLables';
-const LABELS_PLACEHOLDER = 'pulbish-labels-placeholder';
+const LABELS_ID = 'labelForLabels';
+const LABELS_PLACEHOLDER = 'publish-labels-placeholder';
 
-fieldUpdateMapper.set(FieldTypes.INPUT, (field, value) => {
-    getInput(field).value = value;
+updateFieldMapper.set(FieldTypes.INPUT, (fieldName, value) => {
+    getInput(fieldName).value = value;
 });
 
-fieldUpdateMapper.set(FieldTypes.SINGLE_SELECT, (field, value) => {
-    field.selectedIndex = field.options.findIndex((option) => option.value === value);
+updateFieldMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, value) => {
+    getField(fieldName).selectedIndex = field.options.findIndex((option) => option.value === value);
 });
 
-fieldUpdateMapper.set(FieldTypes.BUTTON, (field, value) => {
-    field.disabled = value === 'true';
+updateFieldMapper.set(FieldTypes.SINGLE_SELECT_COMBOBOX, (fieldName, value) => {
+    getField(fieldName).selectedIndex = field.options.findIndex((option) => option.value === value);
 });
 
-fieldUpdateMapper.set(FieldTypes.LABELS, (field, value, fieldName) => {
-    const oldLabelPlaceholeder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
-    if (oldLabelPlaceholeder) {
-        oldLabelPlaceholeder.remove();
+updateFieldMapper.set(FieldTypes.BUTTON, (fieldName, value) => {
+    getField(fieldName).disabled = value === 'true';
+});
+
+updateFieldMapper.set(FieldTypes.LABELS, (fieldName, value) => {
+    const oldLabelPlaceholder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
+    if (oldLabelPlaceholder) {
+        oldLabelPlaceholder.remove();
     }
     if (!value?.length) {
         return;
@@ -77,26 +81,34 @@ fieldUpdateMapper.set(FieldTypes.LABELS, (field, value, fieldName) => {
     });
 });
 
-fieldListenersMapper.set(FieldTypes.INPUT, (fieldName, field) => {
+defaultListenersMapper.set(FieldTypes.INPUT, (fieldName) => {
+    const field = getField(fieldName);
     field.addEventListener('input', () => sendFieldValue(fieldName, field));
 });
 
-fieldListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, field) => {
-    field.addEventListener('change', () => sendFieldValue(fieldName, field));
+defaultListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName) => {
+    const field = getField(fieldName);
+    field.addEventListener('change', () => sendFieldValue(fieldName));
+});
+
+defaultListenersMapper.set(FieldTypes.SINGLE_SELECT_COMBOBOX, (fieldName) => {
+    const field = getField(fieldName);
+    field.addEventListener('change', () => sendFieldValue(fieldName));
     field.addEventListener('focusout', () => {
-        const value = getInput(field).value;
+        // WA. Bug: https://github.com/vscode-elements/elements/issues/368
+        const value = getInput(fieldName).value;
         if (!value?.length) {
             // @ts-ignore
             field.selectedIndex = -1;
-            sendFieldValue(fieldName, "");
-            updateRequired(fieldName, "true");
+            sendFieldValue(fieldName, '');
+            updateRequired(fieldName, 'true');
             return;
         }
         const index = field.selectedIndex;
         const option = getOptions(fieldName)?.[index];
         if (index === -1 || !option || option.value !== value) {
-            sendFieldValue(fieldName, "");
-            updateRequired(fieldName, "true");
+            sendFieldValue(fieldName, '');
+            updateRequired(fieldName, 'true');
         }
     });
 });
@@ -114,7 +126,7 @@ window.addEventListener('message', (event) => {
             break;
         }
         case WebviewMessages.UPDATE_PATTERN: {
-            updatePettern(payload.field, payload.value);
+            updatePattern(payload.field, payload.value);
             break;
         }
         case WebviewMessages.UPDATE_REQUIRED: {
@@ -141,12 +153,20 @@ window.addEventListener('message', (event) => {
 });
 
 const updateField = (fieldName, value) => {
-    const { type, field } = fieldMapper.get(fieldName);
-    fieldUpdateMapper.get(type)(field, value, fieldName);
+    try{
+    const type = typeFieldMapper.get(fieldName);
+    updateFieldMapper.get(type)(fieldName, value);
+    }catch (e){
+        console.log();
+    }
 };
 
-const updatePettern = (fieldName, value) => {
-    const { field } = fieldMapper.get(fieldName);
+const getField = (FieldName) => {
+    return document.querySelector(`#${FieldName}`);
+};
+
+const updatePattern = (fieldName, value) => {
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -160,7 +180,7 @@ const updatePettern = (fieldName, value) => {
 };
 
 const updateOptions = (fieldName, options) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -178,18 +198,19 @@ const updateOptions = (fieldName, options) => {
 };
 
 const getOptions = (fieldName) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
     return field.options;
 };
 
-const sendFieldValue = (fieldName, field) => {
+const sendFieldValue = (fieldName) => {
     if (!fieldName) {
         return;
     }
-    const value = field?.value?.trim() ?? "";
+    const field = getField(fieldName);
+    const value = field?.value?.trim() ?? '';
     vscode.postMessage({
         command: WebviewMessages.UPDATE_FIELD,
         payload: {
@@ -212,10 +233,11 @@ const deleteFieldValue = (fieldName, value) => {
     });
 };
 
-const getInput = (field) => {
-    if (!field) {
+const getInput = (fieldName) => {
+    if (!fieldName) {
         return;
     }
+    const field = getField(fieldName);
     const shadowRoot = field.shadowRoot;
     if (!shadowRoot) {
         return;
@@ -224,7 +246,7 @@ const getInput = (field) => {
 };
 
 const updateRequired = (fieldName, value) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -239,18 +261,18 @@ const updateRequired = (fieldName, value) => {
     }
 };
 
+// WA. Bug: https://github.com/vscode-elements/elements/issues/369
 const recreateSelect = (fieldName, field) => {
     const clone = field.cloneNode(true);
     const parent = field.parentElement;
     field.remove();
     parent.appendChild(clone);
     clone.open = false;
-    fieldMapper.set(fieldName, { type: FieldTypes.SINGLE_SELECT, field: clone });
-    fieldListenersMapper.get(FieldTypes.SINGLE_SELECT)(fieldName, clone);
+    defaultListenersMapper.get(FieldTypes.SINGLE_SELECT_COMBOBOX)(fieldName, clone);
 };
 
 const updateDisable = (fieldName, disabled) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -262,7 +284,7 @@ const updateDisable = (fieldName, disabled) => {
 };
 
 const updateInvalid = (fieldName, disabled) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -274,7 +296,7 @@ const updateInvalid = (fieldName, disabled) => {
 };
 
 const updateSpin = (fieldName, value) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
@@ -286,18 +308,18 @@ const updateSpin = (fieldName, value) => {
 };
 
 const updateIcon = (fieldName, value) => {
-    const { field } = fieldMapper.get(fieldName);
+    const field = getField(fieldName);
     if (!field) {
         return;
     }
-    const clazz = fieldIconMapper.get(fieldName);
+    const clazz = iconFieldMapper.get(fieldName);
     if (clazz) {
         field.classList.remove(clazz);
     }
     field.setAttribute('name', value);
     if (value) {
         field.classList.add(value);
-        fieldIconMapper.set(fieldName, value);
+        iconFieldMapper.set(fieldName, value);
     }
 };
 
@@ -310,7 +332,7 @@ const requestField = (fieldName) => {
     });
 };
 
-const requestSingleSelectOptions = (fieldName, field) => {
+const requestSingleSelectOptions = (fieldName) => {
     updateOptions(fieldName, [{ name: 'Loading...', disabled: true }]);
     vscode.postMessage({
         command: WebviewMessages.REQUEST_OPTIONS,

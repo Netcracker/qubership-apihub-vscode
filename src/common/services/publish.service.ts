@@ -32,7 +32,7 @@ import {
 } from '../models/publish.model';
 import { SpecificationItem } from '../models/specification-item';
 import { ConfigurationFileService } from './configuration-file.service';
-import { SecretStorageService } from './secret-storage.service';
+import { EnvironmentStorageService } from './environment-storage.service';
 
 export class PublishService extends Disposable {
     private readonly _crudService: CrudService;
@@ -44,7 +44,7 @@ export class PublishService extends Disposable {
 
     constructor(
         private readonly fileTreeProvider: SpecificationFileTreeProvider,
-        private readonly secretStorageService: SecretStorageService,
+        private readonly environmentStorageService: EnvironmentStorageService,
         private readonly configurationFileService: ConfigurationFileService
     ) {
         super(() => this.dispose());
@@ -59,14 +59,13 @@ export class PublishService extends Disposable {
     }
 
     public async publish(workfolderPath: WorkfolderPath, data: PublishViewData): Promise<void> {
-        this._onPublish.fire(true);
         this._isPublishProgress = true;
         this._statusBarItem.show();
+        this._onPublish.fire(true);
 
         const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
-        const host = await this.secretStorageService.getHost();
-        const token = await this.secretStorageService.getToken();
-        this.validateAndPulbish(host, token, values, data)
+        const { host, token } = await this.environmentStorageService.getEnvironment();
+        this.validateAndPublish(host, token, values, data)
             .then(() => {
                 const { packageId, version } = data;
                 this.configurationFileService.updateConfigurationFile(
@@ -87,18 +86,18 @@ export class PublishService extends Disposable {
                 window.showErrorMessage(err.message);
             })
             .finally(() => {
+                this._isPublishProgress = false;
                 this._statusBarItem.hide();
                 this._onPublish.fire(false);
-                this._isPublishProgress = false;
             });
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
     }
 
-    private async validateAndPulbish(
+    private async validateAndPublish(
         host: string,
         authorization: string,
         items: SpecificationItem[],
@@ -124,12 +123,12 @@ export class PublishService extends Disposable {
         const apiSpecItems: SpecificationItem[] = items.filter(isItemApispecFile);
         const additionalItems: SpecificationItem[] = items.filter((item) => !isItemApispecFile(item));
 
-        const publishingfiles: File[] = await this.bundlingItems(apiSpecItems);
-        publishingfiles.push(...additionalItems.map(specificationItemToFile));
+        const publishingFiles: File[] = await this.bundlingItems(apiSpecItems);
+        publishingFiles.push(...additionalItems.map(specificationItemToFile));
 
         let zipData: Blob;
         try {
-            zipData = await packToZip(publishingfiles);
+            zipData = await packToZip(publishingFiles);
         } catch (error) {
             console.error(error);
             throw new Error('Pack to zip error');
@@ -138,7 +137,7 @@ export class PublishService extends Disposable {
         const publishFileNames: string[] = items.map((item) =>
             getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? '')
         );
-        const additionalFileNames: string[] = publishingfiles.map((file) => file.name);
+        const additionalFileNames: string[] = publishingFiles.map((file) => file.name);
 
         const publishConfig: PublishConfig = await this.publishApispec(
             host,

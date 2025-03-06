@@ -1,5 +1,6 @@
 import { Disposable, Event, EventEmitter, TextEditor, Uri, window, workspace } from 'vscode';
 import { WorkfolderPath } from '../models/common.model';
+import { getWorkspaceFolders } from '../../utils/path.utils';
 
 export class WorkspaceService extends Disposable {
     private _disposables: Disposable[] = [];
@@ -9,16 +10,8 @@ export class WorkspaceService extends Disposable {
     private readonly _onDidChangeActiveWorkspace: EventEmitter<WorkfolderPath> = new EventEmitter();
     private readonly onDidChangeActiveWorkspace: Event<WorkfolderPath> = this._onDidChangeActiveWorkspace.event;
 
-    constructor(readonly workfolderPaths: WorkfolderPath[]) {
+    constructor() {
         super(() => this.dispose());
-
-        this.updateWorkfolderPaths(workfolderPaths);
-        this.subscribeChanges();
-    }
-
-    public updateWorkfolderPaths(workfolderPaths: WorkfolderPath[]): void {
-        this._workfolderPaths = workfolderPaths;
-        this._activeWorkfolderPath = this.getActiveWorkspace();
     }
 
     public subscribe(listenerName: string, listener: (value: WorkfolderPath) => void): void {
@@ -26,7 +19,7 @@ export class WorkspaceService extends Disposable {
             return;
         }
         if (!this._listeners.size) {
-            this._activeWorkfolderPath = this.getActiveWorkspace();
+            this.updateWorkfolderPaths();
             this.subscribeChanges();
         }
         const disposable: Disposable = this.onDidChangeActiveWorkspace(listener, this, this._disposables);
@@ -49,12 +42,17 @@ export class WorkspaceService extends Disposable {
         return this._activeWorkfolderPath;
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
 
         this._listeners.forEach((value: Disposable) => value.dispose());
         this._listeners = new Map();
+    }
+
+    private updateWorkfolderPaths(): void {
+        this._workfolderPaths = getWorkspaceFolders();;
+        this._activeWorkfolderPath = this.getActiveWorkspace();
     }
 
     private subscribeChanges(): void {
@@ -66,6 +64,11 @@ export class WorkspaceService extends Disposable {
                 this._activeWorkfolderPath = this.getActiveWorkspace();
                 this._onDidChangeActiveWorkspace.fire(this._activeWorkfolderPath);
             },
+            this,
+            this._disposables
+        );
+        workspace.onDidChangeWorkspaceFolders(
+            () => this.updateWorkfolderPaths(),
             this,
             this._disposables
         );

@@ -18,14 +18,14 @@ export const bundledFileDataWithDependencies = async (
     const workspacePath = item.workspacePath;
     const rootApispecPath = item.uri.fsPath;
     const rootApispecName = getFilePath(workspacePath, rootApispecPath);
-    const rootApicpecDirectory = getFileDirectory(rootApispecPath);
+    const rootApispecDirectory = getFileDirectory(rootApispecPath);
 
     const resolver: Resolver = async (sourcePath: string) => {
         let normalizePath = sourcePath;
 
         if (sourcePath !== rootApispecPath) {
             if (!path.isAbsolute(sourcePath)) {
-                normalizePath = path.join(rootApicpecDirectory, sourcePath);
+                normalizePath = path.join(rootApispecDirectory, sourcePath);
             }
             dependencies.push(normalizePath);
         }
@@ -59,8 +59,8 @@ export const createBuildConfigFiles = (publishFileNames: string[], allFileNames:
     return allFileNames.map((fileName) => ({ fileId: fileName, publish: publishFileNames.includes(fileName) }));
 };
 
-export const convertBundleDataToFiles = (datas: BundleData[]): File[] => {
+export const convertBundleDataToFiles = (bundleData: BundleData[]): File[] => {
     const fileMap = new Map<string, File>();
-    datas.flatMap((data) => data.files).forEach((file) => fileMap.set(file.name, file));
+    bundleData.flatMap((data) => data.files).forEach((file) => fileMap.set(file.name, file));
     return Array.from(fileMap.values());
 };
