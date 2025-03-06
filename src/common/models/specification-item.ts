@@ -11,9 +11,8 @@ export class SpecificationItem extends TreeItem {
         public readonly uri: Uri,
         public readonly workspacePath: string,
         public readonly checkboxState: TreeItemCheckboxState,
-        public readonly collapsibleState: TreeItemCollapsibleState = TreeItemCollapsibleState.None
     ) {
-        super(uri, collapsibleState);
+        super(uri);
         this.tooltip = label;
         this.resourceUri = uri;
         this.checkboxState = checkboxState;

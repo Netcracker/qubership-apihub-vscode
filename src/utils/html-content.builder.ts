@@ -24,7 +24,7 @@ export const getNonce = (): string => {
 };
 
 export const getElements = (extensionUri: Uri): Uri => {
-    return Uri.joinPath(extensionUri, NODE_MODULES_PATH, '@vscode-elements/elements', 'dist', 'bundled.js');
+    return Uri.joinPath(extensionUri, 'dist', 'bundled.js');
 };
 
 export const getJsScript = (extensionUri: Uri, jsName: string): Uri => {
@@ -36,5 +36,5 @@ export const getStyle = (extensionUri: Uri): Uri => {
 };
 
 export const getCodicon = (extensionUri: Uri): Uri => {
-    return Uri.joinPath(extensionUri, NODE_MODULES_PATH, '@vscode/codicons', 'dist', 'codicon.css');
+    return Uri.joinPath(extensionUri, 'dist', 'codicon.css');
 };
