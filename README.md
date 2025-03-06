@@ -46,7 +46,7 @@ Configuration file contains the following information:
 | --------- | ---------------- | -------------- |
 | version   | string           | Version of configuration file. Currently, only version "1.0" is avaialable. |
 | packageId | string           | Package where files will be published.|
-| files     | [string]         | List of files that will be published. You can add path to any file from your repository. Such file will be added to the "document to publish" section of the extension.|  
+| files     | [string]         | List of files that will be published. You can add path to any file from your folder. Such file will be added to the "document to publish" section of the extension.|  
 
 Example of configuration file:
 ```yaml
