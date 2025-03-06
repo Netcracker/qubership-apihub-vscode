@@ -16,5 +16,5 @@ export const STATUS_REFETCH_MAX_ATTEMPTS = 2000;
 
 export const PUBLISH_DATA_NAME = "package.zip";
 
-export const PUBLISH_SUCCESSFUL_MESSAGE = "Package version was successfully published in APIHUB Portal. Check it out.";
+export const PUBLISH_SUCCESSFUL_MESSAGE = "Package version was successfully published in APIHUB Portal";
 export const PUBLISH_BUTTON_LINK_MESSAGE = "Check it out";

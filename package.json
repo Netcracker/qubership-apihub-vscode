@@ -47,7 +47,7 @@
       "activitybar": [
         {
           "id": "apihub",
-          "title": "QUBERSHIP APIHUBAPIHUB ENVIRONMENT",
+          "title": "Qubership APIHUB",
           "icon": "resources/media/openapi-icon.svg",
           "contextualTitle": "OpenAPI Specifications"
         }
@@ -57,16 +57,16 @@
       "apihub": [
         {
           "id": "apihubExtension.environmentView",
-          "name": "APIHUB environment",
+          "name": "APIHUB Environment",
           "type": "webview"
         },
         {
           "id": "apihubExtension.explorer",
-          "name": "Documents to publish to apihub portal"
+          "name": "Documents to Publish"
         },
         {
           "id": "apihubExtension.publishView",
-          "name": "Publish to APIHUB Portal",
+          "name": "Publish to APIHUB",
           "type": "webview"
         }
       ]
