@@ -11,7 +11,8 @@ const PublishWebviewMessages = {
     REQUEST_OPTIONS: 'requestOptions',
     UPDATE_INVALID: 'updateInvalid',
     UPDATE_ICON: 'updateIcon',
-    UPDATE_SPIN: 'updateSpin'
+    UPDATE_SPIN: 'updateSpin',
+    DELETE: 'delete',
 };
 const DISABLED_ATTRIBUTE = 'disabled';
 
