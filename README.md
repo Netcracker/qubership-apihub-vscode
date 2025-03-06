@@ -34,7 +34,7 @@ Along with file selection, specify the following information:
 
 After selecting the files and filling in all the required fields, click the **Publish** button. The status bar will indicate the progress of the publication, and once it is complete, a notification will be displayed.
 
-If your published OpenAPI specifacation contains [remote references](https://swagger.io/docs/specification/v3_0/using-ref/) to other files, the extension will automatically gather all referenced files (if they are available in the current open folder) and include them in the publication. APIHUB merges these referenced files with the main OpenAPI specification file, converting external references into local ones.
+If your published OpenAPI specification contains [remote references](https://swagger.io/docs/specification/v3_0/using-ref/) to other files, the extension will automatically gather all referenced files (if they are available in the current open folder) and include them in the publication. APIHUB merges these referenced files with the main OpenAPI specification file, converting external references into local ones.
 
 If you are working with multi-root workspaces, you need to publish files from each root folder separately. Each root folder will be associated with a different package id and have its own [configuration file](#configuration-file).
 
@@ -44,7 +44,7 @@ Configuration file contains the following information:
 
 | Field     | Type             | Description    |
 | --------- | ---------------- | -------------- |
-| version   | string           | Version of configuration file. Currently, only version "1.0" is avaialable. |
+| version   | string           | Version of configuration file. Currently, only version "1.0" is available. |
 | packageId | string           | Package where files will be published.|
 | files     | [string]         | List of files that will be published. You can add path to any file from your folder. Such file will be added to the "document to publish" section of the extension.|  
 
