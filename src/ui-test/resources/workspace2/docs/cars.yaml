@@ -1,0 +1,138 @@
+openapi: 3.0.0
+info:
+  title: Car Management API
+  description: API for managing car information
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+    description: Production server
+paths:
+  /cars:
+    get:
+      summary: Get a list of all cars
+      description: Returns a list of all cars available in the system.
+      responses:
+        '200':
+          description: Successful request
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Car'
+    post:
+      summary: Add a new car
+      description: Adds a new car to the system.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Car'
+      responses:
+        '201':
+          description: Car successfully added
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '400':
+          description: Invalid request
+  /cars/{carId}:
+    get:
+      summary: Get car information by ID
+      description: Returns information about a specific car by its ID.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the car
+      responses:
+        '200':
+          description: Successful request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '404':
+          description: Car not found
+    put:
+      summary: Update car information
+      description: Updates information about a specific car by its ID.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the car
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Car'
+      responses:
+        '200':
+          description: Car information successfully updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Car'
+        '400':
+          description: Invalid request
+        '404':
+          description: Car not found
+    delete:
+      summary: Delete a car
+      description: Deletes a car by its ID.
+      parameters:
+        - name: carId
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: The ID of the car
+      responses:
+        '204':
+          description: Car successfully deleted
+        '404':
+          description: Car not found
+components:
+  schemas:
+    Car:
+      type: object
+      required:
+        - id
+        - brand
+        - model
+        - year
+      properties:
+        id:
+          type: integer
+          description: Unique identifier of the car
+        brand:
+          type: string
+          description: Brand of the car
+        model:
+          type: string
+          description: Model of the car
+        year:
+          type: integer
+          description: Year of manufacture
+        color:
+          type: string
+          description: Color of the car
+        price:
+          type: number
+          format: float
+          description: Price of the car
+      example:
+        id: 1
+        brand: Toyota
+        model: Corolla
+        year: 2020
+        color: Red
+        price: 20000

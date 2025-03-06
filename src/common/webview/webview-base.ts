@@ -15,7 +15,7 @@ export abstract class WebviewBase<T> extends Disposable implements WebviewViewPr
         super(() => callOnDispose?.());
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
     }

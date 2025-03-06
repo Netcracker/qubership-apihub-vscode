@@ -43,7 +43,7 @@ export class WorkspaceService extends Disposable {
         return this._activeWorkfolderPath;
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
 

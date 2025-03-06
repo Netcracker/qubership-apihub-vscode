@@ -13,6 +13,12 @@
 				"kind": "build",
 				"isDefault": true
 			}
-		}
+		},
+		{
+			"label": "run pretest",
+			"type": "npm",
+			"script": "pretest",
+			"problemMatcher": []
+		  }
 	]
 }

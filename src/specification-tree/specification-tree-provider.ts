@@ -80,7 +80,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         );
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
         this.workspaceFolderService.unsubscribe(SPECIFICATION_TREE);
