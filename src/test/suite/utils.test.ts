@@ -13,6 +13,7 @@ import { convertOptionsToDto } from '../../utils/publish.utils';
 import { SpecificationItem } from '../../common/models/specification-item';
 import { Uri } from 'vscode';
 import path from 'path';
+import fs from 'fs';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
