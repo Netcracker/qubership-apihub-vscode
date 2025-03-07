@@ -13,6 +13,7 @@ import { convertOptionsToDto } from '../../utils/publish.utils';
 import { SpecificationItem } from '../../common/models/specification-item';
 import { Uri } from 'vscode';
 import path from 'path';
+import fs from 'fs';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
@@ -27,9 +28,10 @@ const DOC = 'doc';
 const GQL = 'gql';
 const GRAPHQ = 'graphql';
 
-const WORKFOLDER_PATH = path.normalize(`disk:\\folder-name\\workfolder`);
-const FILE_DIRECTORY_PATH = path.normalize(`disk:\\folder-name\\workfolder\\src\\docs\\`);
-const FILE_YAML_PATH = path.normalize(`disk:\\folder-name\\workfolder\\src\\docs\\fileName.yaml`);
+
+const WORKFOLDER_PATH = 'folder-name/workfolder';
+const FILE_DIRECTORY_PATH = 'folder-name/workfolder/src/docs';
+const FILE_YAML_PATH = 'folder-name/workfolder/src/docs/fileName.yaml';
 
 
 suite('Utils', () => {
@@ -60,7 +62,7 @@ suite('Utils', () => {
 
     test('getFileDirectory', async () => {
         const fileDirectory = getFileDirectory(FILE_YAML_PATH);
-        assert.equal(fileDirectory, FILE_DIRECTORY_PATH);
+        assert.equal(fileDirectory, FILE_DIRECTORY_PATH + path.sep);
     });
 
     test('capitalize', async () => {
