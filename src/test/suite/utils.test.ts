@@ -12,6 +12,7 @@ import {
 import { convertOptionsToDto } from '../../utils/publish.utils';
 import { SpecificationItem } from '../../common/models/specification-item';
 import { Uri } from 'vscode';
+import path from 'path';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
@@ -26,7 +27,10 @@ const DOC = 'doc';
 const GQL = 'gql';
 const GRAPHQ = 'graphql';
 
-const WORKFOLDER_PATH = 'disk:\\folder-name\\workfolder';
+const WORKFOLDER_PATH = path.normalize(`disk:\\folder-name\\workfolder`);
+const FILE_DIRECTORY_PATH = path.normalize(`disk:\\folder-name\\workfolder\\src\\docs\\`);
+const FILE_YAML_PATH = path.normalize(`disk:\\folder-name\\workfolder\\src\\docs\\fileName.yaml`);
+
 
 suite('Utils', () => {
     test('convertOptionsToDto', async () => {
@@ -50,15 +54,13 @@ suite('Utils', () => {
     });
 
     test('getMiddlePath', async () => {
-        const src = 'src';
-        const docs = 'docs';
-        const middlePath = getMiddlePath(WORKFOLDER_PATH, `${WORKFOLDER_PATH}\\${src}\\${docs}\\${NAME_1}.${YAML}`);
-        assert.equal(middlePath, `/${src}/${docs}/`);
+        const middlePath = getMiddlePath(WORKFOLDER_PATH, FILE_YAML_PATH);
+        assert.equal(middlePath, `/src/docs/`);
     });
 
     test('getFileDirectory', async () => {
-        const aa = getFileDirectory('d:\\work\\test-apihub\\src\\docs\\cars.yaml');
-        assert.equal(aa, 'd:\\work\\test-apihub\\src\\docs\\');
+        const fileDirectory = getFileDirectory(FILE_YAML_PATH);
+        assert.equal(fileDirectory, FILE_DIRECTORY_PATH);
     });
 
     test('capitalize', async () => {
