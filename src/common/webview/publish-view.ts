@@ -445,7 +445,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
 			<body>
                 <vscode-form-group variant="vertical">
                     <p>
-                        <vscode-label for="${PublishFields.PACKAGE_ID}" required>PackageId:</vscode-label>
+                        <vscode-label for="${PublishFields.PACKAGE_ID}" required>Package Id:</vscode-label>
                         <vscode-textfield id="${PublishFields.PACKAGE_ID}" pattern="{1,}"/>
                     </p>
                     <p>
