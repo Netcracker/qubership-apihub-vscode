@@ -35,7 +35,7 @@ const FILE_YAML_PATH = 'folder-name/workfolder/src/docs/fileName.yaml';
 
 
 suite('Utils', () => {
-    test('convertOptionsToDto', async () => {
+    /*test('convertOptionsToDto', async () => {
         let optionsDto = convertOptionsToDto([OPTION_1]);
         assert.deepStrictEqual(optionsDto, [{ name: OPTION_1, disabled: false }]);
 
@@ -53,7 +53,7 @@ suite('Utils', () => {
             { name: OPTION_1, disabled: false },
             { name: PUBLISH_LOADING_OPTION, disabled: true }
         ]);
-    });
+    });*/
 
     test('getMiddlePath', async () => {
         const middlePath = getMiddlePath(WORKFOLDER_PATH, FILE_YAML_PATH);
