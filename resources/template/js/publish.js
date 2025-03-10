@@ -9,9 +9,6 @@
         PUBLISH_BUTTON: 'publish-button'
     };
 
-    const LABELS_ID = 'labelForLables';
-    const LABELS_PLACEHOLDER = 'pulbish-labels-placeholder';
-
     const packageId = document.querySelector(`#${PublishFields.PACKAGE_ID}`);
     const version = document.querySelector(`#${PublishFields.VERSION}`);
     const status = document.querySelector(`#${PublishFields.STATUS}`);
@@ -19,76 +16,28 @@
     const labels = document.querySelector(`#${PublishFields.LABELS}`);
     const publishButton = document.querySelector(`#${PublishFields.PUBLISH_BUTTON}`);
 
-    fieldMapper.set(PublishFields.PACKAGE_ID, packageId);
-    fieldMapper.set(PublishFields.VERSION, version);
-    fieldMapper.set(PublishFields.STATUS, status);
-    fieldMapper.set(PublishFields.PREVIOUS_VERSION, previousVersion);
-    fieldMapper.set(PublishFields.LABELS, labels);
-    fieldMapper.set(PublishFields.PUBLISH_BUTTON, publishButton);
-
-    fieldUpdateMapper.set(PublishFields.PACKAGE_ID, (value) => {
-        getInput(packageId).value = value;
-    });
-
-    fieldUpdateMapper.set(PublishFields.VERSION, (value) => {
-        getInput(version).value = value;
-    });
-
-    fieldUpdateMapper.set(PublishFields.PREVIOUS_VERSION, (value) => {
-        previousVersion.selectedIndex = previousVersion.options.findIndex((option) => option.value === value);
-    });
-
-    fieldUpdateMapper.set(PublishFields.STATUS, (value) => {
-        status.selectedIndex = status.options.findIndex((option) => option.value === value);
-    });
-    fieldUpdateMapper.set(PublishFields.PUBLISH_BUTTON, (value) => {
-        publishButton.disabled = value === 'true';
-    });
-    fieldUpdateMapper.set(PublishFields.LABELS, (value) => {
-        const oldLabelPlaceholeder = document.querySelector(`#${LABELS_PLACEHOLDER}`);
-        if (oldLabelPlaceholeder) {
-            oldLabelPlaceholeder.remove();
-        }
-        if (!value?.length) {
-            return;
-        }
-        const label = document.querySelector(`#${LABELS_ID}`);
-        if (!label) {
-            return;
-        }
-        const placeholder = document.createElement('div');
-        placeholder.setAttribute('id', LABELS_PLACEHOLDER);
-        placeholder.className = LABELS_PLACEHOLDER;
-
-        label?.append(placeholder);
-
-        value.forEach((label) => {
-            const chip = document.createElement('vscode-button');
-            chip.setAttribute('icon-after', 'close');
-            chip.setAttribute('secondary', '');
-            chip.innerHTML = label;
-            chip.className = 'publish-chip';
-            chip.addEventListener('click', (event) =>
-                // @ts-ignore
-                deleteFieldValue(PublishFields.LABELS, event?.target?.innerText)
-            );
-            placeholder.appendChild(chip);
-        });
-    });
+    fieldMapper.set(PublishFields.PACKAGE_ID, { type: FieldTypes.INPUT, field: packageId });
+    fieldMapper.set(PublishFields.VERSION, { type: FieldTypes.INPUT, field: version });
+    fieldMapper.set(PublishFields.STATUS, { type: FieldTypes.SINGLE_SELECT, field: status });
+    fieldMapper.set(PublishFields.PREVIOUS_VERSION, { type: FieldTypes.SINGLE_SELECT, field: previousVersion });
+    fieldMapper.set(PublishFields.LABELS, { type: FieldTypes.LABELS, field: labels });
+    fieldMapper.set(PublishFields.PUBLISH_BUTTON, { type: FieldTypes.BUTTON, field: publishButton });
 
     if (packageId) {
-        packageId.addEventListener('input', () => sendFieldValue(PublishFields.PACKAGE_ID, packageId));
+        fieldListenersMapper.get(FieldTypes.INPUT)(PublishFields.PACKAGE_ID, packageId);
     }
     if (version) {
-        version.addEventListener('input', () => sendFieldValue(PublishFields.VERSION, version));
+        fieldListenersMapper.get(FieldTypes.INPUT)(PublishFields.VERSION, version);
     }
     if (status) {
         status.addEventListener('change', () => sendFieldValue(PublishFields.STATUS, status));
     }
     if (labels) {
-        labels.addEventListener('focusout', (event) => {
+        // @ts-ignore
+        labels.addEventListener('focusout', () => {
             updateLables();
         });
+        // @ts-ignore
         labels.addEventListener('keyup', ({ key }) => {
             if (key === 'Enter') {
                 updateLables();
@@ -96,11 +45,9 @@
         });
     }
     if (previousVersion) {
-        previousVersion.addEventListener('click', requestVersions);
-        previousVersion.addEventListener('input', () =>
-            sendFieldValue(PublishFields.PREVIOUS_VERSION, previousVersion)
-        );
+        fieldListenersMapper.get(FieldTypes.SINGLE_SELECT)(PublishFields.PREVIOUS_VERSION, previousVersion);
     }
+
     if (publishButton) {
         publishButton.addEventListener('click', publish);
     }
@@ -125,38 +72,9 @@
         input.value = '';
     }
 
-    function requestVersions() {
-        vscode.postMessage({
-            command: PublishWebviewMessages.REQUEST_OPTIONS,
-            payload: {
-                field: PublishFields.VERSION
-            }
-        });
-    }
-
     function publish() {
-        const packageIdValue = getInput(packageId).value?.trim() ?? '';
-        const versionValue = getInput(version).value?.trim() ?? '';
-        // @ts-ignore
-        const statusValue = status?.value?.trim() ?? '';
-        // @ts-ignore
-        const previousVersionValue = previousVersion?.value?.trim() ?? '';
-
-        let labelsValue = [];
-        const labels = document.querySelector(`#${LABELS_PLACEHOLDER}`);
-        if (labels) {
-            labelsValue = Array.from(labels.children).map((chip) => chip.innerHTML);
-        }
-
         vscode.postMessage({
-            command: 'publish',
-            payload: {
-                packageId: packageIdValue,
-                version: versionValue,
-                status: statusValue,
-                previousVersion: previousVersionValue,
-                labels: labelsValue
-            }
+            command: 'publish'
         });
     }
 })();

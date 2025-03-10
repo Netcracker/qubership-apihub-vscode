@@ -74,7 +74,7 @@
     "viewsWelcome": [
       {
         "view": "apihubExtension.explorer",
-        "contents": "No documents found for publication. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem."
+        "contents": "No documents found for publication. Please read the [manual](command:apihubExtension.show.readme) to solve the problem."
       }
     ]
   },
@@ -99,7 +99,7 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@vscode-elements/elements": "^1.11.0",
+    "@vscode-elements/elements": "1.14.0",
     "@vscode/codicons": "^0.0.36",
     "ajv": "^8.17.1",
     "api-ref-bundler": "^0.4.3",

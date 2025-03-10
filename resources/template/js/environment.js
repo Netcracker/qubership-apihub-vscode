@@ -20,31 +20,23 @@
     const testConnectionButton = document.querySelector('#testConnectionButton');
     const testConnectionIcon = document.querySelector('#testConnectionIcon');
 
-    fieldMapper.set(EnvironmentWebviewFields.URL, inputUrl);
-    fieldMapper.set(EnvironmentWebviewFields.TOKEN, inputToken);
-    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, testConnectionButton);
-    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_ICON, testConnectionIcon);
+    fieldMapper.set(EnvironmentWebviewFields.URL, {type: FieldTypes.INPUT, field: inputUrl});
+    fieldMapper.set(EnvironmentWebviewFields.TOKEN, {type: FieldTypes.INPUT, field: inputToken});
+    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, {type: FieldTypes.BUTTON, field: testConnectionButton});
+    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_ICON, {type: FieldTypes.BUTTON, field: testConnectionIcon});
 
     if (inputUrl) {
-        inputUrl.addEventListener('input', () => sendFieldValue(EnvironmentWebviewFields.URL, inputUrl));
+        fieldListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.URL, inputUrl);
     }
     if (inputToken) {
-        inputToken.addEventListener('input', () => sendFieldValue(EnvironmentWebviewFields.TOKEN, inputToken));
+        fieldListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.TOKEN, inputToken);
     }
     if (togglePasswordButton) {
         togglePasswordButton.addEventListener('click', updateTogglePasswordButton);
     }    
-    
     if (testConnectionButton) {
         testConnectionButton.addEventListener('click', testConnection);
     }
-
-    fieldUpdateMapper.set(EnvironmentWebviewFields.URL, (value) => {
-        getInput(inputUrl).value = value;
-    });
-    fieldUpdateMapper.set(EnvironmentWebviewFields.TOKEN, (value) => {
-        getInput(inputToken).value = value;
-    });
 
     function updateTogglePasswordButton() {
         if (!inputToken || !togglePasswordButton) {

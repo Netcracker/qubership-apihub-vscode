@@ -29,7 +29,6 @@ import { WorkfolderPath } from '../models/common.model';
 import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
-    PublishDto,
     PublishFields,
     PublishViewData,
     PublishViewPackageIdData,
@@ -48,7 +47,7 @@ import { WebviewBase } from './webview-base';
 export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
     private readonly updateLabelsDebounced = debounce((data: PublishViewData, version: VersionId) =>
-        this.updateLabels(data, version)
+        this.wrapInProgress(async () => await this.updateLabels(data, version))
     );
     private readonly updatePackageIdDebounced = debounce((publishData: PublishViewData) =>
         this.wrapInProgress(async () => await this.loadPackageId(publishData))
@@ -119,7 +118,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             (message: PublishWebviewDto) => {
                 switch (message.command) {
                     case PublishWebviewMessages.PUBLISH: {
-                        this.publish(message.payload as PublishDto);
+                        this.publish();
                         break;
                     }
                     case WebviewMessages.UPDATE_FIELD: {
@@ -228,8 +227,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
 
     private requestField(payload: WebviewPayload<PublishFields>): void {
         switch (payload.field) {
-            case PublishFields.VERSION: {
-                this.wrapInProgress(async () => await this.loadVersions());
+            case PublishFields.PREVIOUS_VERSION: {
+                this.wrapInProgress(async () => await this.loadPreviousVersions());
                 break;
             }
         }
@@ -302,10 +301,9 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
     }
 
-    private async loadVersions(): Promise<void> {
+    private async loadPreviousVersions(): Promise<void> {
         const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
         if (!packageId) {
-            window.showErrorMessage('Packag ID is empty');
             return;
         }
         const host: string = this.configurationService.hostUrl ?? '';
@@ -314,7 +312,6 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto([PUBLISH_LOADING_OPTION]));
         const options = [PUBLISH_NO_PREVIOUS_VERSION];
         try {
             const versions = await this.crudService.getVersions(host, token, packageId);
@@ -374,7 +371,9 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         } catch (error) {}
     }
 
-    private publish(data: PublishDto): void {
+    private publish(): void {
+        const workfolderPath = this.workfolderService.activeWorkfolderPath;
+        const data = this.getPublishViewData(workfolderPath);
         const { packageId, version, previousVersion, status } = data;
         if (!packageId) {
             this.updateWebviewRequired(PublishFields.PACKAGE_ID);

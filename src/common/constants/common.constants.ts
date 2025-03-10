@@ -11,6 +11,8 @@ export const EXTENSION_PUBLISH_VIEW_NAME = `${EXTENSION_NAME}.publishView`;
 export const EXTENSION_ENVIRONMENT_VIEW_NAME = `${EXTENSION_NAME}.environmentView`;
 export const EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME = `${EXTENSION_NAME}.validation`;
 
+export const SHOW_READMI_ACTION_NAME = `${EXTENSION_NAME}.show.readme`;
+
 export const NODE_MODULES_PATH = 'node_modules';
 export const RESOURCES_PATH = 'resources';
 export const TEMPLATE_PATH = 'template';
