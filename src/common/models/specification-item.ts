@@ -1,8 +1,8 @@
-import { TreeItem, TreeItemCheckboxState, TreeItemCollapsibleState, Uri } from 'vscode';
+import { TreeItem, TreeItemCheckboxState, Uri } from 'vscode';
+import { getMiddlePath } from '../../utils/path.utils';
 import { EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME } from '../constants/common.constants';
 import { FilePath } from './common.model';
 import { ConfigurationId } from './configuration.model';
-import { getMiddlePath } from '../../utils/path.utils';
 
 export class SpecificationItem extends TreeItem {
     constructor(
@@ -10,10 +10,9 @@ export class SpecificationItem extends TreeItem {
         public readonly parentPath: string,
         public readonly uri: Uri,
         public readonly workspacePath: string,
-        public readonly checkboxState: TreeItemCheckboxState,
-        public readonly collapsibleState: TreeItemCollapsibleState = TreeItemCollapsibleState.None
+        public readonly checkboxState: TreeItemCheckboxState
     ) {
-        super(uri, collapsibleState);
+        super(uri);
         this.tooltip = label;
         this.resourceUri = uri;
         this.checkboxState = checkboxState;
