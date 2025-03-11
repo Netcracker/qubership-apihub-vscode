@@ -157,7 +157,10 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         );
         this.updateWebviewLoading(this.publishService.isPublishProgress);
         this.publishService.onPublish(
-            (isPiblishProgress) => this.updateWebviewLoading(isPiblishProgress),
+            (isPiblishProgress) => {
+                this.updateWebviewLoading(isPiblishProgress);
+                this.loadPreviousVersions();
+            },
             this,
             this._disposables
         );

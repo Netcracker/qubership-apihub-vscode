@@ -89,9 +89,9 @@ fieldListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, field) => {
         }
     });
     field.addEventListener('change', () => sendFieldValue(fieldName, field));
-    field.addEventListener('input', (data) => {
+    field.addEventListener('focusout', () => {
         const value = getInput(field).value;
-        if (!value?.length && data.inputType === 'deleteContentBackward') {
+        if (!value?.length) {
             // @ts-ignore
             previousVersion.selectedIndex = -1;
             sendFieldValue(fieldName, field);
@@ -148,8 +148,13 @@ const updatePettern = (fieldName, value) => {
     if (!field) {
         return;
     }
-    field?.setAttribute('pattern', value);
-    field?.setAttribute('placeholder', value);
+    if (value) {
+        field?.setAttribute('pattern', value);
+        field?.setAttribute('placeholder', value);
+    } else {
+        field?.removeAttribute('pattern');
+        field?.removeAttribute('placeholder');
+    }
 };
 
 const updateOptions = (fieldName, options) => {
