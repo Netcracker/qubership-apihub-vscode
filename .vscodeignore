@@ -14,7 +14,13 @@ out/
 tsconfig.json
 webpack.config.js
 dist/test/
+test-resources/**
+test-extensions/**
+.test-extensions/**
+**/*.d.ts
+../../**
+.github/
+settings.json
 docs
-.github
 .prettierignore
 CODE-OF-CONDUCT.md
