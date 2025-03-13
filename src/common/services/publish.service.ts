@@ -24,9 +24,9 @@ import {
     BuildConfigFile,
     PackageId,
     PublishConfig,
-    PublishDto,
     PublishStatus,
     PublishStatusDto,
+    PublishViewData,
     VersionId,
     VersionStatus
 } from '../models/publish.model';
@@ -54,11 +54,11 @@ export class PublishService extends Disposable {
         this._statusBarItem.text = STATUS_BAR_TEXT;
     }
 
-    public get isPublishProgress(): boolean{
+    public get isPublishProgress(): boolean {
         return this._isPublishProgress;
     }
 
-    public async publish(workfolderPath: WorkfolderPath, data: PublishDto): Promise<void> {
+    public async publish(workfolderPath: WorkfolderPath, data: PublishViewData): Promise<void> {
         this._onPublish.fire(true);
         this._isPublishProgress = true;
         this._statusBarItem.show();
@@ -102,7 +102,7 @@ export class PublishService extends Disposable {
         host: string,
         authorization: string,
         items: SpecificationItem[],
-        publishData: PublishDto
+        publishData: PublishViewData
     ): Promise<PublishStatusDto> {
         if (!host) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
@@ -149,7 +149,7 @@ export class PublishService extends Disposable {
             status,
             version,
             previousVersion,
-            labels,
+            Array.from(labels),
             authorization
         );
 

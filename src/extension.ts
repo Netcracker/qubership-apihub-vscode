@@ -1,3 +1,4 @@
+import path from 'path';
 import {
     commands,
     ExtensionContext,
@@ -14,7 +15,8 @@ import {
     EXTENSION_EXPLORER_CLEAN_ACTION_NAME,
     EXTENSION_EXPLORER_NAME,
     EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
-    EXTENSION_PUBLISH_VIEW_NAME
+    EXTENSION_PUBLISH_VIEW_NAME,
+    SHOW_READMI_ACTION_NAME
 } from './common/constants/common.constants';
 import { CrudService } from './common/cruds/crud.service';
 import { WorkfolderPath } from './common/models/common.model';
@@ -77,14 +79,18 @@ export function activate(context: ExtensionContext): void {
             async (resource: Uri) => await window.showTextDocument(resource, { viewColumn: ViewColumn.One })
         )
     );
+
+    context.subscriptions.push(
+        commands.registerCommand(SHOW_READMI_ACTION_NAME, (fragment: string) => {
+            const readmeUri = Uri.file(path.join(context.extensionPath, 'README.md')).with({ fragment });
+            commands.executeCommand('markdown.showPreview', readmeUri);
+        })
+    );
+
     const crudService: CrudService = new CrudService();
     context.subscriptions.push(crudService);
 
-    const publishService = new PublishService(
-        fileTreeProvider,
-        configurationService,
-        configurationFileService
-    );
+    const publishService = new PublishService(fileTreeProvider, configurationService, configurationFileService);
     context.subscriptions.push(publishService);
 
     const publishViewProvider = new PublishViewProvider(

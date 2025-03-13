@@ -5,6 +5,11 @@ import { Disposable, Event, EventEmitter, Uri, window, workspace } from 'vscode'
 import YAML from 'yaml';
 import { convertConfigurationFileToLike, validateYAML } from '../../utils/files.utils';
 import { getFilePath, sortStrings } from '../../utils/path.utils';
+import {
+    CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE,
+    CONFIGURATION_FILE_UNABLE_TO_READ_ERROR_MESSAGE,
+    CONFIGURATION_UNABLE_TO_CREATE_ERROR_MESSAGE
+} from '../constants/configuration-file.constants';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
 import { PackageId } from '../models/publish.model';
@@ -110,7 +115,7 @@ export class ConfigurationFileService extends Disposable {
         try {
             fs.writeFileSync(configFilePath, YAML.stringify(configFile), 'utf8');
         } catch (e) {
-            window.showErrorMessage("Unable to create/update configuration file. Please read the [manual](https://aka.ms/vscode-scm) to solve the problem.");
+            window.showErrorMessage(CONFIGURATION_UNABLE_TO_CREATE_ERROR_MESSAGE);
         }
     }
 
@@ -124,9 +129,14 @@ export class ConfigurationFileService extends Disposable {
 
     private calculateConfigFileDataChanged(workfolderPath: WorkfolderPath, configFilePath: string): boolean {
         let configFileString: string | undefined;
+
+        if (!fs.existsSync(configFilePath)) {
+            return false;
+        }
         try {
             configFileString = fs.readFileSync(configFilePath, 'utf8');
         } catch (e) {
+            window.showErrorMessage(CONFIGURATION_FILE_UNABLE_TO_READ_ERROR_MESSAGE);
             return false;
         }
 
@@ -139,10 +149,11 @@ export class ConfigurationFileService extends Disposable {
         try {
             configurationFile = YAML.parse(configFileString);
         } catch (e) {
-            console.error(String(e));
+            window.showErrorMessage(CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE);
             return false;
         }
         if (!validateYAML(configurationFile, CONFIG_FILE_SCHEMA)) {
+            window.showErrorMessage(CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE);
             return false;
         }
         const configurationData: ConfigurationData = {

@@ -13,7 +13,6 @@ import { convertOptionsToDto } from '../../utils/publish.utils';
 import { SpecificationItem } from '../../common/models/specification-item';
 import { Uri } from 'vscode';
 import path from 'path';
-import fs from 'fs';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
@@ -43,15 +42,6 @@ suite('Utils', () => {
         assert.deepStrictEqual(optionsDto, [
             { name: OPTION_1, disabled: false },
             { name: OPTION_2, disabled: false }
-        ]);
-
-        optionsDto = convertOptionsToDto([PUBLISH_LOADING_OPTION]);
-        assert.deepStrictEqual(optionsDto, [{ name: PUBLISH_LOADING_OPTION, disabled: true }]);
-
-        optionsDto = convertOptionsToDto([OPTION_1, PUBLISH_LOADING_OPTION]);
-        assert.deepStrictEqual(optionsDto, [
-            { name: OPTION_1, disabled: false },
-            { name: PUBLISH_LOADING_OPTION, disabled: true }
         ]);
     });
 

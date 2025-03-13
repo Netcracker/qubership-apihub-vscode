@@ -45,14 +45,6 @@ export enum PublishStatus {
     ERROR = 'error'
 }
 
-export interface PublishDto {
-    packageId: PackageId;
-    version: VersionId;
-    status: VersionStatus;
-    previousVersion: string;
-    labels: string[];
-}
-
 export enum PublishWebviewMessages {
     PUBLISH = 'publish'
 }
@@ -86,7 +78,7 @@ export interface PublishVersionDto {
 }
 
 export interface PublishWebviewDto
-    extends WebviewMessage<WebviewMessages | PublishWebviewMessages, WebviewPayload<PublishFields> | PublishDto | void> {}
+    extends WebviewMessage<WebviewMessages | PublishWebviewMessages, WebviewPayload<PublishFields> | void> {}
 
 export class PublishViewData {
     public packageId: PackageId;
