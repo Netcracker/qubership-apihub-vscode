@@ -10,3 +10,8 @@ vsc-extension-quickstart.md
 **/*.ts
 **/.vscode-test.*
 images/**
+node_modules
+out/
+tsconfig.json
+webpack.config.js
+dist/test/
