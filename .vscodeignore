@@ -15,3 +15,4 @@ out/
 tsconfig.json
 webpack.config.js
 dist/test/
+docs
