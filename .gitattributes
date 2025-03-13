@@ -7,6 +7,7 @@
 *.sh text eol=lf
 *.svg text eol=lf
 *.cjs text eol=lf
+*.css text eol=lf
 .browserslistrc text eol=lf
 *.mp4 binary
 *.png binary

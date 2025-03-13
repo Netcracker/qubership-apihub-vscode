@@ -3,7 +3,6 @@
 src/**
 .gitignore
 .yarnrc
-vsc-extension-quickstart.md
 **/tsconfig.json
 **/eslint.config.mjs
 **/*.map
@@ -18,3 +17,4 @@ dist/test/
 docs
 .github
 .prettierignore
+CODE-OF-CONDUCT.md
