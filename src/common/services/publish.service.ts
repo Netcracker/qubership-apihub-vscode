@@ -93,7 +93,7 @@ export class PublishService extends Disposable {
             });
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
     }

@@ -1,5 +1,6 @@
 import { expect } from 'chai';
 import { ActivityBar } from 'vscode-extension-tester';
+import { EXTENTSION_NAME } from './test.constants';
 
 describe('Activity Bar Tests', () => {
 	let activityBar: ActivityBar;
@@ -8,7 +9,7 @@ describe('Activity Bar Tests', () => {
 		activityBar = new ActivityBar();
 	});
 
-	it('Shows Qubership APIHUB', async () => {
+	it('Show extension', async () => {
 		const controls = await activityBar.getViewControls();
 		expect(controls).not.empty;
 
@@ -17,13 +18,12 @@ describe('Activity Bar Tests', () => {
 				return control.getTitle();
 			}),
 		);
-		expect(titles.some((title) => title.startsWith('Qubership APIHUB'))).is.true;
+		expect(titles.some((title) => title === EXTENTSION_NAME)).is.true;
 	});
 
-
-	it('Get a view Qubership APIHUB', async () => {
-		const ctrl = await activityBar.getViewControl('Qubership APIHUB');
-		const view = await ctrl?.openView();
+	it('Get a extension view', async () => {
+		const viewControl = await activityBar.getViewControl(EXTENTSION_NAME);
+		const view = await viewControl?.openView();
 		expect(view).is.not.undefined;
 		expect(await view?.isDisplayed()).is.true;
 	});

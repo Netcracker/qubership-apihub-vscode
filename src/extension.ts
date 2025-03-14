@@ -110,4 +110,4 @@ export function activate(context: ExtensionContext): void {
     );
 }
 
-export function deactivate() {}
+export function deactivate(): void {}

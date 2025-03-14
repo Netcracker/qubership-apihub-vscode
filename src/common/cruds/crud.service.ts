@@ -1,6 +1,6 @@
 import { BodyInit } from 'undici-types';
 import { Disposable } from 'vscode';
-import { API_V1, API_V2, API_V3, PACKAGES } from '../constants/common.constants';
+import { API_V1, API_V2, API_V3, PACKAGES, PAT_HEADER } from '../constants/common.constants';
 import {
     PackageId,
     PublishConfig,
@@ -16,7 +16,6 @@ const enum CrudMethod {
     GET = 'GET',
     POST = 'POST'
 }
-const PAT_HEADER = 'X-Personal-Access-Token';
 
 const enum RequestNames {
     GET_VERSIONS,
@@ -39,7 +38,7 @@ export class CrudService extends Disposable {
         super(() => this.dispose());
     }
 
-    public dispose() {
+    public dispose(): void {
         this.abortControllers.forEach((controller) => controller.abort());
     }
 

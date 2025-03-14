@@ -70,7 +70,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         webviewView: WebviewView,
         _context: WebviewViewResolveContext,
         _token: CancellationToken
-    ) {
+    ): Thenable<void> | void {
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -105,7 +105,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
     }
 
-    public dispose() {
+    public dispose(): void {
         super.dispose();
         this.workfolderService.unsubscribe(PUBLISH_WEBVIEW);
         this.configurationFileService.unsubscribe(PUBLISH_WEBVIEW);
