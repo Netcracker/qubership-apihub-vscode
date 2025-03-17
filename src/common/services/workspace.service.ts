@@ -20,6 +20,7 @@ export class WorkspaceService extends Disposable {
             return;
         }
         if(!this._listeners.size){
+            this._activeWorkfolderPath = this.getActiveWorkspace();
             this.subscribeChanges();
         }
         const disposable: Disposable = this.onDidChangeActiveWorkspace(listener, this, this._disposables);
