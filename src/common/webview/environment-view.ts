@@ -55,6 +55,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         });
         this._disposables.push(
             commands.registerCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, () => {
+                webviewView.show();
                 this.updateWebviewRequired(EnvironmentWebviewFields.URL);
                 this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
             })
