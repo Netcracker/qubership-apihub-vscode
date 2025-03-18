@@ -67,14 +67,7 @@ describe('Specification tree view tests', () => {
     describe('Two workspaces content', () => {
         before(async () => {
             await VSBrowser.instance.openResources(WORKSPACE_1, WORKSPACE_2);
-        });
-
-        beforeEach(async () => {
             await getTreeSection();
-        });
-
-        after(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_1);
         });
 
         it('Look at the default workspace items', async () => {
