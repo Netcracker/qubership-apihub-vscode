@@ -9,8 +9,8 @@ import {
     VSBrowser,
     WelcomeContentSection
 } from 'vscode-extension-tester';
-import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
 import { TestTreeItem } from './models/tree.model';
+import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
 import { getTestTreeItems, openFileFromExplorer } from './utils/tree.utils';
 
 const WORKSPACE_1 = path.join('src', 'ui-test', 'resources', 'workspace1');
@@ -61,9 +61,18 @@ describe('Specification tree view tests', () => {
             if (!sideBar) {
                 throw new Error(`Sidebar not found`);
             }
-            treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
-            console.log(treeSection);
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+
+            const driver = sideBar.getDriver();
+            
+            const items = await driver.wait(async () => {
+                if (!sideBar) {
+                    throw new Error(`Sidebar not found`);
+                }
+                treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+                const list = await treeSection.getVisibleItems();
+                return list.length > 0 ? list : [];
+            }, 5000);
+            
             const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
