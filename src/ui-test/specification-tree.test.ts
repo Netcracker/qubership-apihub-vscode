@@ -51,13 +51,16 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async () => {
+            console.log("load worspace 1");
             await VSBrowser.instance.openResources(WORKSPACE_1);
+            console.log("switch to plugin");
             await getTreeSection();
         });
 
         it('Look at the items', async () => {
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+            console.log("try to load items");
             await new Promise((res) => setTimeout(res, 1000));
+            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
             const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
