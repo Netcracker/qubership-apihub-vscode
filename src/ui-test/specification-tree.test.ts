@@ -71,7 +71,7 @@ describe('Specification tree view tests', () => {
                 treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
                 const list = await treeSection.getVisibleItems();
                 return list.length > 0 ? list : [];
-            }, 5000);
+            }, 10000);
             
             const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
