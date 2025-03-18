@@ -7,7 +7,8 @@ import {
     SideBarView,
     ViewControl,
     VSBrowser,
-    WelcomeContentSection
+    WelcomeContentSection,
+    Workbench
 } from 'vscode-extension-tester';
 import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
@@ -63,16 +64,18 @@ describe('Specification tree view tests', () => {
             }
 
             const driver = sideBar.getDriver();
-            
+
             const items = await driver.wait(async () => {
                 if (!sideBar) {
                     throw new Error(`Sidebar not found`);
                 }
                 treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+                const screen = await driver.takeScreenshot();
+                console.log(screen);
                 const list = await treeSection.getVisibleItems();
                 return list.length > 0 ? list : [];
             }, 10000);
-            
+
             const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
@@ -81,6 +84,8 @@ describe('Specification tree view tests', () => {
 
     describe('Two workspaces content', () => {
         before(async () => {
+            await VSBrowser.instance.driver.manage().window().setRect({ height: 600, width: 1200 });
+            const workbench = new Workbench();
             await VSBrowser.instance.openResources(WORKSPACE_1, WORKSPACE_2);
         });
 
