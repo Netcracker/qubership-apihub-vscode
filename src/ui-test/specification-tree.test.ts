@@ -13,8 +13,8 @@ import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
 import { getTestTreeItems, openFileFromExplorer } from './utils/tree.utils';
 
-const WORKSPACE_1 = path.join('src', 'ui-test', 'resources', 'workspace1');
-const WORKSPACE_2 = path.join('src', 'ui-test', 'resources', 'workspace2');
+const WORKSPACE_1 = path.join(path.sep, 'ui-test', 'resources', 'workspace1');
+const WORKSPACE_2 = path.join(path.sep, 'src', 'src', 'ui-test', 'resources', 'workspace2');
 
 const WORKSPACE_1_CONTENT = [
     { checkbox: true, description: '/src/docs/', label: 'pets.yaml' },
@@ -51,28 +51,13 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async function () {
+            await VSBrowser.instance.openResources(WORKSPACE_1);
             const browser = VSBrowser.instance;
-
-            await browser.openResources(WORKSPACE_1);
-
             const driver = browser.driver;
-
-            const explorer = await new ActivityBar().getViewControl('Explorer');
-            const content = await explorer?.openView();
-
-            await driver.wait(async () => {
-                const screen = await driver.takeScreenshot();
-                console.log(screen);
-                const sections = await content?.getContent().getSections();
-                const items = (await sections?.[0].getVisibleItems()) ?? [];
-                return items.length > 0 ? items : false;
-            }, 10000);
             let screen = await driver.takeScreenshot();
             console.log(screen);
 
             await getTreeSection();
-            screen = await driver.takeScreenshot();
-            console.log(screen);
         });
 
         it('Look at the items', async () => {
