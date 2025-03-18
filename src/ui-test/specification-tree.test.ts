@@ -7,8 +7,7 @@ import {
     SideBarView,
     ViewControl,
     VSBrowser,
-    WelcomeContentSection,
-    Workbench
+    WelcomeContentSection
 } from 'vscode-extension-tester';
 import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
@@ -51,31 +50,33 @@ describe('Specification tree view tests', () => {
     });
 
     describe('One workspace content', () => {
-        before(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_1);
+        before(async function () {
+            const browser = VSBrowser.instance;
+
+            await browser.openResources(WORKSPACE_1);
+
+            const driver = browser.driver;
+
+            const explorer = await new ActivityBar().getViewControl('Explorer');
+            const content = await explorer?.openView();
+
+            await driver.wait(async () => {
+                const screen = await driver.takeScreenshot();
+                console.log(screen);
+                const sections = await content?.getContent().getSections();
+                const items = (await sections?.[0].getVisibleItems()) ?? [];
+                return items.length > 0 ? items : false;
+            }, 10000);
+            let screen = await driver.takeScreenshot();
+            console.log(screen);
+
             await getTreeSection();
+            screen = await driver.takeScreenshot();
+            console.log(screen);
         });
 
         it('Look at the items', async () => {
-            viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
-            sideBar = await viewControl?.openView();
-            if (!sideBar) {
-                throw new Error(`Sidebar not found`);
-            }
-
-            const driver = sideBar.getDriver();
-
-            const items = await driver.wait(async () => {
-                if (!sideBar) {
-                    throw new Error(`Sidebar not found`);
-                }
-                treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
-                const screen = await driver.takeScreenshot();
-                console.log(screen);
-                const list = await treeSection.getVisibleItems();
-                return list.length > 0 ? list : [];
-            }, 10000);
-
+            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
             const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
@@ -84,8 +85,6 @@ describe('Specification tree view tests', () => {
 
     describe('Two workspaces content', () => {
         before(async () => {
-            await VSBrowser.instance.driver.manage().window().setRect({ height: 600, width: 1200 });
-            const workbench = new Workbench();
             await VSBrowser.instance.openResources(WORKSPACE_1, WORKSPACE_2);
         });
 
