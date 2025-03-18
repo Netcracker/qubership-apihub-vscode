@@ -51,24 +51,22 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async () => {
-            console.log('load worspace 1');
             await VSBrowser.instance.openResources(WORKSPACE_1);
-            console.log('switch to plugin');
             await getTreeSection();
         });
 
         it('Look at the items', async () => {
-            console.log('try to load items');
-            let items: CustomTreeItem[] = [];
-            try {
-                items = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-                console.log('try to getTestTreeItems');
-                const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
-                console.log('expect');
-                expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
-            } catch (e) {
-                console.log("error:", JSON.stringify(e));
+            viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
+            sideBar = await viewControl?.openView();
+            if (!sideBar) {
+                throw new Error(`Sidebar not found`);
             }
+            treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+            console.log(treeSection);
+            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+
+            expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
         });
     });
 
