@@ -13,7 +13,8 @@ export const openFileFromExplorer = async (fileName: string): Promise<void> => {
 };
 
 export const getCheckboxState = async (item: CustomTreeItem): Promise<boolean> => {
-    const checkbox = await item.findElement(By.className('custom-view-tree-node-item-checkbox'));
+    // const checkbox = await item.findElement(By.className('custom-view-tree-node-item-checkbox'));
+    const checkbox = await item.findElement(By.className('monaco-custom-toggle'));
 
     return (await checkbox.getAttribute('aria-checked')) === 'true';
 };
