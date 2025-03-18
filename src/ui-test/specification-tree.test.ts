@@ -37,7 +37,7 @@ describe('Specification tree view tests', () => {
             throw new Error(`Sidebar not found`);
         }
         treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
-    };    
+    };
 
     before(async () => {
         await getTreeSection();
@@ -57,7 +57,8 @@ describe('Specification tree view tests', () => {
 
         it('Look at the items', async () => {
             const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] =  await getTestTreeItems(items);
+            await new Promise((res) => setTimeout(res, 1000));
+            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
         });
@@ -98,11 +99,11 @@ describe('Specification tree view tests', () => {
             await getTreeSection();
 
             const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] =  await getTestTreeItems(items);
+            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
 
             expect(testTreeItems).to.deep.equal([
                 { checkbox: true, description: '/docs/car/', label: 'cars.yaml' },
-                { checkbox: true, description: '/docs/', label: 'cars.yaml' },
+                { checkbox: true, description: '/docs/', label: 'cars.yaml' }
             ]);
         });
     });
