@@ -1,4 +1,4 @@
-import { WebElement } from "vscode-extension-tester";
+import { WebElement } from 'vscode-extension-tester';
 
 export const findWebElementById = async (items: WebElement[], name: string): Promise<WebElement | undefined> => {
     for await (const item of items) {

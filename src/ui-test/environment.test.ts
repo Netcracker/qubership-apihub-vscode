@@ -9,7 +9,7 @@ import {
     TEST_PAT_TOKEN
 } from './test.constants';
 import { LocalServer } from './utils/localServer';
-import { findWebElementById } from './utils/utils';
+import { findWebElementById } from './utils/webview.utils';
 
 describe('Environment Webview', () => {
     let webview: WebView;

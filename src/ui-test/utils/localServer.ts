@@ -61,14 +61,10 @@ export class LocalServer {
     }
 
     public start(): void {
-        this.server.listen(this.port, () => {
-            console.log(`Local server running`);
-        });
+        this.server.listen(this.port, () => {});
     }
 
     public stop(): void {
-        this.server.close(() => {
-            console.log('Server closed');
-        });
+        this.server.close(() => {});
     }
 }
