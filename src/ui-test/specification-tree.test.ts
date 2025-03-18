@@ -12,7 +12,6 @@ import {
 import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
 import { getTestTreeItems, openFileFromExplorer } from './utils/tree.utils';
-import { closeSaveWorkspaceDialog } from './utils/webview.utils';
 
 const WORKSPACE_1 = path.join('src', 'ui-test', 'resources', 'workspace1');
 const WORKSPACE_2 = path.join('src', 'ui-test', 'resources', 'workspace2');
@@ -99,9 +98,5 @@ describe('Specification tree view tests', () => {
                 { checkbox: true, description: '/docs/', label: 'cars.yaml' }
             ]);
         });
-    });
-
-    after(async () => {
-        await closeSaveWorkspaceDialog();
     });
 });
