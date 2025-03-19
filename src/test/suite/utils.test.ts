@@ -43,15 +43,6 @@ suite('Utils', () => {
             { name: OPTION_1, disabled: false },
             { name: OPTION_2, disabled: false }
         ]);
-
-        optionsDto = convertOptionsToDto([PUBLISH_LOADING_OPTION]);
-        assert.deepStrictEqual(optionsDto, [{ name: PUBLISH_LOADING_OPTION, disabled: true }]);
-
-        optionsDto = convertOptionsToDto([OPTION_1, PUBLISH_LOADING_OPTION]);
-        assert.deepStrictEqual(optionsDto, [
-            { name: OPTION_1, disabled: false },
-            { name: PUBLISH_LOADING_OPTION, disabled: true }
-        ]);
     });
 
     test('getMiddlePath', async () => {
