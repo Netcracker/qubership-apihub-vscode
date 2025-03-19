@@ -10,18 +10,13 @@ import {
     WelcomeContentSection
 } from 'vscode-extension-tester';
 import { TestTreeItem } from './models/tree.model';
-import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
-import { clickCheckbox, getTestTreeItems, openExplorer, openFileFromExplorer } from './utils/tree.utils';
-
-const WORKSPACE_1_NAME = 'workspace1';
-const WORKSPACE_2_NAME = 'workspace2';
-const UNITED_WORKSPACE = 'Untitled (Workspace)';
+import { DOCUMENTS_SECTION, EXTENTSION_NAME } from './constants/test.constants';
+import { clickCheckbox, getTestTreeItems } from './utils/tree.utils';
+import { openFileFromExplorer, openExplorer } from './utils/explorer.utils';
+import { WORKSPACE_1_NAME, PETS_NAME, CARS_NAME, DOCUMENTS_WELCOME_TEXT, UNITED_WORKSPACE, WORKSPACE_2_NAME } from './constants/tree.constants';
 
 const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
-const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', 'workspace2');
-
-const PETS_NAME = 'pets.yaml';
-const CARS_NAME = 'cars.yaml';
+const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NAME);
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },

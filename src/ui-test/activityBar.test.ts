@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ActivityBar } from 'vscode-extension-tester';
-import { EXTENTSION_NAME } from './test.constants';
+import { EXTENTSION_NAME } from './constants/test.constants';
 
 describe('Activity Bar Tests', () => {
 	let activityBar: ActivityBar;

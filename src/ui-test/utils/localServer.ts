@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { API_V1, PAT_HEADER } from '../../common/constants/common.constants';
 import { ServerStatusDto } from '../../common/models/common.model';
-import { LOCAL_SERVER_PORT, TEST_PAT_TOKEN } from '../test.constants';
+import { LOCAL_SERVER_PORT, TEST_PAT_TOKEN } from '../constants/environment.constants';
 
 export class LocalServer {
     private readonly server: http.Server;

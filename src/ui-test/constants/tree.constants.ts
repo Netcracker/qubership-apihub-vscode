@@ -1,0 +1,7 @@
+export const DOCUMENTS_WELCOME_TEXT =  'No documents found for publication. Please read the manual to solve the problem.';
+export const PETS_NAME = 'pets.yaml';
+export const CARS_NAME = 'cars.yaml';
+
+export const WORKSPACE_1_NAME = 'workspace1';
+export const WORKSPACE_2_NAME = 'workspace2';
+export const UNITED_WORKSPACE = 'Untitled (Workspace)';

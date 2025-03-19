@@ -1,6 +1,6 @@
 import { expect } from 'chai';
 import { ActivityBar, SideBarView, ViewControl, ViewSection } from 'vscode-extension-tester';
-import { DOCUMENTS_SECTION, ENVIRONMENT_SECTION, EXTENTSION_NAME, PUBLISH_SECTION } from './test.constants';
+import { DOCUMENTS_SECTION, ENVIRONMENT_SECTION, EXTENTSION_NAME, PUBLISH_SECTION } from './constants/test.constants';
 
 describe('Sidebar Test', () => {
     let sideBar: SideBarView;
