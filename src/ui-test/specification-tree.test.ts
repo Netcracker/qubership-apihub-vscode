@@ -11,18 +11,41 @@ import {
 } from 'vscode-extension-tester';
 import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, DOCUMENTS_WELCOME_TEXT, EXTENTSION_NAME } from './test.constants';
-import { getTestTreeItems, openFileFromExplorer } from './utils/tree.utils';
+import { clickCheckbox, getTestTreeItems, openExplorer, openFileFromExplorer } from './utils/tree.utils';
 
-const WORKSPACE_1 = path.join('src', 'ui-test', 'resources', 'workspace1');
-const WORKSPACE_2 = path.join('src', 'ui-test', 'resources', 'workspace2');
+const WORKSPACE_1_NAME = 'workspace1';
+const WORKSPACE_2_NAME = 'workspace2';
+const UNITED_WORKSPACE = 'Untitled (Workspace)';
 
-const WORKSPACE_1_CONTENT = [
-    { checkbox: true, description: '/src/docs/', label: 'pets.yaml' },
+const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
+const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', 'workspace2');
+
+const PETS_NAME = 'pets.yaml';
+const CARS_NAME = 'cars.yaml';
+
+const WORKSPACE_1_CONTENT: TestTreeItem[] = [
+    { checkbox: true, description: '/src/docs/', label: PETS_NAME },
     { checkbox: true, description: '/src/docs/', label: 'store.yaml' },
     { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGraphql.graphql' },
     { checkbox: true, description: '/src/docs/', label: 'user.yaml' }
+];
+const WORKSPACE_2_CONTENT: TestTreeItem[] = [
+    { checkbox: true, description: '/docs/car/', label: CARS_NAME },
+    { checkbox: true, description: '/docs/', label: CARS_NAME }
+];
+const WORKSPACE_1_CHECKBOX_CONTENT: TestTreeItem[] = [
+    { checkbox: false, description: '/src/docs/', label: PETS_NAME },
+    { checkbox: true, description: '/src/docs/', label: 'store.yaml' },
+    { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' },
+    { checkbox: true, description: '/src/docs/', label: 'testGql.gql' },
+    { checkbox: true, description: '/src/docs/', label: 'testGraphql.graphql' },
+    { checkbox: true, description: '/src/docs/', label: 'user.yaml' }
+];
+const WORKSPACE_2_CHECKBOX_CONTENT: TestTreeItem[] = [
+    { checkbox: false, description: '/docs/car/', label: CARS_NAME },
+    { checkbox: true, description: '/docs/', label: CARS_NAME }
 ];
 
 describe('Specification tree view tests', () => {
@@ -39,6 +62,41 @@ describe('Specification tree view tests', () => {
         treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
     };
 
+    const checkSavedCheckboxContext = async (
+        fileName: string,
+        content: TestTreeItem[],
+        workspaceName: string
+    ): Promise<void> => {
+        await openFileFromExplorer(fileName);
+        await getTreeSection();
+
+        const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+        const item = items.find(async (item) => (await item.getLabel()) === fileName);
+        if (!item) {
+            throw new Error(`${fileName} not found`);
+        }
+        await clickCheckbox(item);
+        let testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+        expect(testTreeItems).to.deep.equal(content);
+
+        // Swith to Explorer
+        const section = await openExplorer();
+        const title = await section.getTitle();
+        expect(title).is.eq(workspaceName);
+
+        // Back to plugin and check checkboxes
+        await getTreeSection();
+        testTreeItems = await getTestTreeItems(items);
+        expect(testTreeItems).to.deep.equal(content);
+    };
+
+    const checkItemCheckboxes = async (content: TestTreeItem[]): Promise<void> => {
+        const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+        const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+
+        expect(testTreeItems).to.deep.equal(content);
+    };
+
     before(async () => {
         await getTreeSection();
     });
@@ -51,52 +109,49 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_1);
+            await VSBrowser.instance.openResources(WORKSPACE_1_PATH);
             await getTreeSection();
         });
 
         it('Look at the items', async () => {
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+            await checkItemCheckboxes(WORKSPACE_1_CONTENT);
+        });
 
-            expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
+        it('Checking the status of checkboxes when leaving the plugin', async () => {
+            await checkSavedCheckboxContext(PETS_NAME, WORKSPACE_1_CHECKBOX_CONTENT, WORKSPACE_1_NAME);
         });
     });
 
     describe('Two workspaces content', () => {
         before(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_1, WORKSPACE_2);
+            await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
             await getTreeSection();
         });
 
         it('Look at the default workspace items', async () => {
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
-
-            expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
+            await checkItemCheckboxes(WORKSPACE_1_CONTENT);
         });
 
         it('Look at the workspace_1 items', async () => {
-            await openFileFromExplorer('pets.yaml');
+            await openFileFromExplorer(PETS_NAME);
             await getTreeSection();
 
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+            await checkItemCheckboxes(WORKSPACE_1_CONTENT);
+        });
 
-            expect(testTreeItems).to.deep.equal(WORKSPACE_1_CONTENT);
+        it('Checking the status of workspace_1 checkboxes when leaving the plugin', async () => {
+            await checkSavedCheckboxContext(PETS_NAME, WORKSPACE_1_CHECKBOX_CONTENT, UNITED_WORKSPACE);
         });
 
         it('Look at the workspace_2 items', async () => {
-            await openFileFromExplorer('cars.yaml');
+            await openFileFromExplorer(CARS_NAME);
             await getTreeSection();
 
-            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            const testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+            await checkItemCheckboxes(WORKSPACE_2_CONTENT);
+        });
 
-            expect(testTreeItems).to.deep.equal([
-                { checkbox: true, description: '/docs/car/', label: 'cars.yaml' },
-                { checkbox: true, description: '/docs/', label: 'cars.yaml' }
-            ]);
+        it('Checking the status of workspace_2 checkboxes when leaving the plugin', async () => {
+            await checkSavedCheckboxContext(CARS_NAME, WORKSPACE_2_CHECKBOX_CONTENT, UNITED_WORKSPACE);
         });
     });
 });
