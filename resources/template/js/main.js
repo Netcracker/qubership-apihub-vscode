@@ -93,8 +93,16 @@ fieldListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, field) => {
         const value = getInput(field).value;
         if (!value?.length) {
             // @ts-ignore
-            previousVersion.selectedIndex = -1;
-            sendFieldValue(fieldName, field);
+            field.selectedIndex = -1;
+            sendFieldValue(fieldName, "");
+            updateRequired(fieldName, "true");
+            return;
+        }
+        const index = field.selectedIndex;
+        const option = getOptions(fieldName)?.[index];
+        if (index === -1 || !option || option.value !== value) {
+            sendFieldValue(fieldName, "");
+            updateRequired(fieldName, "true");
         }
     });
 });
@@ -175,11 +183,19 @@ const updateOptions = (fieldName, options) => {
     });
 };
 
-const sendFieldValue = (fieldName, field) => {
-    if (!fieldName || !field) {
+const getOptions = (fieldName) => {
+    const { field } = fieldMapper.get(fieldName);
+    if (!field) {
         return;
     }
-    const value = field.value?.trim();
+    return field.options;
+};
+
+const sendFieldValue = (fieldName, field) => {
+    if (!fieldName) {
+        return;
+    }
+    const value = field?.value?.trim() ?? "";
     vscode.postMessage({
         command: WebviewMessages.UPDATE_FIELD,
         payload: {
@@ -222,18 +238,19 @@ const updateRequired = (fieldName, value) => {
         field.setAttribute('required', '');
 
         if (field.type === 'select-one') {
-            recreate(fieldName, field);
+            recreateSelect(fieldName, field);
         }
     } else {
         field.removeAttribute('required');
     }
 };
 
-const recreate = (fieldName, field) => {
+const recreateSelect = (fieldName, field) => {
     const clone = field.cloneNode(true);
     const parent = field.parentElement;
     field.remove();
     parent.appendChild(clone);
+    clone.open = false;
     fieldMapper.set(fieldName, { type: FieldTypes.SINGLE_SELECT, field: clone });
     fieldListenersMapper.get(FieldTypes.SINGLE_SELECT)(fieldName, clone);
 };
