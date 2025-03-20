@@ -44,6 +44,7 @@ import { PublishService } from '../services/publish.service';
 import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
+import { SecretStorageService } from '../services/secret-storage.service';
 
 export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
