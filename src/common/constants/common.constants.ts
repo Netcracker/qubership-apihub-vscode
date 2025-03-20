@@ -22,6 +22,4 @@ export const API_V2 = '/api/v2';
 export const API_V3 = '/api/v3';
 export const PACKAGES = 'packages';
 
-export const TOKEN_NAME = "token";
-
 export const MAIN_JS_PATH = 'main.js';

@@ -10,9 +10,6 @@ export enum EnvironmentWebviewFields {
 export enum EnvironmentWebviewMessages {
     TEST_CONNECTION = 'testConnection'
 }
-export interface EnvironmentWebviewTestConnectionDto {
-    token: string;
-    host: string;
-}
+
 export interface EnvironmentWebviewDto
-    extends WebviewMessage<WebviewMessages | EnvironmentWebviewMessages, WebviewPayloadType | EnvironmentWebviewTestConnectionDto> {}
+    extends WebviewMessage<WebviewMessages | EnvironmentWebviewMessages, WebviewPayloadType> {}

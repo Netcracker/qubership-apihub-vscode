@@ -23,4 +23,5 @@ export class CrudError extends Error {
 export interface CrudResponse extends Response {
     code?: string;
     debug?: string;
+    message?: string;
 }

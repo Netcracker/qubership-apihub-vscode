@@ -7,18 +7,17 @@ import { CrudError } from '../models/common.model';
 import {
     EnvironmentWebviewDto,
     EnvironmentWebviewFields,
-    EnvironmentWebviewMessages,
-    EnvironmentWebviewTestConnectionDto
+    EnvironmentWebviewMessages
 } from '../models/enviroment.model';
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
-import { ConfigurationService } from '../services/configuration.service';
 import { WebviewBase } from './webview-base';
+import { SecretStorageService } from '../services/secret-storage.service';
 
 export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
     constructor(
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
-        private readonly configurationService: ConfigurationService
+        private readonly secretStorageService: SecretStorageService
     ) {
         super();
     }
@@ -48,7 +47,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                     break;
                 }
                 case EnvironmentWebviewMessages.TEST_CONNECTION: {
-                    this.testConnection(data.payload as EnvironmentWebviewTestConnectionDto);
+                    this.testConnection();
                     break;
                 }
             }
@@ -62,19 +61,20 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         );
     }
 
-    private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
+    private async testConnection(): Promise<void> {
         this.cleanInvalidFields();
         this.setLoadingTestConnection();
 
-        const { host, token } = data;
+        const host = await this.secretStorageService.getHost();
+        const token = await this.secretStorageService.getToken();
         try {
             await this.crudService.getSystemInfo(host, token);
             this.setSuccessfulTestConnection();
         } catch (e) {
             this.setFailureTestConnection();
             const error = e as CrudError;
-            switch (error.code) {
-                case '401': {
+            switch (error.status) {
+                case 401: {
                     this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
                     break;
                 }
@@ -86,19 +86,17 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         }
     }
 
-    private updateField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
+    private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
-                const host = payload.value as string;
-                const fixedHost = host ? host?.trim().replace(/\/$/, '') : '';
-                this.configurationService.hostUrl = fixedHost;
-
-                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !fixedHost?.length);
+                const host = (payload.value as string)?.trim();
+                const isValid = await this.secretStorageService.setHost(host);
+                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {
                 const token = (payload.value as string)?.trim();
-                this.configurationService.storeToken(token ?? '');
+                this.secretStorageService.setToken(token ?? '');
 
                 this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, !token?.length);
                 break;
@@ -120,13 +118,13 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         }
     }
 
-    private requestHost(): void {
-        const host: string = this.configurationService.hostUrl ?? '';
+    private async requestHost(): Promise<void> {
+        const host: string = await this.secretStorageService.getHost();
         this.updateWebviewField(EnvironmentWebviewFields.URL, host);
     }
 
     private async requestToken(): Promise<void> {
-        const token: string = (await this.configurationService.getToken()) ?? '';
+        const token: string = (await this.secretStorageService.getToken()) ?? '';
         this.updateWebviewField(EnvironmentWebviewFields.TOKEN, token);
     }
 

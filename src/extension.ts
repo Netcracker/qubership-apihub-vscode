@@ -22,20 +22,20 @@ import { CrudService } from './common/cruds/crud.service';
 import { WorkfolderPath } from './common/models/common.model';
 import { SpecificationItem } from './common/models/specification-item';
 import { ConfigurationFileService } from './common/services/configuration-file.service';
-import { ConfigurationService } from './common/services/configuration.service';
 import { ItemCheckboxService } from './common/services/Item-checkbox.service';
 import { PublishService } from './common/services/publish.service';
 import { WorkspaceService } from './common/services/workspace.service';
 import { EnvironmentViewProvider } from './common/webview/environment-view';
 import { PublishViewProvider } from './common/webview/publish-view';
 import { SpecificationFileTreeProvider } from './specification-tree/specification-tree-provider';
+import { SecretStorageService } from './common/services/secret-storage.service';
 
 export function activate(context: ExtensionContext): void {
     const workspaceFolders: WorkfolderPath[] = workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [];
     const workspaceFolderService = new WorkspaceService(workspaceFolders);
     context.subscriptions.push(workspaceFolderService);
     const itemCheckboxService = new ItemCheckboxService();
-    const configurationService = new ConfigurationService(context);
+    const secretStorageService = new SecretStorageService(context);
     const configurationFileService = new ConfigurationFileService(workspaceFolders);
     context.subscriptions.push(configurationFileService);
 
@@ -90,21 +90,21 @@ export function activate(context: ExtensionContext): void {
     const crudService: CrudService = new CrudService();
     context.subscriptions.push(crudService);
 
-    const publishService = new PublishService(fileTreeProvider, configurationService, configurationFileService);
+    const publishService = new PublishService(fileTreeProvider, secretStorageService, configurationFileService);
     context.subscriptions.push(publishService);
 
     const publishViewProvider = new PublishViewProvider(
         context,
         crudService,
         workspaceFolders,
-        configurationService,
+        secretStorageService,
         configurationFileService,
         workspaceFolderService,
         publishService
     );
     context.subscriptions.push(window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishViewProvider));
 
-    const environmentViewProvider = new EnvironmentViewProvider(context, crudService, configurationService);
+    const environmentViewProvider = new EnvironmentViewProvider(context, crudService, secretStorageService);
     context.subscriptions.push(
         window.registerWebviewViewProvider(EXTENSION_ENVIRONMENT_VIEW_NAME, environmentViewProvider)
     );

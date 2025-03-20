@@ -132,14 +132,15 @@ export class CrudService extends Disposable {
                 },
                 ...(method === CrudMethod.POST && { body }),
                 signal: controller.signal
-            })) as CrudResponse;
+            }));
 
             if (!response.ok) {
+                const body = await response.json() as CrudResponse;
                 throw new CrudError(
-                    response.statusText,
-                    response?.code || response?.status?.toString() || '',
-                    response?.debug ?? '',
-                    response.status
+                    body?.message || response?.statusText,
+                    body?.code ?? '',
+                    body?.debug ?? '',
+                    body?.status || response?.status
                 );
             }
 

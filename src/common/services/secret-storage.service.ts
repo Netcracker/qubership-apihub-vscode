@@ -1,18 +1,71 @@
-import { ExtensionContext } from 'vscode';
-import { TOKEN_NAME } from '../constants/common.constants';
+import { Event, EventEmitter, ExtensionContext, SecretStorage } from 'vscode';
+import { debounce } from '../../utils/files.utils';
+import { EXTENSION_NAME } from '../constants/common.constants';
 
+interface SecretStorageData {
+    host: string;
+    token: string;
+}
+const SECRET_STORAGE_KEY = `${EXTENSION_NAME}.secret`;
 export class SecretStorageService {
-    constructor(private readonly context: ExtensionContext) {}
+    private readonly _secretStorage: SecretStorage;
+    private readonly _onDidChangeConfiguration: EventEmitter<void> = new EventEmitter();
+    private readonly fireDebounced = debounce(() => this.fire());
+    public readonly onDidChangeConfiguration: Event<void> = this._onDidChangeConfiguration.event;
 
-    public async storeToken(value: string): Promise<void> {
-        await this.context.secrets.store(TOKEN_NAME, value);
+    constructor(private readonly context: ExtensionContext) {
+        this._secretStorage = this.context.secrets;
+    }
+    public async getHost(): Promise<string> {
+        const secretData = await this.getSecretData();
+        return secretData?.host ?? '';
+    }
+
+    public async setHost(value: string): Promise<boolean> {
+        const secretData = await this.getSecretData();
+
+        let isValid = true;
+        try {
+            secretData.host = new URL(value).origin;
+        } catch {
+            secretData.host = '';
+            isValid = false;
+        }
+        await this.saveSecretData(secretData);
+        this.fireDebounced();
+        
+        return isValid;
     }
 
     public async getToken(): Promise<string> {
-        return await this.context.secrets.get(TOKEN_NAME) ?? "";
+        const secretData = await this.getSecretData();
+        return secretData?.token ?? '';
     }
 
-    public async deleteToken(): Promise<void> {
-       return this.context.secrets.delete(TOKEN_NAME);
+    public async setToken(value: string): Promise<void> {
+        const secretData = await this.getSecretData();
+        secretData.token = value;
+        await this.saveSecretData(secretData);
+        this.fireDebounced();
+    }
+
+    private fire(): void {
+        this._onDidChangeConfiguration.fire();
+    }
+
+    private async getSecretData(): Promise<SecretStorageData> {
+        const storedValue = await this._secretStorage.get(SECRET_STORAGE_KEY);
+        let secretStorageData: SecretStorageData = { host: '', token: '' };
+        if (!storedValue) {
+            return secretStorageData;
+        }
+        try {
+            secretStorageData = JSON.parse(storedValue);
+        } catch {}
+        return secretStorageData;
+    }
+
+    private async saveSecretData(data: SecretStorageData): Promise<void> {
+        await this._secretStorage.store(SECRET_STORAGE_KEY, JSON.stringify(data));
     }
 }

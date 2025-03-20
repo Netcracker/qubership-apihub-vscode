@@ -32,7 +32,7 @@ import {
 } from '../models/publish.model';
 import { SpecificationItem } from '../models/specification-item';
 import { ConfigurationFileService } from './configuration-file.service';
-import { ConfigurationService } from './configuration.service';
+import { SecretStorageService } from './secret-storage.service';
 
 export class PublishService extends Disposable {
     private readonly _crudService: CrudService;
@@ -44,7 +44,7 @@ export class PublishService extends Disposable {
 
     constructor(
         private readonly fileTreeProvider: SpecificationFileTreeProvider,
-        private readonly configurationService: ConfigurationService,
+        private readonly secretStorageService: SecretStorageService,
         private readonly configurationFileService: ConfigurationFileService
     ) {
         super(() => this.dispose());
@@ -64,8 +64,8 @@ export class PublishService extends Disposable {
         this._statusBarItem.show();
 
         const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
-        const host = this.configurationService.hostUrl;
-        const token = await this.configurationService.getToken();
+        const host = await this.secretStorageService.getHost();
+        const token = await this.secretStorageService.getToken();
         this.validateAndPulbish(host, token, values, data)
             .then(() => {
                 const { packageId, version } = data;

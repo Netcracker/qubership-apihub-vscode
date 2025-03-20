@@ -39,10 +39,10 @@ import {
 } from '../models/publish.model';
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
-import { ConfigurationService } from '../services/configuration.service';
 import { PublishService } from '../services/publish.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
+import { SecretStorageService } from '../services/secret-storage.service';
 
 export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
@@ -57,7 +57,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
         private readonly workfolderPaths: WorkfolderPath[],
-        private readonly configurationService: ConfigurationService,
+        private readonly secretStorageService: SecretStorageService,
         private readonly configurationFileService: ConfigurationFileService,
         private readonly workfolderService: WorkspaceService,
         private readonly publishService: PublishService
@@ -146,7 +146,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 this.configurationFileService.getConfigurationFile(workfolderPath);
             this.restoreConfigPackageId(workfolderPath, configFile);
         });
-        this.configurationService.onDidChangeConfiguration(
+        this.secretStorageService.onDidChangeConfiguration(
             () => {
                 this.disableDependentFields();
                 const activeWorkfolderPath = this.workfolderService.activeWorkfolderPath;
@@ -282,8 +282,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
             return;
         }
-        const host: string = this.configurationService.hostUrl ?? '';
-        const token: string = (await this.configurationService.getToken()) ?? '';
+        const host: string = await this.secretStorageService.getHost();
+        const token: string = await this.secretStorageService.getToken();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -309,8 +309,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId) {
             return;
         }
-        const host: string = this.configurationService.hostUrl ?? '';
-        const token: string = (await this.configurationService.getToken()) ?? '';
+        const host: string = await this.secretStorageService.getHost();
+        const token: string = await this.secretStorageService.getToken();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -358,8 +358,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId || labels.size) {
             return;
         }
-        const host: string = this.configurationService.hostUrl ?? '';
-        const token: string = (await this.configurationService.getToken()) ?? '';
+        const host: string = await this.secretStorageService.getHost();
+        const token: string = await this.secretStorageService.getToken();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -448,7 +448,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 <vscode-form-group variant="vertical">
                     <p>
                         <vscode-label for="${PublishFields.PACKAGE_ID}" required>Package Id:</vscode-label>
-                        <vscode-textfield id="${PublishFields.PACKAGE_ID}" pattern="{1,}"/>
+                        <vscode-textfield id="${PublishFields.PACKAGE_ID}" pattern=".{1,}"/>
                     </p>
                     <p>
                         <vscode-label for="${PublishFields.VERSION}" required>Version:</vscode-label>
