@@ -125,22 +125,22 @@ export class CrudService extends Disposable {
         this.deleteController(requestName);
         this.addController(requestName, controller);
         try {
-            const response = (await fetch(url, {
+            const response = await fetch(url, {
                 method,
                 headers: {
                     [PAT_HEADER]: authorization
                 },
                 ...(method === CrudMethod.POST && { body }),
                 signal: controller.signal
-            }));
+            });
 
             if (!response.ok) {
-                const body = await response.json() as CrudResponse;
+                const errorData = await this.getErrorData(response);
                 throw new CrudError(
-                    body?.message || response?.statusText,
-                    body?.code ?? '',
-                    body?.debug ?? '',
-                    body?.status || response?.status
+                    errorData?.message || response?.statusText,
+                    errorData?.code ?? '',
+                    errorData?.debug ?? '',
+                    errorData?.status || response?.status
                 );
             }
 
@@ -166,5 +166,12 @@ export class CrudService extends Disposable {
     private deleteController(requestName: RequestNames): void {
         this.abortControllers.get(requestName)?.abort();
         this.abortControllers.delete(requestName);
+    }
+
+    private async getErrorData(response: Response): Promise<CrudResponse> {
+        try {
+            return (await response.json()) as CrudResponse;
+        } catch {}
+        return {};
     }
 }

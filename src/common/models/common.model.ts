@@ -20,8 +20,9 @@ export class CrudError extends Error {
         super(message);
     }
 }
-export interface CrudResponse extends Response {
+export interface CrudResponse {
     code?: string;
     debug?: string;
     message?: string;
+    status?: number;
 }
