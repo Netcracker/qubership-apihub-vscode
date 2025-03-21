@@ -74,7 +74,7 @@ describe('Environment Webview', () => {
         expect(type).is.eq('text');
     });
 
-    describe('Test connection', () => {
+    describe('Test connection', async () => {
         let localServer: LocalServer;
 
         before(async function () {
@@ -86,7 +86,7 @@ describe('Environment Webview', () => {
             localServer.stop();
         });
 
-        it('Check loading icon after click test', async () => {
+        it('Check loading icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
             await testConnectionButton?.click();
@@ -98,12 +98,12 @@ describe('Environment Webview', () => {
             expect(testConnectionIconType).eq('loading');
         });
 
-        it('Check successful icon after click test', async () => {
+        it('Check successful icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 100));
+            await new Promise((res) => setTimeout(res, 500));
 
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
@@ -112,12 +112,12 @@ describe('Environment Webview', () => {
             expect(testConnectionIconType).eq('check');
         });
 
-        it('Check faild icon after click test', async () => {
+        it('Check faild icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_BROKEN_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 100));
+            await new Promise((res) => setTimeout(res, 500));
 
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
@@ -126,12 +126,12 @@ describe('Environment Webview', () => {
             expect(testConnectionIconType).eq('close');
         });
 
-        it('Check url field error after click test', async () => {
+        it('Check url field error after click test', async function () {
             await urlField?.sendKeys('broken_url');
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 100));
+            await new Promise((res) => setTimeout(res, 500));
 
             const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
             const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');
@@ -140,12 +140,12 @@ describe('Environment Webview', () => {
             expect(isTokenFieldInvalid).eq('false');
         });
 
-        it('Check Token field error after click test', async () => {
+        it('Check Token field error after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_BROKEN_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 300));
+            await new Promise((res) => setTimeout(res, 500));
 
             const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
             const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');

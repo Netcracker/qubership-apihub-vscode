@@ -1,4 +1,13 @@
-import { ModalDialog, VSBrowser, WebElement } from 'vscode-extension-tester';
+import {
+    By,
+    ModalDialog,
+    SideBarView,
+    until,
+    ViewSection,
+    VSBrowser,
+    WebElement,
+    WebView
+} from 'vscode-extension-tester';
 
 export const findWebElementById = async (items: WebElement[], name: string): Promise<WebElement | undefined> => {
     for await (const item of items) {
@@ -30,4 +39,29 @@ export const closeSaveWorkspaceDialog = async (): Promise<void> => {
             return false;
         }
     }, 5000);
+};
+
+export const getWebView = async (sideBar: SideBarView, sectionName: string): Promise<WebView> => {
+    const sections = await sideBar.getContent().getSections();
+    for (const section of sections) {
+        const title = await section.getTitle();
+        if (title !== sectionName) {
+            try {
+                await section.collapse();
+            } catch {}
+        }
+    }
+    const section = await sideBar.getContent().getSection(sectionName);
+    const webviewElem = await section.getDriver().wait(until.elementLocated(By.css('iframe')), 1000);
+    return new WebView(webviewElem);
+};
+
+export const expandAll = async (sections: ViewSection[]): Promise<void> => {
+    for (const section of sections) {
+        try {
+            await section.expand();
+
+           console.log();
+        } catch {}
+    }
 };
