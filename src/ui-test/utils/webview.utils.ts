@@ -61,7 +61,18 @@ export const expandAll = async (sections: ViewSection[]): Promise<void> => {
         try {
             await section.expand();
 
-           console.log();
+            console.log();
         } catch {}
     }
 };
+
+export class Until {
+    static getAttribute = async (
+        field: WebElement | undefined,
+        attribute: string,
+        value: string
+    ): Promise<string | null> => {
+        const attributeValue = await field?.getAttribute(attribute);
+        return attributeValue === value ? attributeValue : null;
+    };
+}

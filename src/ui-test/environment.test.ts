@@ -1,18 +1,10 @@
 import { expect } from 'chai';
-import {
-    ActivityBar,
-    By,
-    SideBarView,
-    ViewControl,
-    WebElement,
-    WebView,
-    until
-} from 'vscode-extension-tester';
+import { ActivityBar, By, SideBarView, until, ViewControl, WebElement, WebView } from 'vscode-extension-tester';
 import { EnvironmentWebviewFields } from '../common/models/enviroment.model';
-import { ENVIRONMENT_SECTION, EXTENTSION_NAME } from './constants/test.constants';
 import { LOCAL_SERVER_FULL_URL, TEST_BROKEN_PAT_TOKEN, TEST_PAT_TOKEN } from './constants/environment.constants';
+import { ENVIRONMENT_SECTION, EXTENTSION_NAME } from './constants/test.constants';
 import { LocalServer } from './utils/localServer';
-import { findWebElementById } from './utils/webview.utils';
+import { findWebElementById, Until } from './utils/webview.utils';
 
 describe('Environment Webview', () => {
     let webview: WebView;
@@ -133,7 +125,9 @@ describe('Environment Webview', () => {
 
             await new Promise((res) => setTimeout(res, 500));
 
-            const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
+            const isUrlFieldInvalid = await urlField
+                ?.getDriver()
+                .wait(async () => Until.getAttribute(urlField, 'invalid', 'true'), 2000);
             const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');
 
             expect(isUrlFieldInvalid).eq('true');
@@ -147,8 +141,10 @@ describe('Environment Webview', () => {
 
             await new Promise((res) => setTimeout(res, 500));
 
+            const isTokenFieldInvalid = await tokenField
+                ?.getDriver()
+                .wait(async () => Until.getAttribute(tokenField, 'invalid', 'true'), 1000);
             const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
-            const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');
 
             expect(isUrlFieldInvalid).eq('false');
             expect(isTokenFieldInvalid).eq('true');
