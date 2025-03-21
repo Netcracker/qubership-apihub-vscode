@@ -34,15 +34,6 @@
         "category": "File"
       }
     ],
-    "configuration": {
-      "title": "Publish APIHUB Settings",
-      "properties": {
-        "APIHUB.portalURL": {
-          "type": "string",
-          "description": "URL to APIHUB Portal where the files will be published"
-        }
-      }
-    },
     "viewsContainers": {
       "activitybar": [
         {
