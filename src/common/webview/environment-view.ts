@@ -1,6 +1,6 @@
 import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, WebviewViewResolveContext } from 'vscode';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
-import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, MAIN_JS_PATH } from '../constants/common.constants';
+import { ABORTED_ERROR_CODE, EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, MAIN_JS_PATH } from '../constants/common.constants';
 import { ENVIRONMENT_JS_PATH } from '../constants/enviroment.constants';
 import { CrudService } from '../cruds/crud.service';
 import { CrudError } from '../models/common.model';
@@ -70,10 +70,13 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         try {
             await this.crudService.getSystemInfo(host, token);
             this.setSuccessfulTestConnection();
-        } catch (e) {
+        } catch (error) {
             this.setFailureTestConnection();
-            const error = e as CrudError;
-            switch (error.status) {
+            const crudError = error as CrudError;
+            switch (crudError.status) {
+                case ABORTED_ERROR_CODE: {
+                    break;
+                }
                 case 401: {
                     this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
                     break;

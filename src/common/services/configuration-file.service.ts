@@ -114,7 +114,7 @@ export class ConfigurationFileService extends Disposable {
         const configFilePath = path.join(workfolderPath, CONFIG_FILE_NAME);
         try {
             fs.writeFileSync(configFilePath, YAML.stringify(configFile), 'utf8');
-        } catch (e) {
+        } catch {
             window.showErrorMessage(CONFIGURATION_UNABLE_TO_CREATE_ERROR_MESSAGE);
         }
     }
@@ -135,7 +135,7 @@ export class ConfigurationFileService extends Disposable {
         }
         try {
             configFileString = fs.readFileSync(configFilePath, 'utf8');
-        } catch (e) {
+        } catch {
             window.showErrorMessage(CONFIGURATION_FILE_UNABLE_TO_READ_ERROR_MESSAGE);
             return false;
         }
@@ -148,7 +148,7 @@ export class ConfigurationFileService extends Disposable {
         let configurationFile: ConfigurationFile;
         try {
             configurationFile = YAML.parse(configFileString);
-        } catch (e) {
+        } catch {
             window.showErrorMessage(CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE);
             return false;
         }

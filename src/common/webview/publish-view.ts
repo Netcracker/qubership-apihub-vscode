@@ -12,6 +12,7 @@ import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../
 import { capitalize } from '../../utils/path.utils';
 import { convertOptionsToDto } from '../../utils/publish.utils';
 import {
+    ABORTED_ERROR_CODE,
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
     EXTENSION_PUBLISH_VIEW_NAME,
     MAIN_JS_PATH
@@ -25,7 +26,7 @@ import {
     PUBLISH_WEBVIEW
 } from '../constants/publish.constants';
 import { CrudService } from '../cruds/crud.service';
-import { WorkfolderPath } from '../models/common.model';
+import { CrudError, WorkfolderPath } from '../models/common.model';
 import { ConfigurationFileLike } from '../models/configuration.model';
 import {
     PackageId,
@@ -40,9 +41,9 @@ import {
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
 import { PublishService } from '../services/publish.service';
+import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
-import { SecretStorageService } from '../services/secret-storage.service';
 
 export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly _publishViewData: Map<WorkfolderPath, PublishViewData> = new Map();
@@ -300,7 +301,15 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.disableDependentFields(false);
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
         } catch (error) {
-            this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
+            const crudError = error as CrudError;
+            switch (crudError.status) {
+                case ABORTED_ERROR_CODE: {
+                    break;
+                }
+                default: {
+                    this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
+                }
+            }
         }
     }
 
@@ -319,7 +328,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         try {
             const versions = await this.crudService.getVersions(host, token, packageId);
             options.push(...versions.versions.map((ver) => splitVersion(ver.version).version));
-        } catch (error) {}
+        } catch {}
 
         this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options));
     }
@@ -371,7 +380,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 .flat()
                 .forEach((version) => labels.add(version));
             this.updateWebviewLabels(labels);
-        } catch (error) {}
+        } catch {}
     }
 
     private publish(): void {

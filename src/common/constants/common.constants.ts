@@ -23,3 +23,4 @@ export const API_V3 = '/api/v3';
 export const PACKAGES = 'packages';
 
 export const MAIN_JS_PATH = 'main.js';
+export const ABORTED_ERROR_CODE = 20;
