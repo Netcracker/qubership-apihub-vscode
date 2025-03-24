@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { API_V1, PAT_HEADER } from '../../common/constants/common.constants';
 import { ServerStatusDto } from '../../common/models/common.model';
-import { LOCAL_SERVER_PORT, TEST_PAT_TOKEN } from '../constants/environment.constants';
+import { LOCAL_SERVER_PORT, TEST_LOADING_PAT_TOKEN, TEST_PAT_TOKEN } from '../constants/environment.constants';
 
 export class LocalServer {
     private readonly server: http.Server;
@@ -26,10 +26,14 @@ export class LocalServer {
                 this.sendResponseWithDelay(res, 404, 'Not Found');
                 return;
             }
-
+            const token = req.headers[PAT_HEADER.toLocaleLowerCase()];
             if (req.headers[PAT_HEADER.toLocaleLowerCase()] !== TEST_PAT_TOKEN) {
                 this.sendResponseWithDelay(res, 401, 'Not Found');
                 return;
+            }
+            let delay = 500;
+            if (req.headers[PAT_HEADER.toLocaleLowerCase()] !== TEST_LOADING_PAT_TOKEN) {
+                delay = 1000;
             }
             this.sendResponseWithDelay(
                 res,
@@ -39,7 +43,8 @@ export class LocalServer {
                     externalLinks: [],
                     frontendVersion: '',
                     productionMode: false
-                } as ServerStatusDto)
+                } as ServerStatusDto),
+                delay
             );
         });
     }
@@ -53,11 +58,16 @@ export class LocalServer {
         }
     }
 
-    private sendResponseWithDelay(res: http.ServerResponse, statusCode: number, body: any): void {
+    private sendResponseWithDelay(
+        res: http.ServerResponse,
+        statusCode: number,
+        body: any,
+        timeout: number = 500
+    ): void {
         setTimeout(() => {
             res.writeHead(statusCode, { 'Content-Type': 'application/json' });
             res.end(body);
-        }, 500);
+        }, timeout);
     }
 
     public start(): void {
