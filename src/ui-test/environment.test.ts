@@ -83,12 +83,12 @@ describe('Environment Webview', () => {
 
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
+            await testConnectionButton?.click();
+            
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'loading'), 5000);
                 
-            await testConnectionButton?.click();
-
             expect(testConnectionIconType).eq('loading');
 
             await testConnectionIcon
