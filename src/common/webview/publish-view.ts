@@ -70,7 +70,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         webviewView: WebviewView,
         _context: WebviewViewResolveContext,
         _token: CancellationToken
-    ) {
+    ): Thenable<void> | void {
         this._view = webviewView;
 
         webviewView.webview.options = {
@@ -105,7 +105,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
     }
 
-    public dispose() {
+    public dispose(): void {
         super.dispose();
         this.workfolderService.unsubscribe(PUBLISH_WEBVIEW);
         this.configurationFileService.unsubscribe(PUBLISH_WEBVIEW);
@@ -289,28 +289,30 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        try {
-            const packageIdData: PublishViewPackageIdData = await this.crudService.getPackageId(host, token, packageId);
 
-            publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
+        await this.crudService
+            .getPackageId(host, token, packageId)
+            .then((packageIdData: PublishViewPackageIdData) => {
+                publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
 
-            if (publishData.status === VersionStatus.RELEASE) {
-                this.updateWebviewPattern(PublishFields.VERSION, publishData.releaseVersionPattern);
-            }
-
-            this.disableDependentFields(false);
-            this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
-        } catch (error) {
-            const crudError = error as CrudError;
-            switch (crudError.status) {
-                case ABORTED_ERROR_CODE: {
-                    break;
+                if (publishData.status === VersionStatus.RELEASE) {
+                    this.updateWebviewPattern(PublishFields.VERSION, publishData.releaseVersionPattern);
                 }
-                default: {
-                    this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
+
+                this.disableDependentFields(false);
+                this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
+            })
+            .catch((error) => {
+                const crudError = error as CrudError;
+                switch (crudError.status) {
+                    case ABORTED_ERROR_CODE: {
+                        break;
+                    }
+                    default: {
+                        this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
+                    }
                 }
-            }
-        }
+            });
     }
 
     private async loadPreviousVersions(): Promise<void> {
@@ -325,10 +327,11 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             return;
         }
         const options = [PUBLISH_NO_PREVIOUS_VERSION];
-        try {
-            const versions = await this.crudService.getVersions(host, token, packageId);
-            options.push(...versions.versions.map((ver) => splitVersion(ver.version).version));
-        } catch {}
+
+        await this.crudService
+            .getVersions(host, token, packageId)
+            .then((versions) => options.push(...versions.versions.map((ver) => splitVersion(ver.version).version)))
+            .catch();
 
         this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options));
     }
@@ -373,14 +376,16 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        try {
-            const versions = await this.crudService.getLabels(host, token, packageId, version);
-            versions.versions
-                .map((version) => version.versionLabels)
-                .flat()
-                .forEach((version) => labels.add(version));
-            this.updateWebviewLabels(labels);
-        } catch {}
+        await this.crudService
+            .getLabels(host, token, packageId, version)
+            .then((versions) => {
+                versions.versions
+                    .map((version) => version.versionLabels)
+                    .flat()
+                    .forEach((version) => labels.add(version));
+                this.updateWebviewLabels(labels);
+            })
+            .catch();
     }
 
     private publish(): void {

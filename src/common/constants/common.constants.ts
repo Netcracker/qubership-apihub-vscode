@@ -24,3 +24,5 @@ export const PACKAGES = 'packages';
 
 export const MAIN_JS_PATH = 'main.js';
 export const ABORTED_ERROR_CODE = 20;
+
+export const PAT_HEADER = 'X-Personal-Access-Token';
