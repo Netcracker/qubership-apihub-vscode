@@ -1,7 +1,7 @@
 import * as http from 'http';
 import { API_V1, PAT_HEADER } from '../../common/constants/common.constants';
 import { ServerStatusDto } from '../../common/models/common.model';
-import { LOCAL_SERVER_PORT, TEST_LOADING_PAT_TOKEN, TEST_PAT_TOKEN } from '../constants/environment.constants';
+import { LOCAL_SERVER_PORT, TEST_PAT_TOKEN } from '../constants/environment.constants';
 
 export class LocalServer {
     private readonly server: http.Server;
@@ -31,10 +31,6 @@ export class LocalServer {
                 this.sendResponseWithDelay(res, 401, 'Not Found');
                 return;
             }
-            let delay = 500;
-            if (req.headers[PAT_HEADER.toLocaleLowerCase()] !== TEST_LOADING_PAT_TOKEN) {
-                delay = 1000;
-            }
             this.sendResponseWithDelay(
                 res,
                 200,
@@ -43,8 +39,7 @@ export class LocalServer {
                     externalLinks: [],
                     frontendVersion: '',
                     productionMode: false
-                } as ServerStatusDto),
-                delay
+                } as ServerStatusDto)
             );
         });
     }
