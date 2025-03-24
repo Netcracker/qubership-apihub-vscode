@@ -17,7 +17,7 @@ const enum CrudMethod {
     POST = 'POST'
 }
 
-const enum RequestNames {
+export const enum RequestNames {
     GET_VERSIONS,
     GET_PACKAGE_ID,
     GET_LABELS,
@@ -36,6 +36,12 @@ export class CrudService extends Disposable {
 
     constructor() {
         super(() => this.dispose());
+    }
+
+    public abort(requestName: RequestNames): void {
+        if (this.abortControllers.has(requestName)) {
+            this.abortControllers.get(requestName)?.abort();
+        }
     }
 
     public dispose(): void {
@@ -120,51 +126,43 @@ export class CrudService extends Disposable {
         authorization: string,
         body?: BodyInit | undefined
     ): Promise<T> {
+        this.abort(requestName);
         const controller = new AbortController();
-        this.deleteController(requestName);
-        this.addController(requestName, controller);
-        try {
-            const response = await fetch(url, {
-                method,
-                headers: {
-                    [PAT_HEADER]: authorization
-                },
-                ...(method === CrudMethod.POST && { body }),
-                signal: controller.signal
+        this.abortControllers.set(requestName, controller);
+
+        const promise = fetch(url, {
+            method,
+            headers: {
+                [PAT_HEADER]: authorization
+            },
+            ...(method === CrudMethod.POST && { body }),
+            signal: controller.signal
+        })
+            .then(async (response) => {
+                if (!response.ok) {
+                    const errorData = await this.getErrorData(response);
+                    throw new CrudError(
+                        errorData?.message || response?.statusText,
+                        errorData?.code ?? '',
+                        errorData?.debug ?? '',
+                        errorData?.status || response?.status
+                    );
+                }
+
+                return (await response.json()) as T;
+            })
+            .catch((error) => {
+                if (error instanceof CrudError) {
+                    throw error;
+                }
+                const defaultError = error as DefaultError;
+                throw new CrudError(defaultError.message, '', defaultError.stack, defaultError?.code);
+            })
+            .finally(() => {
+                this.abortControllers.delete(requestName);
             });
 
-            if (!response.ok) {
-                const errorData = await this.getErrorData(response);
-                throw new CrudError(
-                    errorData?.message || response?.statusText,
-                    errorData?.code ?? '',
-                    errorData?.debug ?? '',
-                    errorData?.status || response?.status
-                );
-            }
-
-            return (await response.json()) as T;
-        } catch (error) {
-            if (error instanceof CrudError) {
-                throw error;
-            }
-            const defaultError = error as DefaultError;
-            throw new CrudError(
-                defaultError.message,
-                defaultError?.code || defaultError.cause?.code || '',
-                defaultError.stack
-            );
-        } finally {
-            this.deleteController(requestName);
-        }
-    }
-
-    private addController(requestName: RequestNames, controller: AbortController): void {
-        this.abortControllers.set(requestName, controller);
-    }
-    private deleteController(requestName: RequestNames): void {
-        this.abortControllers.get(requestName)?.abort();
-        this.abortControllers.delete(requestName);
+        return promise;
     }
 
     private async getErrorData(response: Response): Promise<CrudResponse> {

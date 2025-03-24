@@ -12,7 +12,7 @@ export interface DefaultError {
     message: string;
     stack: string;
     cause?: { code: string };
-    code?: string;
+    code?: number;
 }
 
 export class CrudError extends Error {

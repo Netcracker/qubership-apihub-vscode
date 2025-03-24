@@ -75,4 +75,12 @@ export class Until {
         const attributeValue = await field?.getAttribute(attribute);
         return attributeValue === value ? attributeValue : null;
     };
+
+    static isNotAttribute = async (
+        field: WebElement | undefined,
+        attribute: string
+    ): Promise<boolean> => {
+        const attributeValue = await field?.getAttribute(attribute);
+        return !attributeValue;
+    };
 }

@@ -57,7 +57,7 @@ export class LocalServer {
         setTimeout(() => {
             res.writeHead(statusCode, { 'Content-Type': 'application/json' });
             res.end(body);
-        }, 100);
+        }, 500);
     }
 
     public start(): void {

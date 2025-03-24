@@ -13,40 +13,55 @@ export class SecretStorageService {
     private readonly fireDebounced = debounce(() => this.fire());
     public readonly onDidChangeConfiguration: Event<void> = this._onDidChangeConfiguration.event;
 
+    public savePromise: Promise<void> = Promise.resolve();
+
     constructor(private readonly context: ExtensionContext) {
         this._secretStorage = this.context.secrets;
     }
     public async getHost(): Promise<string> {
+        await this.savePromise;
         const secretData = await this.getSecretData();
         return secretData?.host ?? '';
     }
 
-    public async setHost(value: string): Promise<boolean> {
-        const secretData = await this.getSecretData();
-
+    public setHost(value: string): boolean {
+        let normalizedUrl = '';
         let isValid = true;
         try {
-            secretData.host = new URL(value).origin;
+            normalizedUrl = new URL(value).origin;
         } catch {
-            secretData.host = '';
             isValid = false;
         }
-        await this.saveSecretData(secretData);
-        this.fireDebounced();
-        
+
+        this.updateSavePromise(async () => await this.updateHost(normalizedUrl));
+
         return isValid;
     }
 
     public async getToken(): Promise<string> {
+        await this.savePromise;
         const secretData = await this.getSecretData();
         return secretData?.token ?? '';
     }
 
-    public async setToken(value: string): Promise<void> {
+    public setToken(value: string): void {
+        this.updateSavePromise(async () => this.updateToken(value));
+    }
+
+    private async updateHost(value: string): Promise<void> {
+        const secretData = await this.getSecretData();
+        secretData.host = value;
+        await this.saveSecretData(secretData);
+    }
+
+    private async updateToken(value: string): Promise<void> {
         const secretData = await this.getSecretData();
         secretData.token = value;
         await this.saveSecretData(secretData);
-        this.fireDebounced();
+    }
+
+    private updateSavePromise(updateSecretData: () => Promise<void>): void {
+        this.savePromise = this.savePromise.then(updateSecretData).finally(this.fireDebounced);
     }
 
     private fire(): void {
@@ -66,6 +81,6 @@ export class SecretStorageService {
     }
 
     private async saveSecretData(data: SecretStorageData): Promise<void> {
-        await this._secretStorage.store(SECRET_STORAGE_KEY, JSON.stringify(data));
+        return this._secretStorage.store(SECRET_STORAGE_KEY, JSON.stringify(data));
     }
 }

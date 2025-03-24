@@ -66,9 +66,8 @@ describe('Environment Webview', () => {
         expect(type).is.eq('text');
     });
 
-    describe('Test connection', async () => {
+    describe('Test connection', function () {
         let localServer: LocalServer;
-
         before(async function () {
             localServer = new LocalServer();
             localServer.start();
@@ -86,8 +85,11 @@ describe('Environment Webview', () => {
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
             let testConnectionIconType = await testConnectionIcon?.getAttribute('name');
-
             expect(testConnectionIconType).eq('loading');
+
+            await testConnectionIcon
+                ?.getDriver()
+                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'check'), 5000);
         });
 
         it('Check successful icon after click test', async function () {
@@ -100,7 +102,10 @@ describe('Environment Webview', () => {
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
 
-            let testConnectionIconType = await testConnectionIcon?.getAttribute('name');
+            let testConnectionIconType = await testConnectionIcon
+                ?.getDriver()
+                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'check'), 5000);
+
             expect(testConnectionIconType).eq('check');
         });
 
@@ -113,8 +118,10 @@ describe('Environment Webview', () => {
 
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
+            let testConnectionIconType = await testConnectionIcon
+                ?.getDriver()
+                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'close'), 5000);
 
-            let testConnectionIconType = await testConnectionIcon?.getAttribute('name');
             expect(testConnectionIconType).eq('close');
         });
 
@@ -127,7 +134,7 @@ describe('Environment Webview', () => {
 
             const isUrlFieldInvalid = await urlField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(urlField, 'invalid', 'true'), 2000);
+                .wait(async () => Until.getAttribute(urlField, 'invalid', 'true'), 5000);
             const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');
 
             expect(isUrlFieldInvalid).eq('true');
@@ -143,7 +150,7 @@ describe('Environment Webview', () => {
 
             const isTokenFieldInvalid = await tokenField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(tokenField, 'invalid', 'true'), 1000);
+                .wait(async () => Until.getAttribute(tokenField, 'invalid', 'true'), 5000);
             const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
 
             expect(isUrlFieldInvalid).eq('false');

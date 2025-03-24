@@ -1,8 +1,12 @@
-import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, WebviewViewResolveContext } from 'vscode';
+import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, WebviewViewResolveContext, window } from 'vscode';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
-import { ABORTED_ERROR_CODE, EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, MAIN_JS_PATH } from '../constants/common.constants';
+import {
+    ABORTED_ERROR_CODE,
+    EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
+    MAIN_JS_PATH
+} from '../constants/common.constants';
 import { ENVIRONMENT_JS_PATH } from '../constants/enviroment.constants';
-import { CrudService } from '../cruds/crud.service';
+import { CrudService, RequestNames } from '../cruds/crud.service';
 import { CrudError } from '../models/common.model';
 import {
     EnvironmentWebviewDto,
@@ -37,6 +41,8 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
         webviewView.webview.onDidReceiveMessage((data: EnvironmentWebviewDto) => {
+            this.crudService.abort(RequestNames.GET_SYSTEM_INFO);
+            this.cleanInvalidFields();
             switch (data.command) {
                 case WebviewMessages.UPDATE_FIELD: {
                     this.updateField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
@@ -67,33 +73,35 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
 
         const host = await this.secretStorageService.getHost();
         const token = await this.secretStorageService.getToken();
-        try {
-            await this.crudService.getSystemInfo(host, token);
-            this.setSuccessfulTestConnection();
-        } catch (error) {
-            this.setFailureTestConnection();
-            const crudError = error as CrudError;
-            switch (crudError.status) {
-                case ABORTED_ERROR_CODE: {
-                    break;
+        await this.crudService
+            .getSystemInfo(host, token)
+            .then(() => this.setSuccessfulTestConnection())
+            .catch((error) => {
+                const crudError = error as CrudError;
+                switch (crudError.status) {
+                    case ABORTED_ERROR_CODE: {
+                        break;
+                    }
+                    case 401: {
+                        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
+                        this.setFailureTestConnection();
+                        break;
+                    }
+                    default: {
+                        this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
+                        this.setFailureTestConnection();
+                        break;
+                    }
                 }
-                case 401: {
-                    this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
-                    break;
-                }
-                default: {
-                    this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
-                    break;
-                }
-            }
-        }
+            });
     }
 
     private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
+        this.updateWebviewDisable(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, true);
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
                 const host = (payload.value as string)?.trim();
-                const isValid = await this.secretStorageService.setHost(host);
+                const isValid = this.secretStorageService.setHost(host);
                 this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
                 break;
             }
@@ -101,11 +109,11 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                 const token = (payload.value as string)?.trim();
                 this.secretStorageService.setToken(token ?? '');
 
-                this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, !token?.length);
+                this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
                 break;
             }
         }
-        this.cleanTestConnection();
+        this.updateWebviewDisable(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, false);
     }
 
     private requestField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
@@ -137,6 +145,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     }
 
     private cleanInvalidFields(): void {
+        this.cleanTestConnection();
         this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, false);
         this.updateWebviewInvalid(EnvironmentWebviewFields.URL, false);
     }
