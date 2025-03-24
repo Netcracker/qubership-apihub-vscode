@@ -73,6 +73,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
 
         const host = await this.secretStorageService.getHost();
         const token = await this.secretStorageService.getToken();
+
         await this.crudService
             .getSystemInfo(host, token)
             .then(() => this.setSuccessfulTestConnection())
@@ -97,23 +98,29 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     }
 
     private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
-        this.updateWebviewDisable(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, true);
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
                 const host = (payload.value as string)?.trim();
-                const isValid = await this.secretStorageService.setHost(host);
+                let normalizedUrl = '';
+                let isValid = true;
+                try {
+                    normalizedUrl = new URL(host).origin;
+                } catch {
+                    isValid = false;
+                }
+                this.secretStorageService.setHost(normalizedUrl);
+
                 this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {
                 const token = (payload.value as string)?.trim();
-                await this.secretStorageService.setToken(token ?? '');
+                this.secretStorageService.setToken(token ?? '');
 
                 this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
                 break;
             }
         }
-        this.updateWebviewDisable(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, false);
     }
 
     private requestField(payload: WebviewPayload<EnvironmentWebviewFields>): void {

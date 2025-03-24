@@ -14,38 +14,28 @@ export class SecretStorageService {
     private readonly fireDebounced = debounce(() => this.fire());
     public readonly onDidChangeConfiguration: Event<void> = this._onDidChangeConfiguration.event;
 
-    public saveHost: Promise<void> = Promise.resolve();
-    public saveToken: Promise<void> = Promise.resolve();
+    private readonly _saveHost: Promise<void> = Promise.resolve();
+    private readonly _saveToken: Promise<void> = Promise.resolve();
 
     constructor(private readonly context: ExtensionContext) {
         this._secretStorage = this.context.secrets;
     }
     public async getHost(): Promise<string> {
-        await this.saveHost;
+        await this._saveHost;
         return (await this._secretStorage.get(SECRET_STORAGE_HOST_KEY)) ?? '';
     }
 
-    public async setHost(value: string): Promise<boolean> {
-        let normalizedUrl = '';
-        let isValid = true;
-        try {
-            normalizedUrl = new URL(value).origin;
-        } catch {
-            isValid = false;
-        }
-        this.updateSavePromise(this.saveHost, async () => await this.updateHost(normalizedUrl));
-
-        return isValid;
+    public setHost(value: string): void {
+        this.updateSavePromise(this._saveHost, async () => await this.updateHost(value));
     }
 
     public async getToken(): Promise<string> {
-        await this.saveToken;
+        await this._saveToken;
         return (await this._secretStorage.get(SECRET_STORAGE_TOKEN_KEY)) ?? '';
     }
 
-    public async setToken(value: string): Promise<void> {
-        await this.saveHost;
-        this.updateSavePromise(this.saveToken, async () => this.updateToken(value));
+    public setToken(value: string): void {
+        this.updateSavePromise(this._saveToken, async () => await this.updateToken(value));
     }
 
     private async updateHost(value: string): Promise<void> {
