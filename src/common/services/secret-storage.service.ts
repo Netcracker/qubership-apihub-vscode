@@ -6,25 +6,26 @@ interface SecretStorageData {
     host: string;
     token: string;
 }
-const SECRET_STORAGE_KEY = `${EXTENSION_NAME}.secret`;
+const SECRET_STORAGE_HOST_KEY = `${EXTENSION_NAME}.secret.host`;
+const SECRET_STORAGE_TOKEN_KEY = `${EXTENSION_NAME}.secret.token`;
 export class SecretStorageService {
     private readonly _secretStorage: SecretStorage;
     private readonly _onDidChangeConfiguration: EventEmitter<void> = new EventEmitter();
     private readonly fireDebounced = debounce(() => this.fire());
     public readonly onDidChangeConfiguration: Event<void> = this._onDidChangeConfiguration.event;
 
-    public savePromise: Promise<void> = Promise.resolve();
+    public saveHost: Promise<void> = Promise.resolve();
+    public saveToken: Promise<void> = Promise.resolve();
 
     constructor(private readonly context: ExtensionContext) {
         this._secretStorage = this.context.secrets;
     }
     public async getHost(): Promise<string> {
-        await this.savePromise;
-        const secretData = await this.getSecretData();
-        return secretData?.host ?? '';
+        await this.saveHost;
+        return (await this._secretStorage.get(SECRET_STORAGE_HOST_KEY)) ?? '';
     }
 
-    public setHost(value: string): boolean {
+    public async setHost(value: string): Promise<boolean> {
         let normalizedUrl = '';
         let isValid = true;
         try {
@@ -32,55 +33,34 @@ export class SecretStorageService {
         } catch {
             isValid = false;
         }
-
-        this.updateSavePromise(async () => await this.updateHost(normalizedUrl));
+        this.updateSavePromise(this.saveHost, async () => await this.updateHost(normalizedUrl));
 
         return isValid;
     }
 
     public async getToken(): Promise<string> {
-        await this.savePromise;
-        const secretData = await this.getSecretData();
-        return secretData?.token ?? '';
+        await this.saveToken;
+        return (await this._secretStorage.get(SECRET_STORAGE_TOKEN_KEY)) ?? '';
     }
 
-    public setToken(value: string): void {
-        this.updateSavePromise(async () => this.updateToken(value));
+    public async setToken(value: string): Promise<void> {
+        await this.saveHost;
+        this.updateSavePromise(this.saveToken, async () => this.updateToken(value));
     }
 
     private async updateHost(value: string): Promise<void> {
-        const secretData = await this.getSecretData();
-        secretData.host = value;
-        await this.saveSecretData(secretData);
+        await this._secretStorage.store(SECRET_STORAGE_HOST_KEY, value);
     }
 
     private async updateToken(value: string): Promise<void> {
-        const secretData = await this.getSecretData();
-        secretData.token = value;
-        await this.saveSecretData(secretData);
+        await this._secretStorage.store(SECRET_STORAGE_TOKEN_KEY, value);
     }
 
-    private updateSavePromise(updateSecretData: () => Promise<void>): void {
-        this.savePromise = this.savePromise.then(updateSecretData).finally(this.fireDebounced);
+    private updateSavePromise(promise: Promise<void>, updateSecretData: () => Promise<void>): void {
+        promise = promise.then(updateSecretData).finally(this.fireDebounced);
     }
 
     private fire(): void {
         this._onDidChangeConfiguration.fire();
-    }
-
-    private async getSecretData(): Promise<SecretStorageData> {
-        const storedValue = await this._secretStorage.get(SECRET_STORAGE_KEY);
-        let secretStorageData: SecretStorageData = { host: '', token: '' };
-        if (!storedValue) {
-            return secretStorageData;
-        }
-        try {
-            secretStorageData = JSON.parse(storedValue);
-        } catch {}
-        return secretStorageData;
-    }
-
-    private async saveSecretData(data: SecretStorageData): Promise<void> {
-        return this._secretStorage.store(SECRET_STORAGE_KEY, JSON.stringify(data));
     }
 }

@@ -101,13 +101,13 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
                 const host = (payload.value as string)?.trim();
-                const isValid = this.secretStorageService.setHost(host);
+                const isValid = await this.secretStorageService.setHost(host);
                 this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {
                 const token = (payload.value as string)?.trim();
-                this.secretStorageService.setToken(token ?? '');
+                await this.secretStorageService.setToken(token ?? '');
 
                 this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
                 break;
