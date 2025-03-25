@@ -79,6 +79,7 @@ describe.only('Environment Webview', () => {
         before(async function () {
             localServer = new LocalServer();
             await localServer.start();
+            await new Promise((res) => setTimeout(res, 1000));
         });
 
         after(async () => {
@@ -106,9 +107,8 @@ describe.only('Environment Webview', () => {
 
         it('Check successful icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
-            await new Promise((res) => setTimeout(res, 100));
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
-            await new Promise((res) => setTimeout(res, 100));
+
             await testConnectionButton?.click();
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
