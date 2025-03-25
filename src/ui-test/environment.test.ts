@@ -103,7 +103,7 @@ describe.only('Environment Webview', () => {
                 .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'loading'), 5000);
 
             expect(testConnectionIconType).to.equal('loading');
-            console.log(await webview.getDriver().takeScreenshot());
+
             await testConnectionIcon
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'check'), 5000);
@@ -133,7 +133,6 @@ describe.only('Environment Webview', () => {
 
             await new Promise((res) => setTimeout(res, 1000));
 
-            console.log(await webview.getDriver().takeScreenshot());
             let testConnectionIconType = await testConnectionIcon?.getAttribute(NAME_ATTRIBUTE);
             expect(testConnectionIconType).to.equal('close');
         });
@@ -143,7 +142,7 @@ describe.only('Environment Webview', () => {
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 500));
+            await new Promise((res) => setTimeout(res, 1000));
 
             const isUrlFieldInvalid = await urlField
                 ?.getDriver()
@@ -159,11 +158,11 @@ describe.only('Environment Webview', () => {
             await tokenField?.sendKeys(TEST_BROKEN_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 2000));
+            await new Promise((res) => setTimeout(res, 1000));
 
             const isTokenFieldInvalid = await tokenField?.getAttribute(INVALID_ATTRIBUTE);
             const isUrlFieldInvalid = await urlField?.getAttribute(INVALID_ATTRIBUTE);
-            console.log(await webview.getDriver().takeScreenshot());
+            
             expect(isUrlFieldInvalid).to.equal('false');
             expect(isTokenFieldInvalid).to.equal('true');
         });
