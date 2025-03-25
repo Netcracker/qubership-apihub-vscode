@@ -14,7 +14,7 @@ const LABELS_DATA: LabelData[] = [
     { label: 'Authentication Token:', required: true }
 ];
 
-describe('Environment Webview', () => {
+describe.only('Environment Webview', () => {
     let webview: WebView;
     let urlField: WebElement | undefined;
     let tokenField: WebElement | undefined;
