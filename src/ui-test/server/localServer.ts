@@ -4,7 +4,7 @@ import { AddressInfo } from 'net';
 import { API_V1, API_V2, PACKAGES, PAT_HEADER } from '../../common/constants/common.constants';
 import { ServerStatusDto } from '../../common/models/common.model';
 import { PublishViewPackageIdData } from '../../common/models/publish.model';
-import { LOCAL_SERVER_PORT, TEST_PAT_TOKEN } from '../constants/environment.constants';
+import { LOCAL_SERVER_PORT, TEST_LOADING_PAT_TOKEN, TEST_PAT_TOKEN } from '../constants/environment.constants';
 import { PACKAGES_DATA } from './data/packages';
 
 export class LocalServer {
@@ -23,6 +23,19 @@ export class LocalServer {
 
             if (token !== TEST_PAT_TOKEN) {
                 res.status(401).json();
+                return;
+            }
+            if (token !== TEST_LOADING_PAT_TOKEN) {
+                setTimeout(
+                    () =>
+                        res.status(200).json({
+                            backendVersion: '',
+                            externalLinks: [],
+                            frontendVersion: '',
+                            productionMode: false
+                        } as ServerStatusDto),
+                    1000
+                );
                 return;
             }
             res.status(200).json({

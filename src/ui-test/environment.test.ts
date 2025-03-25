@@ -94,9 +94,6 @@ describe.only('Environment Webview', () => {
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 1000));
-            console.log(await webview.getDriver().takeScreenshot());
-            
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'loading'), 5000);
