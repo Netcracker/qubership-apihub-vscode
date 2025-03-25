@@ -79,14 +79,13 @@ describe.only('Environment Webview', () => {
         before(async function () {
             localServer = new LocalServer();
             await localServer.start();
-            await new Promise((res) => setTimeout(res, 1000));
         });
 
         after(async () => {
             localServer.stop();
         });
 
-        afterEach(async () => {
+        beforeEach(async () => {
             await new Promise((res) => setTimeout(res, 1000));
         });
 
@@ -112,7 +111,6 @@ describe.only('Environment Webview', () => {
         it('Check successful icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_PAT_TOKEN);
-
             await testConnectionButton?.click();
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
@@ -144,9 +142,7 @@ describe.only('Environment Webview', () => {
 
             await new Promise((res) => setTimeout(res, 1000));
 
-            const isUrlFieldInvalid = await urlField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(urlField, INVALID_ATTRIBUTE, 'true'), 5000);
+            const isUrlFieldInvalid = await urlField?.getAttribute(INVALID_ATTRIBUTE)
             const isTokenFieldInvalid = await tokenField?.getAttribute(INVALID_ATTRIBUTE);
 
             expect(isUrlFieldInvalid).to.equal('true');
