@@ -127,10 +127,10 @@ describe.only('Environment Webview', () => {
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
 
-            let testConnectionIconType = await testConnectionIcon
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'close'), 5000);
+            await new Promise((res) => setTimeout(res, 1000));
 
+            console.log(await webview.getDriver().takeScreenshot());
+            let testConnectionIconType = await testConnectionIcon?.getAttribute(NAME_ATTRIBUTE);
             expect(testConnectionIconType).to.equal('close');
         });
 
@@ -155,13 +155,11 @@ describe.only('Environment Webview', () => {
             await tokenField?.sendKeys(TEST_BROKEN_PAT_TOKEN);
             await testConnectionButton?.click();
 
-            await new Promise((res) => setTimeout(res, 500));
+            await new Promise((res) => setTimeout(res, 2000));
 
-            const isTokenFieldInvalid = await tokenField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(tokenField, INVALID_ATTRIBUTE, 'true'), 5000);
+            const isTokenFieldInvalid = await tokenField?.getAttribute(INVALID_ATTRIBUTE);
             const isUrlFieldInvalid = await urlField?.getAttribute(INVALID_ATTRIBUTE);
-
+            console.log(await webview.getDriver().takeScreenshot());
             expect(isUrlFieldInvalid).to.equal('false');
             expect(isTokenFieldInvalid).to.equal('true');
         });
