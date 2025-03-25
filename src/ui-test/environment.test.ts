@@ -1,12 +1,20 @@
 import { expect } from 'chai';
 import { ActivityBar, By, SideBarView, until, ViewControl, WebElement, WebView } from 'vscode-extension-tester';
 import { EnvironmentWebviewFields } from '../common/models/enviroment.model';
+import { INVALID_ATTRIBUTE, NAME_ATTRIBUTE } from './constants/attribute.constants';
 import { LOCAL_SERVER_FULL_URL, TEST_BROKEN_PAT_TOKEN, TEST_PAT_TOKEN } from './constants/environment.constants';
 import { ENVIRONMENT_SECTION, EXTENTSION_NAME } from './constants/test.constants';
-import { LocalServer } from './utils/localServer';
-import { findWebElementById, Until } from './utils/webview.utils';
+import { LabelData } from './models/label.model';
+import { LocalServer } from './server/localServer';
+import { findWebElementById, getLabels, Until } from './utils/webview.utils';
+import { TEXT_FIELD_LOCATOR } from './models/webview.model';
 
-describe.only('Environment Webview', () => {
+const LABELS_DATA: LabelData[] = [
+    { label: 'APIHUB URL:', required: true },
+    { label: 'Authentication Token:', required: true }
+];
+
+describe('Environment Webview', () => {
     let webview: WebView;
     let urlField: WebElement | undefined;
     let tokenField: WebElement | undefined;
@@ -26,7 +34,7 @@ describe.only('Environment Webview', () => {
         webview = new WebView(webviewElem, envSection);
         await webview.switchToFrame();
 
-        const textFields = await webview.findWebElements(By.css('vscode-textfield'));
+        const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
         urlField = await findWebElementById(textFields, EnvironmentWebviewFields.URL);
         tokenField = await findWebElementById(textFields, EnvironmentWebviewFields.TOKEN);
         testConnectionButton = await webview.findWebElement(By.css('a'));
@@ -42,9 +50,9 @@ describe.only('Environment Webview', () => {
     });
 
     it('Check labels required', async () => {
-        const labels = await webview.findWebElements(By.css('vscode-label'));
-        const attributes = await Promise.all(labels.map((label) => label.getAttribute('required')));
-        expect(attributes.every((attr) => attr === 'true')).to.be.true;
+        const vsLabels = await webview.findWebElements(By.css('vscode-label'));
+        const labels: LabelData[] = await getLabels(vsLabels);
+        expect(labels).to.deep.equal(LABELS_DATA);
     });
 
     it('Check all field exist', async () => {
@@ -56,21 +64,21 @@ describe.only('Environment Webview', () => {
     it('Check password button', async () => {
         await tokenField?.sendKeys(TEST_PAT_TOKEN);
         let type = await tokenField?.getAttribute('type');
-        expect(type).is.eq('password');
+        expect(type).is.equal('password');
 
         const icons = await webview.findWebElements(By.css('vscode-icon'));
         const eyeButton = await findWebElementById(icons, 'eye-icon');
         await eyeButton?.click();
 
         type = await tokenField?.getAttribute('type');
-        expect(type).is.eq('text');
+        expect(type).is.equal('text');
     });
 
     describe('Test connection', function () {
         let localServer: LocalServer;
         before(async function () {
             localServer = new LocalServer();
-            localServer.start();
+            await localServer.start();
         });
 
         after(async () => {
@@ -84,16 +92,16 @@ describe.only('Environment Webview', () => {
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
             await testConnectionButton?.click();
-            console.log(await webview.getDriver().takeScreenshot());
+
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'loading'), 5000);
-                
-            expect(testConnectionIconType).eq('loading');
+                .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'loading'), 5000);
+
+            expect(testConnectionIconType).to.equal('loading');
 
             await testConnectionIcon
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'check'), 5000);
+                .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'check'), 5000);
         });
 
         it('Check successful icon after click test', async function () {
@@ -102,12 +110,12 @@ describe.only('Environment Webview', () => {
             await testConnectionButton?.click();
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
-            console.log(await webview.getDriver().takeScreenshot());
+
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'check'), 5000);
+                .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'check'), 5000);
 
-            expect(testConnectionIconType).eq('check');
+            expect(testConnectionIconType).to.equal('check');
         });
 
         it('Check faild icon after click test', async function () {
@@ -116,12 +124,12 @@ describe.only('Environment Webview', () => {
             await testConnectionButton?.click();
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
-            console.log(await webview.getDriver().takeScreenshot());
+
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(testConnectionIcon, 'name', 'close'), 5000);
+                .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'close'), 5000);
 
-            expect(testConnectionIconType).eq('close');
+            expect(testConnectionIconType).to.equal('close');
         });
 
         it('Check url field error after click test', async function () {
@@ -133,11 +141,11 @@ describe.only('Environment Webview', () => {
 
             const isUrlFieldInvalid = await urlField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(urlField, 'invalid', 'true'), 5000);
-            const isTokenFieldInvalid = await tokenField?.getAttribute('invalid');
-            console.log(await webview.getDriver().takeScreenshot());
-            expect(isUrlFieldInvalid).eq('true');
-            expect(isTokenFieldInvalid).eq('false');
+                .wait(async () => Until.getAttribute(urlField, INVALID_ATTRIBUTE, 'true'), 5000);
+            const isTokenFieldInvalid = await tokenField?.getAttribute(INVALID_ATTRIBUTE);
+
+            expect(isUrlFieldInvalid).to.equal('true');
+            expect(isTokenFieldInvalid).to.equal('false');
         });
 
         it('Check Token field error after click test', async function () {
@@ -149,11 +157,11 @@ describe.only('Environment Webview', () => {
 
             const isTokenFieldInvalid = await tokenField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(tokenField, 'invalid', 'true'), 5000);
-            const isUrlFieldInvalid = await urlField?.getAttribute('invalid');
-            console.log(await webview.getDriver().takeScreenshot());
-            expect(isUrlFieldInvalid).eq('false');
-            expect(isTokenFieldInvalid).eq('true');
+                .wait(async () => Until.getAttribute(tokenField, INVALID_ATTRIBUTE, 'true'), 5000);
+            const isUrlFieldInvalid = await urlField?.getAttribute(INVALID_ATTRIBUTE);
+
+            expect(isUrlFieldInvalid).to.equal('false');
+            expect(isTokenFieldInvalid).to.equal('true');
         });
     });
 });
