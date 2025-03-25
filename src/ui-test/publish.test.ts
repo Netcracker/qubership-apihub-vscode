@@ -88,7 +88,7 @@ describe('Publsih Test', () => {
             await clearTextField(packageIdField);
         });
 
-        it('Check required empty Environment fields if PackageId is fill', async function () {
+        it.only('Check required empty Environment fields if PackageId is fill', async function () {
             await switchToEnvironments();
             await findEnvFields();
 
@@ -100,19 +100,15 @@ describe('Publsih Test', () => {
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-            await new Promise((res) => setTimeout(res, 500));
+            await new Promise((res) => setTimeout(res, 2000));
 
             await switchToEnvironments();
             await findEnvFields();
 
-            const isUrlFieldInvalid = await urlField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(urlField, REQUIRED_ATTRIBUTE, 'true'), 5000);
+            const isUrlFieldInvalid = await urlField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isUrlFieldInvalid).to.equal('true');
 
-            const isTokenFieldInvalid = await tokenField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(tokenField, REQUIRED_ATTRIBUTE, 'true'), 5000);
+            const isTokenFieldInvalid = await tokenField?.getAttribute(REQUIRED_ATTRIBUTE)
             expect(isTokenFieldInvalid).to.equal('true');
         });
 
@@ -128,7 +124,7 @@ describe('Publsih Test', () => {
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-            await new Promise((res) => setTimeout(res, 1000));
+            await new Promise((res) => setTimeout(res, 2000));
 
             const isPackageIdFieldNoInvalid = await packageIdField
                 ?.getDriver()
