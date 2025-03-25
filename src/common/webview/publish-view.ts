@@ -40,8 +40,8 @@ import {
 } from '../models/publish.model';
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
+import { EnvironmentStorageService } from '../services/environment-storage.service';
 import { PublishService } from '../services/publish.service';
-import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
 
@@ -58,7 +58,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
         private readonly workfolderPaths: WorkfolderPath[],
-        private readonly secretStorageService: SecretStorageService,
+        private readonly environmentStorageService: EnvironmentStorageService,
         private readonly configurationFileService: ConfigurationFileService,
         private readonly workfolderService: WorkspaceService,
         private readonly publishService: PublishService
@@ -147,7 +147,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 this.configurationFileService.getConfigurationFile(workfolderPath);
             this.restoreConfigPackageId(workfolderPath, configFile);
         });
-        this.secretStorageService.onDidChangeConfiguration(
+        this.environmentStorageService.onDidChangeConfiguration(
             () => {
                 this.disableDependentFields();
                 const activeWorkfolderPath = this.workfolderService.activeWorkfolderPath;
@@ -283,8 +283,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -320,8 +319,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId) {
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -370,8 +368,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId || labels.size) {
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;

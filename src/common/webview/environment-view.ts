@@ -1,5 +1,13 @@
-import { CancellationToken, commands, ExtensionContext, Webview, WebviewView, WebviewViewResolveContext, window } from 'vscode';
+import {
+    CancellationToken,
+    commands,
+    ExtensionContext,
+    Webview,
+    WebviewView,
+    WebviewViewResolveContext
+} from 'vscode';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
+import { normalizeUrl } from '../../utils/path.utils';
 import {
     ABORTED_ERROR_CODE,
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
@@ -13,15 +21,15 @@ import {
     EnvironmentWebviewFields,
     EnvironmentWebviewMessages
 } from '../models/enviroment.model';
-import { WebviewMessages, WebviewPayload } from '../models/webview.model';
+import { EnvironmentWebviewTestConnectionDto, WebviewMessages, WebviewPayload } from '../models/webview.model';
+import { EnvironmentStorageService } from '../services/environment-storage.service';
 import { WebviewBase } from './webview-base';
-import { SecretStorageService } from '../services/secret-storage.service';
 
 export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
     constructor(
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
-        private readonly secretStorageService: SecretStorageService
+        private readonly environmentStorageService: EnvironmentStorageService
     ) {
         super();
     }
@@ -53,7 +61,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                     break;
                 }
                 case EnvironmentWebviewMessages.TEST_CONNECTION: {
-                    this.testConnection();
+                    this.testConnection(data.payload as EnvironmentWebviewTestConnectionDto);
                     break;
                 }
             }
@@ -67,12 +75,17 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         );
     }
 
-    private async testConnection(): Promise<void> {
+    private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
         this.cleanInvalidFields();
         this.setLoadingTestConnection();
 
-        const host = await this.secretStorageService.getHost();
-        const token = await this.secretStorageService.getToken();
+        let { host, token } = data;
+        host = normalizeUrl(host);
+        if (!host) {
+            this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
+            this.setFailureTestConnection();
+            return;
+        }
 
         await this.crudService
             .getSystemInfo(host, token)
@@ -100,22 +113,15 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
-                const host = (payload.value as string)?.trim();
-                let normalizedUrl = '';
-                let isValid = true;
-                try {
-                    normalizedUrl = new URL(host).origin;
-                } catch {
-                    isValid = false;
-                }
-                this.secretStorageService.setHost(normalizedUrl);
+                const host = normalizeUrl(payload.value as string);
+                await this.environmentStorageService.setHost(host);
 
-                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
+                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !host?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {
                 const token = (payload.value as string)?.trim();
-                this.secretStorageService.setToken(token ?? '');
+                await this.environmentStorageService.setToken(token ?? '');
 
                 this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
                 break;
@@ -137,12 +143,12 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     }
 
     private async requestHost(): Promise<void> {
-        const host: string = await this.secretStorageService.getHost();
+        const { host } = await this.environmentStorageService.getEnvironment();
         this.updateWebviewField(EnvironmentWebviewFields.URL, host);
     }
 
     private async requestToken(): Promise<void> {
-        const token: string = (await this.secretStorageService.getToken()) ?? '';
+        const { token } = await this.environmentStorageService.getEnvironment();
         this.updateWebviewField(EnvironmentWebviewFields.TOKEN, token);
     }
 
