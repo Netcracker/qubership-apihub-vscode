@@ -16,6 +16,7 @@ import {
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { WebviewBase } from './webview-base';
 import { SecretStorageService } from '../services/secret-storage.service';
+import { normalizeUrl } from '../../utils/path.utils';
 
 export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
     constructor(
@@ -100,17 +101,11 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
     private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
         switch (payload.field) {
             case EnvironmentWebviewFields.URL: {
-                const host = (payload.value as string)?.trim();
-                let normalizedUrl = '';
-                let isValid = true;
-                try {
-                    normalizedUrl = new URL(host).origin;
-                } catch {
-                    isValid = false;
-                }
-                this.secretStorageService.setHost(normalizedUrl);
+                const host = normalizeUrl(payload.value as string);
+                this.secretStorageService.setHost(host);
 
-                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !isValid || !host?.length);
+                this.updateWebviewRequired(EnvironmentWebviewFields.URL);
+                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !host?.length);
                 break;
             }
             case EnvironmentWebviewFields.TOKEN: {

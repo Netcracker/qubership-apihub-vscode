@@ -75,6 +75,19 @@ describe('Publsih Test', () => {
             localServer.stop();
         });
 
+        beforeEach(async () => {
+            await switchToEnvironments();
+            await findEnvFields();
+
+            await clearTextField(urlField);
+            await clearTextField(tokenField);
+
+            await switchToPublish();
+            await findPublishFields();
+
+            await clearTextField(packageIdField);
+        });
+
         it('Check required empty Environment fields if PackageId is fill', async function () {
             await switchToEnvironments();
             await findEnvFields();
@@ -119,8 +132,8 @@ describe('Publsih Test', () => {
 
             const isPackageIdFieldNoInvalid = await packageIdField
                 ?.getDriver()
-                .wait(async () => Until.isNotAttribute(packageIdField, INVALID_ATTRIBUTE), 5000);
-            expect(isPackageIdFieldNoInvalid).to.equal('true');
+                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, "false"), 5000);
+            expect(isPackageIdFieldNoInvalid).to.equal('false');
 
             await checkDependentFieldsAreDisabled(false);
         });
@@ -151,6 +164,8 @@ describe('Publsih Test', () => {
 
             await clearTextField(urlField);
             await clearTextField(tokenField);
+
+            await new Promise((res) => setTimeout(res, 2000));
 
             await switchToPublish();
             await findPublishFields();

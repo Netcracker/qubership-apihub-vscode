@@ -41,3 +41,11 @@ export const isItemApispecFile = (item: SpecificationItem): boolean => {
 export const sortStrings = (arr: string[]): string[] => {
     return arr.sort((a, b) => a.localeCompare(b));
 };
+
+export const normalizeUrl = (url: string): string => {
+    let normalizedUrl = '';
+    try {
+        normalizedUrl = new URL(url).origin;
+    } catch {}
+    return normalizedUrl;
+};

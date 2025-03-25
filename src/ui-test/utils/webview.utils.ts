@@ -49,7 +49,9 @@ export const getWebView = async (sideBar: SideBarView | undefined, sectionName: 
     const sections = (await sideBar?.getContent().getSections()) ?? [];
     for (const section of sections) {
         const title = await section.getTitle();
-        if (title !== sectionName) {
+        if (title === sectionName) {
+            break;
+        } else {
             try {
                 await section.collapse();
             } catch {}
