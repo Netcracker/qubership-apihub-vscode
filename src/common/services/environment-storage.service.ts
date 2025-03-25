@@ -1,4 +1,4 @@
-import { Event, EventEmitter, ExtensionContext, SecretStorage } from 'vscode';
+import { Event, EventEmitter, ExtensionContext, SecretStorage, window } from 'vscode';
 import { debounce } from '../../utils/files.utils';
 import { EXTENSION_NAME } from '../constants/common.constants';
 
@@ -52,6 +52,7 @@ export class EnvironmentStorageService {
             value = JSON.stringify(environmentData);
         } catch {}
         await this._secretStorage.store(SECRET_STORAGE_KEY, value);
+        window.showInformationMessage(value);
     }
 
     private async getEnvironmentFromStorage(): Promise<void> {

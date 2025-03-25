@@ -94,12 +94,13 @@ describe.only('Environment Webview', () => {
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
             await testConnectionButton?.click();
 
+            console.log(await webview.getDriver().takeScreenshot());
             let testConnectionIconType = await testConnectionIcon
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'loading'), 5000);
 
             expect(testConnectionIconType).to.equal('loading');
-
+            console.log(await webview.getDriver().takeScreenshot());
             await testConnectionIcon
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(testConnectionIcon, NAME_ATTRIBUTE, 'check'), 5000);

@@ -4,7 +4,8 @@ import {
     ExtensionContext,
     Webview,
     WebviewView,
-    WebviewViewResolveContext
+    WebviewViewResolveContext,
+    window
 } from 'vscode';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
 import { normalizeUrl } from '../../utils/path.utils';
@@ -86,7 +87,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
             this.setFailureTestConnection();
             return;
         }
-
+        window.showErrorMessage(`${host}, ${token}`);
         await this.crudService
             .getSystemInfo(host, token)
             .then(() => this.setSuccessfulTestConnection())
