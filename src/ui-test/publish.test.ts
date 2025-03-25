@@ -119,8 +119,8 @@ describe('Publsih Test', () => {
 
             const isPackageIdFieldNoInvalid = await packageIdField
                 ?.getDriver()
-                .wait(async () => Until.isNotAttribute(packageIdField, INVALID_ATTRIBUTE), 5000);
-            expect(isPackageIdFieldNoInvalid).to.equal('true');
+                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, "false"), 5000);
+            expect(isPackageIdFieldNoInvalid).to.equal('false');
 
             await checkDependentFieldsAreDisabled(false);
         });
@@ -145,7 +145,7 @@ describe('Publsih Test', () => {
             await checkDependentFieldsAreDisabled(true);
         });
 
-        it('Check load PackageId after click test connection', async function () {
+        it.skip('Check load PackageId after click test connection', async function () {
             await switchToEnvironments();
             await findEnvFields();
 

@@ -60,6 +60,8 @@ export const getWebView = async (sideBar: SideBarView | undefined, sectionName: 
     return new WebView(webviewElem);
 };
 
+// export const collapseAll = async (sections: ViewSection[])
+
 export const expandAll = async (sections: ViewSection[]): Promise<void> => {
     for (const section of sections) {
         try {
