@@ -52,7 +52,9 @@ export class EnvironmentStorageService {
             value = JSON.stringify(environmentData);
         } catch {}
         await this._secretStorage.store(SECRET_STORAGE_KEY, value);
-        window.showInformationMessage(value);
+        const now = new Date();
+const time = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+        window.showInformationMessage(`${time}, ${value}`);
     }
 
     private async getEnvironmentFromStorage(): Promise<void> {

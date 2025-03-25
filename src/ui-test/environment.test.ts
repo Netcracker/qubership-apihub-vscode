@@ -86,6 +86,10 @@ describe.only('Environment Webview', () => {
             localServer.stop();
         });
 
+        afterEach(async () => {
+            await new Promise((res) => setTimeout(res, 1000));
+        });
+
         it('Check loading icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_PAT_TOKEN);

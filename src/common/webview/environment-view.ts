@@ -87,7 +87,9 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
             this.setFailureTestConnection();
             return;
         }
-        window.showErrorMessage(`${host}, ${token}`);
+        const now = new Date();
+        const time = now.toLocaleTimeString("ru-RU", { hour: "2-digit", minute: "2-digit" });
+        window.showErrorMessage(`${time}, ${host}, ${token}`);
         await this.crudService
             .getSystemInfo(host, token)
             .then(() => this.setSuccessfulTestConnection())
