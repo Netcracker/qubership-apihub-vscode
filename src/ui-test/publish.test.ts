@@ -145,7 +145,7 @@ describe('Publsih Test', () => {
             await checkDependentFieldsAreDisabled(true);
         });
 
-        it.only('Check load PackageId after click test connection', async function () {
+        it('Check load PackageId after click test connection', async function () {
             await switchToEnvironments();
             await findEnvFields();
 
