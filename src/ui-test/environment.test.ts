@@ -85,9 +85,9 @@ describe('Environment Webview', () => {
             localServer.stop();
         });
 
-        // beforeEach(async () => {
-        //     await new Promise((res) => setTimeout(res, 1000));
-        // });
+        beforeEach(async () => {
+            await new Promise((res) => setTimeout(res, 1000));
+        });
 
         it('Check loading icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
