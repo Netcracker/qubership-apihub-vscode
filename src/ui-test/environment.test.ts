@@ -14,7 +14,7 @@ const LABELS_DATA: LabelData[] = [
     { label: 'Authentication Token:', required: true }
 ];
 
-describe.only('Environment Webview', () => {
+describe('Environment Webview', () => {
     let webview: WebView;
     let urlField: WebElement | undefined;
     let tokenField: WebElement | undefined;
@@ -85,9 +85,9 @@ describe.only('Environment Webview', () => {
             localServer.stop();
         });
 
-        beforeEach(async () => {
-            await new Promise((res) => setTimeout(res, 1000));
-        });
+        // beforeEach(async () => {
+        //     await new Promise((res) => setTimeout(res, 1000));
+        // });
 
         it('Check loading icon after click test', async function () {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
