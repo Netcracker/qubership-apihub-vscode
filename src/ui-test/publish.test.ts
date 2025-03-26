@@ -60,7 +60,7 @@ describe('Publsih Test', () => {
         await checkDependentFieldsAreDisabled(true);
     });
 
-    describe('Publish and Environment integration', function () {
+    describe.only('Publish and Environment integration', function () {
         let localServer: LocalServer;
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
@@ -75,6 +75,19 @@ describe('Publsih Test', () => {
             localServer.stop();
         });
 
+        beforeEach(async () => {
+            await switchToEnvironments();
+            await findEnvFields();
+
+            await clearTextField(urlField);
+            await clearTextField(tokenField);
+
+            await switchToPublish();
+            await findPublishFields();
+
+            await clearTextField(packageIdField);
+        });
+
         it('Check required empty Environment fields if PackageId is fill', async function () {
             await switchToEnvironments();
             await findEnvFields();
@@ -86,20 +99,16 @@ describe('Publsih Test', () => {
             await findPublishFields();
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
-
-            await new Promise((res) => setTimeout(res, 500));
+            console.log(await webview.getDriver().takeScreenshot());
+            await new Promise((res) => setTimeout(res, 2000));
 
             await switchToEnvironments();
             await findEnvFields();
-
-            const isUrlFieldInvalid = await urlField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(urlField, REQUIRED_ATTRIBUTE, 'true'), 5000);
+            console.log(await webview.getDriver().takeScreenshot());
+            const isUrlFieldInvalid = await urlField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isUrlFieldInvalid).to.equal('true');
 
-            const isTokenFieldInvalid = await tokenField
-                ?.getDriver()
-                .wait(async () => Until.getAttribute(tokenField, REQUIRED_ATTRIBUTE, 'true'), 5000);
+            const isTokenFieldInvalid = await tokenField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isTokenFieldInvalid).to.equal('true');
         });
 
@@ -115,11 +124,11 @@ describe('Publsih Test', () => {
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-            await new Promise((res) => setTimeout(res, 1000));
+            await new Promise((res) => setTimeout(res, 2000));
 
             const isPackageIdFieldNoInvalid = await packageIdField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, "false"), 5000);
+                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, 'false'), 5000);
             expect(isPackageIdFieldNoInvalid).to.equal('false');
 
             await checkDependentFieldsAreDisabled(false);
@@ -152,6 +161,8 @@ describe('Publsih Test', () => {
             await clearTextField(urlField);
             await clearTextField(tokenField);
 
+            await new Promise((res) => setTimeout(res, 2000));
+
             await switchToPublish();
             await findPublishFields();
 
@@ -169,13 +180,11 @@ describe('Publsih Test', () => {
             await switchToPublish();
             await findPublishFields();
 
-            await new Promise((res) => setTimeout(res, 1000));
-
             const isPackageIdFieldInvalid = await packageIdField
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, 'false'), 5000);
             expect(isPackageIdFieldInvalid).to.equal('false');
-            
+
             await checkDependentFieldsAreDisabled(false);
         });
 

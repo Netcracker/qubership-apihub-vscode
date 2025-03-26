@@ -49,7 +49,9 @@ export const getWebView = async (sideBar: SideBarView | undefined, sectionName: 
     const sections = (await sideBar?.getContent().getSections()) ?? [];
     for (const section of sections) {
         const title = await section.getTitle();
-        if (title !== sectionName) {
+        if (title === sectionName) {
+            break;
+        } else {
             try {
                 await section.collapse();
             } catch {}
@@ -68,6 +70,13 @@ export const expandAll = async (sections: ViewSection[]): Promise<void> => {
             await section.expand();
 
             console.log();
+        } catch {}
+    }
+};
+export const collapseAll = async (sections: ViewSection[]): Promise<void> => {
+    for (const section of sections) {
+        try {
+            await section.collapse();
         } catch {}
     }
 };

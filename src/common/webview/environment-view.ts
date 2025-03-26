@@ -117,6 +117,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                 const host = normalizeUrl(payload.value as string);
                 await this.environmentStorageService.setHost(host);
 
+                this.updateWebviewRequired(EnvironmentWebviewFields.URL);
                 this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !host?.length);
                 break;
             }
