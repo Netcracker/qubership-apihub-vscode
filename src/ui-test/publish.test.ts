@@ -60,7 +60,7 @@ describe('Publsih Test', () => {
         await checkDependentFieldsAreDisabled(true);
     });
 
-    describe('Publish and Environment integration', function () {
+    describe.only('Publish and Environment integration', function () {
         let localServer: LocalServer;
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
@@ -99,16 +99,16 @@ describe('Publsih Test', () => {
             await findPublishFields();
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
-
+            console.log(await webview.getDriver().takeScreenshot());
             await new Promise((res) => setTimeout(res, 2000));
 
             await switchToEnvironments();
             await findEnvFields();
-
+            console.log(await webview.getDriver().takeScreenshot());
             const isUrlFieldInvalid = await urlField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isUrlFieldInvalid).to.equal('true');
 
-            const isTokenFieldInvalid = await tokenField?.getAttribute(REQUIRED_ATTRIBUTE)
+            const isTokenFieldInvalid = await tokenField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isTokenFieldInvalid).to.equal('true');
         });
 
@@ -128,7 +128,7 @@ describe('Publsih Test', () => {
 
             const isPackageIdFieldNoInvalid = await packageIdField
                 ?.getDriver()
-                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, "false"), 5000);
+                .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, 'false'), 5000);
             expect(isPackageIdFieldNoInvalid).to.equal('false');
 
             await checkDependentFieldsAreDisabled(false);
@@ -184,7 +184,7 @@ describe('Publsih Test', () => {
                 ?.getDriver()
                 .wait(async () => Until.getAttribute(packageIdField, INVALID_ATTRIBUTE, 'false'), 5000);
             expect(isPackageIdFieldInvalid).to.equal('false');
-            
+
             await checkDependentFieldsAreDisabled(false);
         });
 
