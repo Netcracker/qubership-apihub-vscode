@@ -71,6 +71,13 @@ export const expandAll = async (sections: ViewSection[]): Promise<void> => {
         } catch {}
     }
 };
+export const collapseAll = async (sections: ViewSection[]): Promise<void> => {
+    for (const section of sections) {
+        try {
+            await section.collapse();
+        } catch {}
+    }
+};
 
 export const getLabels = async (data: WebElement[]): Promise<LabelData[]> => {
     return Promise.all(

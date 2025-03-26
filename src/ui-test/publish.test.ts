@@ -88,7 +88,7 @@ describe('Publsih Test', () => {
             await clearTextField(packageIdField);
         });
 
-        it.only('Check required empty Environment fields if PackageId is fill', async function () {
+        it('Check required empty Environment fields if PackageId is fill', async function () {
             await switchToEnvironments();
             await findEnvFields();
 
@@ -179,8 +179,6 @@ describe('Publsih Test', () => {
 
             await switchToPublish();
             await findPublishFields();
-
-            await new Promise((res) => setTimeout(res, 1000));
 
             const isPackageIdFieldInvalid = await packageIdField
                 ?.getDriver()
