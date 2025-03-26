@@ -60,7 +60,7 @@ describe('Publsih Test', () => {
         await checkDependentFieldsAreDisabled(true);
     });
 
-    describe.only('Publish and Environment integration', function () {
+    describe('Publish and Environment integration', function () {
         let localServer: LocalServer;
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
