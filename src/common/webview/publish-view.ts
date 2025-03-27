@@ -294,11 +294,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             .getPackageId(host, token, packageId)
             .then((packageIdData: PublishViewPackageIdData) => {
                 publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
-
-                if (publishData.status === VersionStatus.RELEASE) {
-                    this.updateWebviewPattern(PublishFields.VERSION, publishData.releaseVersionPattern);
-                }
-
+                const pattern = this.getPettern(publishData, publishData.status);
+                this.updateWebviewPattern(PublishFields.VERSION, pattern);
                 this.disableDependentFields(false);
                 this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
             })
@@ -337,18 +334,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private updateVersionPattern(publishData: PublishViewData, status: VersionStatus): void {
-        switch (status) {
-            case VersionStatus.ARCHIVED:
-            case VersionStatus.DRAFT: {
-                this.updateWebviewPattern(PublishFields.VERSION, PUBLISH_INPUT_DRAFT_PATTERN);
-                break;
-            }
-            case VersionStatus.RELEASE: {
-                const { releaseVersionPattern } = publishData;
-                this.updateWebviewPattern(PublishFields.VERSION, releaseVersionPattern);
-                break;
-            }
-        }
+        this.updateWebviewPattern(PublishFields.VERSION, this.getPettern(publishData, status));
     }
 
     private deleteWebviewLabels(label: string): void {
@@ -400,9 +386,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewRequired(PublishFields.VERSION);
             return;
         }
-
-        const { releaseVersionPattern } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
-        const pattern = status === VersionStatus.RELEASE ? releaseVersionPattern : PUBLISH_INPUT_DRAFT_PATTERN;
+        const pattern = this.getPettern(data, status);
         const regexp = new RegExp(pattern);
         if (!regexp.test(version)) {
             return;
@@ -414,6 +398,19 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
 
         this.publishService.publish(this.workfolderService.activeWorkfolderPath, data);
+    }
+
+    private getPettern(publishData: PublishViewData, status: VersionStatus): string {
+        switch (status) {
+            case VersionStatus.ARCHIVED:
+            case VersionStatus.DRAFT: {
+                return PUBLISH_INPUT_DRAFT_PATTERN;
+            }
+            case VersionStatus.RELEASE: {
+                const { releaseVersionPattern } = publishData;
+                return releaseVersionPattern;
+            }
+        }
     }
 
     private getPublishViewData(workfolderPath: WorkfolderPath): PublishViewData {

@@ -163,7 +163,7 @@ export class PublishService extends Disposable {
         );
 
         if (bundleErrors.length) {
-            throw new Error('Errors: ' + bundleErrors.join(', '));
+            console.error('Errors: ' + bundleErrors.join(', '));
         }
 
         return convertBundleDataToFiles(dataWithDependencies);
