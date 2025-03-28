@@ -1,7 +1,7 @@
 import * as assert from 'assert';
 import path from 'path';
-import {Uri} from 'vscode';
-import {SpecificationItem} from '../../common/models/specification-item';
+import { Uri } from 'vscode';
+import { SpecificationItem } from '../../common/models/specification-item';
 import {
     capitalize,
     getExtension,
@@ -11,7 +11,7 @@ import {
     isItemApispecFile,
     sortStrings
 } from '../../utils/path.utils';
-import {convertOptionsToDto} from '../../utils/publish.utils';
+import { convertOptionsToDto } from '../../utils/publish.utils';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
