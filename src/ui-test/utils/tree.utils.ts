@@ -19,7 +19,10 @@ export const getTestTreeItems = async (items: CustomTreeItem[]): Promise<TestTre
     Promise.all(
         items.map(async (item) => {
             const checkbox = await getCheckboxState(item);
-            const description = await item.getDescription();
+            let description = '';
+            try {
+                description = await item.getDescription();
+            } catch {}
             const label = await item.getLabel();
             return {
                 checkbox,

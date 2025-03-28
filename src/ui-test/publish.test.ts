@@ -43,7 +43,7 @@ const RELEASE_VERSION = "2025.1";
 const NONE_RELEASE_VERSION = "none-release-version";
 const BROKEN_VERSION = "broken-version!%#";
 
-describe.only('Publsih Test', () => {
+describe('Publsih Test', () => {
     let sideBar: SideBarView | undefined;
     let sections: ViewSection[] | undefined;
     let webview: WebView;
@@ -105,17 +105,17 @@ describe.only('Publsih Test', () => {
 
             await clearTextField(urlField);
             await clearTextField(tokenField);
-            console.log(await webview.getDriver().takeScreenshot());
+
             await switchToPublish();
             await findPublishFields();
 
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
-            console.log(await webview.getDriver().takeScreenshot());
+
             await new Promise((res) => setTimeout(res, 2000));
 
             await switchToEnvironments();
             await findEnvFields();
-            console.log(await webview.getDriver().takeScreenshot());
+
             const isUrlFieldInvalid = await urlField?.getAttribute(REQUIRED_ATTRIBUTE);
             expect(isUrlFieldInvalid).to.equal('true');
 
@@ -200,7 +200,7 @@ describe.only('Publsih Test', () => {
         });
 
         /** Tests with a only correct environment */
-        describe.only('Publish e2e', function () {
+        describe('Publish e2e', function () {
             before(async function () {
                 await switchToEnvironments();
                 await findEnvFields();
@@ -210,6 +210,11 @@ describe.only('Publsih Test', () => {
 
                 await switchToPublish();
                 await findPublishFields();
+            });
+
+            afterEach(async () => {
+                await clearTextField(versionField);
+                await clearTextField(packageIdField);
             });
 
             it('Check Status Options', async function () {
@@ -224,7 +229,7 @@ describe.only('Publsih Test', () => {
                 await statusField?.click();
             });
 
-            it.only('Check changes in the Draft status pattern and validation', async function () {
+            it('Check changes in the Draft status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
@@ -246,7 +251,7 @@ describe.only('Publsih Test', () => {
                 expect(isVersionFieldPatternMismatch).to.be.true;
             });
 
-            it.only('Check changes in the Release status pattern and validation', async function () {
+            it('Check changes in the Release status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
@@ -268,7 +273,7 @@ describe.only('Publsih Test', () => {
                 expect(isVersionFieldPatternMismatch).to.be.true;
             });
 
-            it.only('Check changes in the Archived status pattern and validation', async function () {
+            it('Check changes in the Archived status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
@@ -288,26 +293,6 @@ describe.only('Publsih Test', () => {
                 await versionField?.sendKeys(BROKEN_VERSION);
                 isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
                 expect(isVersionFieldPatternMismatch).to.be.true;
-            });
-
-            it.only('Check version pattern', async function () {
-                // await packageIdField?.sendKeys(PACKAGE_ID_NAME);
-
-                // await new Promise((res) => setTimeout(res, 2000));
-
-                // await versionField?.sendKeys('draft_version');
-
-                // await clickOption(statusField, DRAFT);
-                // let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
-                // expect(isVersionFieldPatternMismatch).to.be.false;
-
-                // await clickOption(statusField, RELEASE);
-                // isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
-                // expect(isVersionFieldPatternMismatch).to.be.true;
-
-                // await clickOption(statusField, ARCHIVED);
-                // isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
-                // expect(isVersionFieldPatternMismatch).to.be.false;
             });
         });
 

@@ -19,9 +19,10 @@ import {
     CARS_NAME,
     DOCUMENTS_WELCOME_TEXT,
     UNITED_WORKSPACE,
-    WORKSPACE_2_NAME
+    WORKSPACE_2_NAME,
+    CHECKBOX_CARS_NAME
 } from './constants/tree.constants';
-import { collapseAll, expandAll } from './utils/webview.utils';
+import { collapseAll, expandAll, findAsync } from './utils/webview.utils';
 
 const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
 const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NAME);
@@ -29,26 +30,39 @@ const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NA
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },
     { checkbox: true, description: '/src/docs/', label: 'store.yaml' },
-    { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGraphql.graphql' },
-    { checkbox: true, description: '/src/docs/', label: 'user.yaml' }
+    { checkbox: true, description: '/src/docs/', label: 'user.yaml' },
+    { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' }
 ];
+
 const WORKSPACE_2_CONTENT: TestTreeItem[] = [
+    { checkbox: true, description: '', label: CARS_NAME },
+    { checkbox: true, description: '/docs/', label: 'a-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: 'b-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: 'c-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: CARS_NAME },
     { checkbox: true, description: '/docs/car/', label: CARS_NAME },
-    { checkbox: true, description: '/docs/', label: CARS_NAME }
+    { checkbox: true, description: '/docs/car/', label: CHECKBOX_CARS_NAME }
 ];
+
 const WORKSPACE_1_CHECKBOX_CONTENT: TestTreeItem[] = [
     { checkbox: false, description: '/src/docs/', label: PETS_NAME },
     { checkbox: true, description: '/src/docs/', label: 'store.yaml' },
-    { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGql.gql' },
     { checkbox: true, description: '/src/docs/', label: 'testGraphql.graphql' },
-    { checkbox: true, description: '/src/docs/', label: 'user.yaml' }
+    { checkbox: true, description: '/src/docs/', label: 'user.yaml' },
+    { checkbox: true, description: '/src/docs/gql/', label: 'testGql.gql' }
 ];
+
 const WORKSPACE_2_CHECKBOX_CONTENT: TestTreeItem[] = [
-    { checkbox: false, description: '/docs/car/', label: CARS_NAME },
-    { checkbox: true, description: '/docs/', label: CARS_NAME }
+    { checkbox: true, description: '', label: CARS_NAME },
+    { checkbox: true, description: '/docs/', label: 'a-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: 'b-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: 'c-cars.yaml' },
+    { checkbox: true, description: '/docs/', label: CARS_NAME },
+    { checkbox: true, description: '/docs/car/', label: CARS_NAME },
+    { checkbox: false, description: '/docs/car/', label: CHECKBOX_CARS_NAME }
 ];
 
 describe('Specification tree view tests', () => {
@@ -74,7 +88,7 @@ describe('Specification tree view tests', () => {
         await getTreeSection();
 
         const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-        const item = items.find(async (item) => (await item.getLabel()) === fileName);
+        const item = await findAsync(items, async (item) => (await item.getLabel()) === fileName);
         if (!item) {
             throw new Error(`${fileName} not found`);
         }
@@ -118,8 +132,8 @@ describe('Specification tree view tests', () => {
 
         it('Look at the items', async () => {
             await checkItemCheckboxes(WORKSPACE_1_CONTENT);
-        });        
-        
+        });
+
         it('Expand/collapse DOCUMENTS TO PUBLISH', async () => {
             const sections = await sideBar?.getContent().getSections();
             await collapseAll(sections ?? []);
@@ -161,7 +175,8 @@ describe('Specification tree view tests', () => {
         });
 
         it('Checking the status of workspace_2 checkboxes when leaving the plugin', async () => {
-            await checkSavedCheckboxContext(CARS_NAME, WORKSPACE_2_CHECKBOX_CONTENT, UNITED_WORKSPACE);
+            await openFileFromExplorer(CHECKBOX_CARS_NAME);
+            await checkSavedCheckboxContext(CHECKBOX_CARS_NAME, WORKSPACE_2_CHECKBOX_CONTENT, UNITED_WORKSPACE);
         });
     });
 });
