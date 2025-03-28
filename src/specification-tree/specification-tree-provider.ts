@@ -171,7 +171,13 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
     }
 
     private sortSpecificationItems(specItems: SpecificationItem[]): SpecificationItem[] {
-        return specItems.sort((firstValue, secondValue) => firstValue.label.localeCompare(secondValue.label));
+        return specItems.sort((firstValue, secondValue) => {
+            const descriptionComparison = firstValue.description.localeCompare(secondValue.description);
+            if (descriptionComparison !== 0) {
+                return descriptionComparison;
+            }
+            return firstValue.label.localeCompare(secondValue.label);
+        });
     }
 
     private isSpecificationFile(path: FilePath): boolean {

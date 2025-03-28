@@ -54,6 +54,9 @@ export const splitVersion = (version: VersionId): { version: string; revision: s
 };
 
 export const convertPreviousVersion = (version: VersionId): string => {
+    if (!version) {
+        return '';
+    }
     if (version === PUBLISH_NO_PREVIOUS_VERSION) {
         return '';
     }

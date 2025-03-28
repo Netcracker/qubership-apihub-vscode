@@ -12,7 +12,8 @@ const relative = (workfolderPath: WorkfolderPath, filePath: string): string => {
 };
 
 export const getMiddlePath = (workfolderPath: WorkfolderPath, filePath: string): string => {
-    return `/${path.dirname(relative(workfolderPath, filePath))}/`;
+    const middlePath = path.dirname(relative(workfolderPath, filePath));
+    return middlePath === '.' ? '' : `/${middlePath}/`;
 };
 
 export const getFileDirectory = (filePath: string): string => {

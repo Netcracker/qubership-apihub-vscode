@@ -1,4 +1,4 @@
-import { PUBLISH_INPUT_RELEASE_PATTERN } from '../constants/publish.constants';
+import { PUBLISH_INPUT_RELEASE_PATTERN, PUBLISH_NO_PREVIOUS_VERSION } from '../constants/publish.constants';
 import { ConfigurationId } from './configuration.model';
 import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
@@ -12,6 +12,11 @@ export enum VersionStatus {
     DRAFT = 'draft',
     ARCHIVED = 'archived'
 }
+
+export enum ValidationRulesSeverityLevel {
+    ERROR = 'error',
+    WARNING = 'warning'
+}
 export interface BuildConfigFile {
     fileId: FileId;
     publish: boolean;
@@ -20,6 +25,9 @@ export interface BuildConfigMetadata {
     versionLabels: string[];
 }
 
+export interface ValidationRulesSeverity {
+    brokenRefs: ValidationRulesSeverityLevel;
+}
 export interface BuildConfig {
     packageId: PackageId;
     version: VersionId;
@@ -27,6 +35,7 @@ export interface BuildConfig {
     previousVersion: VersionId;
     files: BuildConfigFile[];
     metadata: BuildConfigMetadata | {};
+    validationRulesSeverity: ValidationRulesSeverity;
 }
 
 export type Key = Readonly<string>;
@@ -94,26 +103,26 @@ export class PublishViewData {
         this.version = '';
         this.labels = new Set();
         this.status = VersionStatus.DRAFT;
-        this.previousVersion = '';
+        this.previousVersion = PUBLISH_NO_PREVIOUS_VERSION;
         this.configId = '';
         this.releaseVersionPattern = PUBLISH_INPUT_RELEASE_PATTERN;
     }
 }
 
-export interface PublishViewPackageIdData{
-    packageId: PackageId,
-    alias: string,
-    parentId: string,
-    kind: string,
-    name: string,
-    description: string,
-    isFavorite: boolean,
-    imageUrl: string,
-    parents: string[],
-    defaultRole: string,
-    permissions: string[],
-    defaultReleaseVersion: string,
-    defaultVersion: string,
-    releaseVersionPattern: string,
-    excludeFromSearch: boolean
+export interface PublishViewPackageIdData {
+    packageId: PackageId;
+    alias: string;
+    parentId: string;
+    kind: string;
+    name: string;
+    description: string;
+    isFavorite: boolean;
+    imageUrl: string;
+    parents: string[];
+    defaultRole: string;
+    permissions: string[];
+    defaultReleaseVersion: string;
+    defaultVersion: string;
+    releaseVersionPattern: string;
+    excludeFromSearch: boolean;
 }

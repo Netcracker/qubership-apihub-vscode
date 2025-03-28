@@ -1,5 +1,7 @@
 import * as assert from 'assert';
-import { PUBLISH_LOADING_OPTION } from '../../common/constants/publish.constants';
+import path from 'path';
+import { Uri } from 'vscode';
+import { SpecificationItem } from '../../common/models/specification-item';
 import {
     capitalize,
     getExtension,
@@ -10,9 +12,6 @@ import {
     sortStrings
 } from '../../utils/path.utils';
 import { convertOptionsToDto } from '../../utils/publish.utils';
-import { SpecificationItem } from '../../common/models/specification-item';
-import { Uri } from 'vscode';
-import path from 'path';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
@@ -27,18 +26,16 @@ const DOC = 'doc';
 const GQL = 'gql';
 const GRAPHQ = 'graphql';
 
-
 const WORKFOLDER_PATH = 'folder-name/workfolder';
 const FILE_DIRECTORY_PATH = 'folder-name/workfolder/src/docs';
 const FILE_YAML_PATH = 'folder-name/workfolder/src/docs/fileName.yaml';
 
-
 suite('Utils', () => {
     test('convertOptionsToDto', async () => {
-        let optionsDto = convertOptionsToDto([OPTION_1]);
+        let optionsDto = convertOptionsToDto([OPTION_1], '');
         assert.deepStrictEqual(optionsDto, [{ name: OPTION_1, disabled: false }]);
 
-        optionsDto = convertOptionsToDto([OPTION_1, OPTION_2]);
+        optionsDto = convertOptionsToDto([OPTION_1, OPTION_2], '');
         assert.deepStrictEqual(optionsDto, [
             { name: OPTION_1, disabled: false },
             { name: OPTION_2, disabled: false }
@@ -77,22 +74,10 @@ suite('Utils', () => {
     });
 
     test('isItemApispecFile', async () => {
-        const item1: SpecificationItem = {
-            label: NAME_1,
-            parentPath: '',
-            uri: Uri.file(`${NAME_1}.${YAML}`),
-            workspacePath: '',
-            checkboxState: 0
-        };
+        const item1: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${YAML}`), '', 0);
         assert.equal(isItemApispecFile(item1), true);
 
-        const item2: SpecificationItem = {
-            label: NAME_1,
-            parentPath: '',
-            uri: Uri.file(`${NAME_1}.${GRAPHQ}`),
-            workspacePath: '',
-            checkboxState: 0
-        };
+        const item2: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${GRAPHQ}`), '', 0);
         assert.equal(isItemApispecFile(item2), false);
     });
 

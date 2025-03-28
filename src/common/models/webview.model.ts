@@ -22,6 +22,7 @@ export enum WebviewMessages {
 export interface WebviewOption {
     name: string;
     disabled: boolean;
+    selected: boolean;
 }
 
 export interface WebviewPayload<T> {

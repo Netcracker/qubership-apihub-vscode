@@ -160,7 +160,6 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.publishService.onPublish(
             (isPiblishProgress) => {
                 this.updateWebviewLoading(isPiblishProgress);
-                this.loadPreviousVersions();
             },
             this,
             this._disposables
@@ -181,7 +180,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.updateVersionPattern(publishData, status);
 
         const options = Array.from(new Set([PUBLISH_NO_PREVIOUS_VERSION, previousVersion])).filter((value) => !!value);
-        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options));
+        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options, previousVersion));
         this.updateWebviewField(PublishFields.PREVIOUS_VERSION, previousVersion);
         this.updateWebviewLabels(labels);
     }
@@ -313,7 +312,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private async loadPreviousVersions(): Promise<void> {
-        const { packageId } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
+        const { packageId, previousVersion } = this.getPublishViewData(this.workfolderService.activeWorkfolderPath);
         if (!packageId) {
             return;
         }
@@ -327,10 +326,10 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
 
         await this.crudService
             .getVersions(host, token, packageId)
-            .then((versions) => options.push(...versions.versions.map((ver) => splitVersion(ver.version).version)))
+            .then((dto) => options.push(...dto.versions.map((version) => splitVersion(version.version).version)))
             .catch();
 
-        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options));
+        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options, previousVersion));
     }
 
     private updateVersionPattern(publishData: PublishViewData, status: VersionStatus): void {
@@ -476,7 +475,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                     <p>
                         <vscode-label for="${PublishFields.PREVIOUS_VERSION}" required>Previous release version:</vscode-label>
                         <vscode-single-select id="${PublishFields.PREVIOUS_VERSION}" combobox>
-                            <vscode-option>${PUBLISH_NO_PREVIOUS_VERSION}</vscode-option>
+                            <vscode-option selected>${PUBLISH_NO_PREVIOUS_VERSION}</vscode-option>
                         </vscode-single-select>
                     </p>
                     <p>

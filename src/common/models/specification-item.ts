@@ -5,6 +5,8 @@ import { FilePath } from './common.model';
 import { ConfigurationId } from './configuration.model';
 
 export class SpecificationItem extends TreeItem {
+    public description: string;
+
     constructor(
         public readonly label: string,
         public readonly parentPath: string,
