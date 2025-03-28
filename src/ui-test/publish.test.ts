@@ -99,6 +99,12 @@ describe('Publsih Test', () => {
             localServer.stop();
         });
 
+        afterEach(async () => {
+            await switchToPublish();
+            await findPublishFields();
+            await clearTextField(packageIdField);
+        });
+
         it('Check required empty Environment fields if PackageId is fill', async function () {
             await switchToEnvironments();
             await findEnvFields();
@@ -176,7 +182,7 @@ describe('Publsih Test', () => {
 
             await switchToPublish();
             await findPublishFields();
-
+            console.log(await webview.getDriver().takeScreenshot());
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
             await checkDependentFieldsAreDisabled(true);
 
@@ -293,7 +299,14 @@ describe('Publsih Test', () => {
                 await versionField?.sendKeys(BROKEN_VERSION);
                 isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
                 expect(isVersionFieldPatternMismatch).to.be.true;
-            });
+            });            
+            
+            
+            // it('Enter label and delete', async function () {
+            //     await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+            //     await new Promise((res) => setTimeout(res, 2000));
+            // });
         });
 
         const switchTo = async (section: PLUGIN_SECTIONS): Promise<void> => {
