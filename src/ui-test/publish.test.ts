@@ -371,7 +371,7 @@ describe('Publsih Test', () => {
                 expect(labels).to.be.empty;
             });            
             
-            it.only('Check Previous Version has default value', async function () {
+            it('Check Previous Version has default value', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
