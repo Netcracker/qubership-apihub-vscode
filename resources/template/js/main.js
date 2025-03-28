@@ -82,12 +82,6 @@ fieldListenersMapper.set(FieldTypes.INPUT, (fieldName, field) => {
 });
 
 fieldListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, field) => {
-    field.addEventListener('click', () => {
-        const value = getInput(field).value;
-        if (!value?.length) {
-            requestSingleSelectOptions(fieldName, field);
-        }
-    });
     field.addEventListener('change', () => sendFieldValue(fieldName, field));
     field.addEventListener('focusout', () => {
         const value = getInput(field).value;

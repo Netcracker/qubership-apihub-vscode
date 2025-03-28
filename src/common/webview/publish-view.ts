@@ -160,6 +160,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.publishService.onPublish(
             (isPiblishProgress) => {
                 this.updateWebviewLoading(isPiblishProgress);
+                this.wrapInProgress(async () => await this.loadPreviousVersions());
             },
             this,
             this._disposables
@@ -297,6 +298,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                 this.updateWebviewPattern(PublishFields.VERSION, pattern);
                 this.disableDependentFields(false);
                 this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
+                this.wrapInProgress(async () => await this.loadPreviousVersions());
             })
             .catch((error) => {
                 const crudError = error as CrudError;

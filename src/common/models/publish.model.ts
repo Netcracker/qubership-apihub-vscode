@@ -13,10 +13,6 @@ export enum VersionStatus {
     ARCHIVED = 'archived'
 }
 
-export enum ValidationRulesSeverityLevel {
-    ERROR = 'error',
-    WARNING = 'warning'
-}
 export interface BuildConfigFile {
     fileId: FileId;
     publish: boolean;
@@ -25,9 +21,6 @@ export interface BuildConfigMetadata {
     versionLabels: string[];
 }
 
-export interface ValidationRulesSeverity {
-    brokenRefs: ValidationRulesSeverityLevel;
-}
 export interface BuildConfig {
     packageId: PackageId;
     version: VersionId;
@@ -35,7 +28,6 @@ export interface BuildConfig {
     previousVersion: VersionId;
     files: BuildConfigFile[];
     metadata: BuildConfigMetadata | {};
-    validationRulesSeverity: ValidationRulesSeverity;
 }
 
 export type Key = Readonly<string>;

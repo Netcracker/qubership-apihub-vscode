@@ -27,7 +27,6 @@ import {
     PublishStatus,
     PublishStatusDto,
     PublishViewData,
-    ValidationRulesSeverityLevel,
     VersionId,
     VersionStatus
 } from '../models/publish.model';
@@ -191,8 +190,7 @@ export class PublishService extends Disposable {
             version,
             previousVersion: normalizePreviousVersion,
             files: buildConfig,
-            metadata: versionLabels?.length ? { versionLabels } : {},
-            validationRulesSeverity: { brokenRefs: ValidationRulesSeverityLevel.ERROR }
+            metadata: versionLabels?.length ? { versionLabels } : {}
         };
         const formData = new FormData();
 
