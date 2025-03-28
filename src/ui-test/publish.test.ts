@@ -1,6 +1,15 @@
 import { expect } from 'chai';
-import { ActivityBar, By, SideBarView, ViewControl, ViewSection, WebElement, WebView } from 'vscode-extension-tester';
-import { PUBLISH_INPUT_DRAFT_PATTERN } from '../common/constants/publish.constants';
+import {
+    ActivityBar,
+    By,
+    Key,
+    SideBarView,
+    ViewControl,
+    ViewSection,
+    WebElement,
+    WebView
+} from 'vscode-extension-tester';
+import { PUBLISH_INPUT_DRAFT_PATTERN, PUBLISH_NO_PREVIOUS_VERSION } from '../common/constants/publish.constants';
 import { EnvironmentWebviewFields } from '../common/models/enviroment.model';
 import { PublishFields } from '../common/models/publish.model';
 import {
@@ -12,7 +21,7 @@ import {
 import { LOCAL_SERVER_FULL_URL, TEST_PAT_TOKEN } from './constants/environment.constants';
 import { EXTENTSION_NAME, PLUGIN_SECTIONS } from './constants/test.constants';
 import { LabelData } from './models/label.model';
-import { SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
+import { BUTTON_LOCATOR, SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
 import { PACKAGE_ID_NAME, RELEASE_VERSION_PATTERN } from './server/data/packages';
 import { LocalServer } from './server/localServer';
 import {
@@ -23,6 +32,7 @@ import {
     getLabels,
     getPatternMismatch,
     getSingleSelectOptions,
+    getTexts,
     getWebView,
     Until
 } from './utils/webview.utils';
@@ -39,9 +49,13 @@ const DRAFT = 'Draft';
 const RELEASE = 'Release';
 const ARCHIVED = 'Archived';
 
-const RELEASE_VERSION = "2025.1";
-const NONE_RELEASE_VERSION = "none-release-version";
-const BROKEN_VERSION = "broken-version!%#";
+const RELEASE_VERSION = '2025.1';
+const NONE_RELEASE_VERSION = 'none-release-version';
+const BROKEN_VERSION = 'broken-version!%#';
+
+const LABEL_NAME = 'label';
+const LABEL_LONG_NAME = 'Loooooooooooooooooooooooooooong';
+const LABEL_SHORT_NAME = 'S';
 
 describe('Publsih Test', () => {
     let sideBar: SideBarView | undefined;
@@ -182,7 +196,9 @@ describe('Publsih Test', () => {
 
             await switchToPublish();
             await findPublishFields();
-            console.log(await webview.getDriver().takeScreenshot());
+
+            await new Promise((res) => setTimeout(res, 1000));
+
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
             await checkDependentFieldsAreDisabled(true);
 
@@ -219,6 +235,10 @@ describe('Publsih Test', () => {
             });
 
             afterEach(async () => {
+                const labels = await getLabels();
+                for (const label of labels) {
+                    await deleteLabel(label);
+                }
                 await clearTextField(versionField);
                 await clearTextField(packageIdField);
             });
@@ -299,14 +319,74 @@ describe('Publsih Test', () => {
                 await versionField?.sendKeys(BROKEN_VERSION);
                 isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
                 expect(isVersionFieldPatternMismatch).to.be.true;
+            });
+
+            it('Check create some Labels be Enter and delete', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await labelsField?.sendKeys(LABEL_NAME, Key.ENTER);
+                await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
+                await labelsField?.sendKeys(LABEL_SHORT_NAME, Key.ENTER);
+
+                let labels = await getLabels();
+                let labelNames: string[] = await getTexts(labels);
+                expect(labelNames).to.be.an('array').with.lengthOf(3);
+                expect(labelNames).deep.equals([LABEL_NAME, LABEL_LONG_NAME, LABEL_SHORT_NAME]);
+
+                await deleteLabel(labels[1]);
+                labels = await getLabels();
+                labelNames = await getTexts(labels);
+                expect(labelNames).deep.equals([LABEL_NAME, LABEL_SHORT_NAME]);
+
+                await deleteLabel(labels[1]);
+                labels = await getLabels();
+                labelNames = await getTexts(labels);
+                expect(labelNames).deep.equals([LABEL_NAME]);
+
+                await deleteLabel(labels[0]);
+                labels = await getLabels();
+                expect(labels).to.be.empty;
+            });
+
+            it('Check create Labels using focusout', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await labelsField?.sendKeys(LABEL_NAME);
+                await labelsField?.sendKeys(Key.TAB);
+
+                const labelFieldValue = await labelsField?.getText();
+                expect(labelFieldValue).to.be.empty;
+
+                let labels = await getLabels();
+                const labelNames = await getTexts(labels);
+                expect(labelNames).to.be.an('array').with.lengthOf(1);
+                expect(labelNames[0]).to.be.equals(LABEL_NAME);
+
+                await deleteLabel(labels[0]);
+                labels = await getLabels();
+                expect(labels).to.be.empty;
             });            
             
-            
-            // it('Enter label and delete', async function () {
-            //     await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+            it.only('Check Previous Version has default value', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-            //     await new Promise((res) => setTimeout(res, 2000));
-            // });
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await previousReleaseVersion?.click();
+
+                const options = await getSingleSelectOptions(previousReleaseVersion);
+                const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
+
+                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION]);
+
+                await options[0]?.click();
+                const value = await previousReleaseVersion?.getText();
+                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+            });
         });
 
         const switchTo = async (section: PLUGIN_SECTIONS): Promise<void> => {
@@ -330,6 +410,20 @@ describe('Publsih Test', () => {
             urlField = await findWebElementById(textFields, EnvironmentWebviewFields.URL);
             tokenField = await findWebElementById(textFields, EnvironmentWebviewFields.TOKEN);
             testConnectionButton = await webview.findWebElement(By.css('a'));
+        };
+
+        const getLabels = async (): Promise<WebElement[]> => {
+            let labelPlaceholder;
+            try {
+                labelPlaceholder = await webview.findWebElement(By.id('pulbish-labels-placeholder'));
+            } catch {
+                return [];
+            }
+            return (await labelPlaceholder.findElements(BUTTON_LOCATOR)) ?? [];
+        };
+
+        const deleteLabel = async (label: WebElement): Promise<void> => {
+            await label.click();
         };
     });
 

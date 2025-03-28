@@ -62,8 +62,6 @@ export const getWebView = async (sideBar: SideBarView | undefined, sectionName: 
     return new WebView(webviewElem);
 };
 
-// export const collapseAll = async (sections: ViewSection[])
-
 export const expandAll = async (sections: ViewSection[]): Promise<void> => {
     for (const section of sections) {
         try {
@@ -107,7 +105,7 @@ export const getSingleSelectOptions = async (field: WebElement | undefined): Pro
 export const clickOption = async (field: WebElement | undefined, name: string): Promise<void> => {
     await field?.click();
     const options = await getSingleSelectOptions(field);
-    const option = await findAsync(options, async (option)=> (await option.getText()) === name);
+    const option = await findAsync(options, async (option) => (await option.getText()) === name);
     await option?.click();
 };
 
@@ -121,7 +119,11 @@ export const findAsync = async <T>(array: T[], predicate: (item: T) => Promise<b
 };
 
 export const getPatternMismatch = async (field: WebElement | undefined): Promise<boolean> => {
-    return field?.getDriver().executeScript("return arguments[0].validity.patternMismatch;", field) ?? false;;
+    return field?.getDriver().executeScript('return arguments[0].validity.patternMismatch;', field) ?? false;
+};
+
+export const getTexts = async (fields: WebElement[]): Promise<string[]> => {
+    return Promise.all(fields.map(async (field) => await field.getText()));
 };
 
 export class Until {

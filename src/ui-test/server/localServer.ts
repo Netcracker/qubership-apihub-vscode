@@ -3,7 +3,7 @@ import { AddressInfo } from 'net';
 import { API_V1, API_V2, API_V3, PACKAGES, PAT_HEADER } from '../../common/constants/common.constants';
 import { PublishVersionDto, PublishViewPackageIdData } from '../../common/models/publish.model';
 import { LOCAL_SERVER_PORT, TEST_BROKEN_PAT_TOKEN, TEST_LOADING_PAT_TOKEN } from '../constants/environment.constants';
-import { PACKAGES_DATA } from './data/packages';
+import { PACKAGE_ID_NAME, PACKAGES_DATA } from './data/packages';
 import { SERVER_STATUS_DTO } from './data/status';
 import { VERSIONS } from './data/versions';
 
@@ -36,7 +36,7 @@ export class LocalServer {
 
         this._app.get(`${API_V3}/${PACKAGES}/:packageId/versions`, (req, res) => {
             const packageId = req.params.packageId;
-            res.status(200).json({ versions: VERSIONS } as PublishVersionDto);
+            res.status(200).json(packageId === PACKAGE_ID_NAME ? ({ versions: VERSIONS } as PublishVersionDto) : []);
         });
 
         this._app.get(`${API_V2}/${PACKAGES}/:packageId`, (req, res) => {
