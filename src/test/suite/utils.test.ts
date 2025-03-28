@@ -33,12 +33,12 @@ const FILE_YAML_PATH = 'folder-name/workfolder/src/docs/fileName.yaml';
 suite('Utils', () => {
     test('convertOptionsToDto', async () => {
         let optionsDto = convertOptionsToDto([OPTION_1], '');
-        assert.deepStrictEqual(optionsDto, [{ name: OPTION_1, disabled: false }]);
+        assert.deepStrictEqual(optionsDto, [{ name: OPTION_1, disabled: false, selected: false }]);
 
         optionsDto = convertOptionsToDto([OPTION_1, OPTION_2], '');
         assert.deepStrictEqual(optionsDto, [
-            { name: OPTION_1, disabled: false },
-            { name: OPTION_2, disabled: false }
+            { name: OPTION_1, disabled: false, selected: false },
+            { name: OPTION_2, disabled: false, selected: false }
         ]);
     });
 
