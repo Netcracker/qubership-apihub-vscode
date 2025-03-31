@@ -1,7 +1,13 @@
 import express from 'express';
 import { AddressInfo } from 'net';
 import { API_V1, API_V2, API_V3, PACKAGES, PAT_HEADER } from '../../common/constants/common.constants';
-import { PublishVersionDto, PublishViewPackageIdData } from '../../common/models/publish.model';
+import {
+    PublishConfig,
+    PublishStatus,
+    PublishStatusDto,
+    PublishVersionDto,
+    PublishViewPackageIdData
+} from '../../common/models/publish.model';
 import { LOCAL_SERVER_PORT, TEST_BROKEN_PAT_TOKEN, TEST_LOADING_PAT_TOKEN } from '../constants/environment.constants';
 import { PACKAGE_ID_NAME, PACKAGES_DATA } from './data/packages';
 import { SERVER_STATUS_DTO } from './data/status';
@@ -17,6 +23,7 @@ export class LocalServer {
 
     private setupRoutes(): void {
         this._app.use(express.json());
+        this._app.use(express.urlencoded({ extended: true }));
 
         this._app.get(`${API_V1}/system/info`, (req, res) => {
             const token: string | undefined = req.get(PAT_HEADER.toLocaleLowerCase());
@@ -49,6 +56,22 @@ export class LocalServer {
                 return;
             }
             res.status(404).json();
+        });
+
+        this._app.post(`${API_V2}/${PACKAGES}/:packageId/publish`, (req, res) => {
+            const packageId = req.params.packageId;
+
+            setTimeout(() => res.status(200).json({ config: {}, publishId: packageId } as PublishConfig), 500);
+        });
+
+        this._app.get(`${API_V2}/${PACKAGES}/:packageId/publish/:publishId/status`, (req, res) => {
+            setTimeout(
+                () =>
+                    res
+                        .status(200)
+                        .json({ message: '', publishId: '', status: PublishStatus.COMPLETE } as PublishStatusDto),
+                500
+            );
         });
     }
 

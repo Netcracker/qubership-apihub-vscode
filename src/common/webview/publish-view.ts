@@ -278,7 +278,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private async loadPackageId(publishData: PublishViewData): Promise<void> {
-        const { packageId } = publishData;
+        const { packageId, previousVersion } = publishData;
         if (!packageId) {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
             return;
@@ -288,6 +288,8 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
+
+        this.updatePreviousVersions([], previousVersion);
 
         await this.crudService
             .getPackageId(host, token, packageId)
@@ -322,14 +324,18 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        const options = [PUBLISH_NO_PREVIOUS_VERSION];
-
+        const options: string[] = [];
         await this.crudService
             .getVersions(host, token, packageId)
             .then((dto) => options.push(...dto.versions.map((version) => splitVersion(version.version).version)))
             .catch();
 
-        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(options, previousVersion));
+        this.updatePreviousVersions(options, previousVersion);
+    }
+
+    private updatePreviousVersions(options: string[], previousVersion: string): void {
+        const value = [PUBLISH_NO_PREVIOUS_VERSION, ...options];
+        this.updateWebviewOptions(PublishFields.PREVIOUS_VERSION, convertOptionsToDto(value, previousVersion));
     }
 
     private updateVersionPattern(publishData: PublishViewData, status: VersionStatus): void {

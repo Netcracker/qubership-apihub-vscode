@@ -3,6 +3,7 @@ import { PublishVersion } from '../../../common/models/publish.model';
 export const VERSION_LABEL = 'DRAFT';
 export const VERSION_1 = "2025.1";
 export const VERSION_2 = "2025.2";
+export const VERSION_3 = "2025.3";
 
 export const VERSIONS: PublishVersion[] = [
     {

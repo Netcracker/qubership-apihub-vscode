@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import * as path from 'path';
 import {
     ActivityBar,
     CustomTreeItem,
@@ -9,23 +8,21 @@ import {
     VSBrowser,
     WelcomeContentSection
 } from 'vscode-extension-tester';
-import { TestTreeItem } from './models/tree.model';
 import { DOCUMENTS_SECTION, EXTENTSION_NAME } from './constants/test.constants';
-import { clickCheckbox, getTestTreeItems } from './utils/tree.utils';
-import { openFileFromExplorer, openExplorer } from './utils/explorer.utils';
 import {
-    WORKSPACE_1_NAME,
-    PETS_NAME,
     CARS_NAME,
+    CHECKBOX_CARS_NAME,
     DOCUMENTS_WELCOME_TEXT,
+    PETS_NAME,
     UNITED_WORKSPACE,
-    WORKSPACE_2_NAME,
-    CHECKBOX_CARS_NAME
+    WORKSPACE_1_NAME,
+    WORKSPACE_1_PATH,
+    WORKSPACE_2_PATH
 } from './constants/tree.constants';
+import { TestTreeItem } from './models/tree.model';
+import { openExplorer, openFileFromExplorer } from './utils/explorer.utils';
+import { clickCheckbox, getTestTreeItems } from './utils/tree.utils';
 import { collapseAll, expandAll, findAsync } from './utils/webview.utils';
-
-const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
-const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NAME);
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },

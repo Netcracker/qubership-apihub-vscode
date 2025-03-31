@@ -4,12 +4,14 @@ import {
     By,
     Key,
     SideBarView,
+    StatusBar,
     ViewControl,
     ViewSection,
+    VSBrowser,
     WebElement,
     WebView
 } from 'vscode-extension-tester';
-import { PUBLISH_INPUT_DRAFT_PATTERN, PUBLISH_NO_PREVIOUS_VERSION } from '../common/constants/publish.constants';
+import { PUBLISH_INPUT_DRAFT_PATTERN, PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_PUBLISH_MESSAGE } from '../common/constants/publish.constants';
 import { EnvironmentWebviewFields } from '../common/models/enviroment.model';
 import { PublishFields } from '../common/models/publish.model';
 import {
@@ -20,9 +22,11 @@ import {
 } from './constants/attribute.constants';
 import { LOCAL_SERVER_FULL_URL, TEST_PAT_TOKEN } from './constants/environment.constants';
 import { EXTENTSION_NAME, PLUGIN_SECTIONS } from './constants/test.constants';
+import { WORKSPACE_1_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
 import { PACKAGE_ID_NAME, PACKAGE_ID_VERSIONS_NAME, RELEASE_VERSION_PATTERN } from './server/data/packages';
+import { VERSION_1, VERSION_2, VERSION_3, VERSION_LABEL } from './server/data/versions';
 import { LocalServer } from './server/localServer';
 import {
     clearTextField,
@@ -36,7 +40,6 @@ import {
     getWebView,
     Until
 } from './utils/webview.utils';
-import { VERSION_2, VERSION_1, VERSION_LABEL } from './server/data/versions';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -59,6 +62,7 @@ const LABEL_LONG_NAME = 'Loooooooooooooooooooooooooooong';
 const LABEL_SHORT_NAME = 'S';
 
 describe('Publsih Test', () => {
+    let viewControl: ViewControl | undefined;
     let sideBar: SideBarView | undefined;
     let sections: ViewSection[] | undefined;
     let webview: WebView;
@@ -67,9 +71,10 @@ describe('Publsih Test', () => {
     let statusField: WebElement | undefined;
     let labelsField: WebElement | undefined;
     let previousReleaseVersion: WebElement | undefined;
+    let publishButton: WebElement | undefined;
 
     before(async () => {
-        const viewControl: ViewControl | undefined = await new ActivityBar().getViewControl(EXTENTSION_NAME);
+        viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
         sideBar = await viewControl?.openView();
         sections = await sideBar?.getContent().getSections();
         webview = await getWebView(sideBar, PLUGIN_SECTIONS.PUBLISH);
@@ -223,7 +228,7 @@ describe('Publsih Test', () => {
         });
 
         /** Tests with a only correct environment */
-        describe('Publish e2e', function () {
+        describe('Publish e2e preparation', function () {
             before(async function () {
                 await switchToEnvironments();
                 await findEnvFields();
@@ -371,9 +376,8 @@ describe('Publsih Test', () => {
                 await deleteLabel(labels[0]);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
-            });            
-                        
-            
+            });
+
             it('Check load label from version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
@@ -391,8 +395,8 @@ describe('Publsih Test', () => {
                 await deleteLabel(labels[0]);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
-            });            
-            
+            });
+
             it('Check "Previous Version" has default value', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_VERSIONS_NAME);
 
@@ -408,8 +412,8 @@ describe('Publsih Test', () => {
                 await options[0]?.click();
                 const value = await previousReleaseVersion?.getText();
                 expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
-            });            
-            
+            });
+
             it('Check load "Previous Version" from package', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
@@ -423,23 +427,60 @@ describe('Publsih Test', () => {
                 expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
 
                 await options[2]?.click();
-                const value = await previousReleaseVersion?.getAttribute("value");
+                const value = await previousReleaseVersion?.getAttribute('value');
                 expect(value).is.equals(VERSION_1);
-            });            
-            
+            });
+
             it('Check "Previous Version" cannot select a non-existent version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
 
-                await previousReleaseVersion?.sendKeys("non-existentVersion");
+                await previousReleaseVersion?.sendKeys('non-existentVersion');
                 await previousReleaseVersion?.sendKeys(Key.TAB + Key.TAB);
-                
+
                 // WA. Delete after https://github.com/vscode-elements/elements/issues/369
                 await findPublishFields();
 
-                const value = await previousReleaseVersion?.getAttribute("value");
+                const value = await previousReleaseVersion?.getAttribute('value');
                 expect(value).is.empty;
+            });
+
+            describe('Publish', function () {
+                let statusBar: StatusBar;
+
+                before(async function () {
+                    await webview.switchBack();
+
+                    await VSBrowser.instance.openResources(WORKSPACE_1_PATH);
+                    viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
+                    sideBar = await viewControl?.openView();
+                    sections = await sideBar?.getContent().getSections();
+                    statusBar = new StatusBar();
+                    await switchToPublish();
+                    await findPublishFields();
+                });
+
+                it('Check success of the draft Publish', async function () {
+                    await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                    await new Promise((res) => setTimeout(res, 2000));
+
+                    await versionField?.sendKeys(VERSION_3);
+                    await clickOption(statusField, DRAFT);
+
+                    await labelsField?.sendKeys('Pulbush-test' + Key.ENTER);
+                    await clickOption(previousReleaseVersion, VERSION_2);
+
+                    await publishButton?.click();
+
+                    await new Promise((res) => setTimeout(res, 500));
+                    await webview.switchBack();
+
+                    const statusBarText = await statusBar.getText();
+                    expect(statusBarText).includes(STATUS_BAR_PUBLISH_MESSAGE);
+                    await webview.switchBack();
+                });
             });
         });
 
@@ -484,11 +525,13 @@ describe('Publsih Test', () => {
     const findPublishFields = async (): Promise<void> => {
         const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
         const selectFields = await webview.findWebElements(SENGLE_SELECT_LOCATOR);
+        const buttons = await webview.findWebElements(BUTTON_LOCATOR);
         packageIdField = await findWebElementById(textFields, PublishFields.PACKAGE_ID);
         versionField = await findWebElementById(textFields, PublishFields.VERSION);
         statusField = await findWebElementById(selectFields, PublishFields.STATUS);
         labelsField = await findWebElementById(textFields, PublishFields.LABELS);
         previousReleaseVersion = await findWebElementById(selectFields, PublishFields.PREVIOUS_VERSION);
+        publishButton = await findWebElementById(buttons, PublishFields.PUBLISH_BUTTON);
     };
 
     const checkDependentFieldsAreDisabled = async (isDisabled: boolean): Promise<void> => {

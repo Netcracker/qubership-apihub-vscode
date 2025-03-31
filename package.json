@@ -105,8 +105,8 @@
     "typescript": "^5.7.3",
     "vscode-extension-tester": "^8.13.0",
     "vscode-test": "^1.6.1",
-    "webpack-cli": "^6.0.1",
-    "webpack": "^5.98.0"
+    "webpack": "^5.98.0",
+    "webpack-cli": "^6.0.1"
   },
   "dependencies": {
     "@vscode-elements/elements": "1.14.0",
