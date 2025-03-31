@@ -1,10 +1,12 @@
 import { PublishVersion } from '../../../common/models/publish.model';
 
 export const VERSION_LABEL = 'DRAFT';
+export const VERSION_1 = "2025.1";
+export const VERSION_2 = "2025.2";
 
 export const VERSIONS: PublishVersion[] = [
     {
-        version: '2025.2@1',
+        version: `${VERSION_2}@1`,
         status: 'draft',
         createdAt: '2025-03-11T10:49:08.291543Z',
         createdBy: {
@@ -15,10 +17,10 @@ export const VERSIONS: PublishVersion[] = [
             type: 'user'
         },
         versionLabels: [VERSION_LABEL],
-        previousVersion: '2025.1@1'
+        previousVersion: `${VERSION_1}@1`
     },
     {
-        version: '2025.1@1',
+        version: `${VERSION_1}@1`,
         status: 'release',
         createdAt: '2025-03-11T10:38:41.00982Z',
         createdBy: {

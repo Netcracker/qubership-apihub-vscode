@@ -22,7 +22,7 @@ import { LOCAL_SERVER_FULL_URL, TEST_PAT_TOKEN } from './constants/environment.c
 import { EXTENTSION_NAME, PLUGIN_SECTIONS } from './constants/test.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
-import { PACKAGE_ID_NAME, RELEASE_VERSION_PATTERN } from './server/data/packages';
+import { PACKAGE_ID_NAME, PACKAGE_ID_VERSIONS_NAME, RELEASE_VERSION_PATTERN } from './server/data/packages';
 import { LocalServer } from './server/localServer';
 import {
     clearTextField,
@@ -36,6 +36,7 @@ import {
     getWebView,
     Until
 } from './utils/webview.utils';
+import { VERSION_2, VERSION_1, VERSION_LABEL } from './server/data/versions';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -235,6 +236,7 @@ describe('Publsih Test', () => {
             });
 
             afterEach(async () => {
+                await clearTextField(previousReleaseVersion);
                 const labels = await getLabels();
                 for (const label of labels) {
                     await deleteLabel(label);
@@ -370,9 +372,29 @@ describe('Publsih Test', () => {
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });            
+                        
             
-            it('Check Previous Version has default value', async function () {
+            it('Check load label from version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await versionField?.sendKeys(VERSION_2);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                let labels = await getLabels();
+                const labelNames = await getTexts(labels);
+                expect(labelNames).to.be.an('array').with.lengthOf(1);
+                expect(labelNames[0]).to.be.equals(VERSION_LABEL);
+
+                await deleteLabel(labels[0]);
+                labels = await getLabels();
+                expect(labels).to.be.empty;
+            });            
+            
+            it('Check "Previous Version" has default value', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_VERSIONS_NAME);
 
                 await new Promise((res) => setTimeout(res, 2000));
 
@@ -386,6 +408,38 @@ describe('Publsih Test', () => {
                 await options[0]?.click();
                 const value = await previousReleaseVersion?.getText();
                 expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+            });            
+            
+            it('Check load "Previous Version" from package', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await previousReleaseVersion?.click();
+
+                const options = await getSingleSelectOptions(previousReleaseVersion);
+                const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
+
+                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
+
+                await options[2]?.click();
+                const value = await previousReleaseVersion?.getAttribute("value");
+                expect(value).is.equals(VERSION_1);
+            });            
+            
+            it('Check "Previous Version" cannot select a non-existent version', async function () {
+                await packageIdField?.sendKeys(PACKAGE_ID_NAME);
+
+                await new Promise((res) => setTimeout(res, 2000));
+
+                await previousReleaseVersion?.sendKeys("non-existentVersion");
+                await previousReleaseVersion?.sendKeys(Key.TAB + Key.TAB);
+                
+                // WA. Delete after https://github.com/vscode-elements/elements/issues/369
+                await findPublishFields();
+
+                const value = await previousReleaseVersion?.getAttribute("value");
+                expect(value).is.empty;
             });
         });
 
