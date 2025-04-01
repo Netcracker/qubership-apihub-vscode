@@ -17,7 +17,8 @@ import {
     UNITED_WORKSPACE,
     WORKSPACE_1_NAME,
     WORKSPACE_1_PATH,
-    WORKSPACE_2_PATH
+    WORKSPACE_2_PATH,
+    WORKSPACE_3_PATH
 } from './constants/tree.constants';
 import { TestTreeItem } from './models/tree.model';
 import { openExplorer, openFileFromExplorer } from './utils/explorer.utils';
@@ -68,6 +69,7 @@ describe('Specification tree view tests', () => {
     let sideBar: SideBarView | undefined;
 
     const getTreeSection = async (): Promise<void> => {
+        // await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
         viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
         sideBar = await viewControl?.openView();
         if (!sideBar) {

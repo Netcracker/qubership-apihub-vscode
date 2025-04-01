@@ -8,3 +8,11 @@ export enum PLUGIN_SECTIONS {
     DOCUMENTS = DOCUMENTS_SECTION,
     ENVIRONMENT = ENVIRONMENT_SECTION
 }
+
+export const PACKAGE_ID_NAME = 'packageId';
+export const PACKAGE_ID_VERSIONS_NAME = 'packageId-version';
+export const RELEASE_VERSION_PATTERN = '^[0-9]{4}[.]{1}[1-4]{1}$';
+export const VERSION_LABEL = 'DRAFT';
+export const VERSION_1 = '2025.1';
+export const VERSION_2 = '2025.2';
+export const VERSION_3 = '2025.3';

@@ -8,7 +8,9 @@ export const CHECKBOX_CARS_NAME = 'checkbox-cars.yaml';
 
 export const WORKSPACE_1_NAME = 'workspace1';
 export const WORKSPACE_2_NAME = 'workspace2';
+export const WORKSPACE_3_NAME = 'workspace3';
 export const UNITED_WORKSPACE = 'Untitled (Workspace)';
 
 export const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
 export const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NAME);
+export const WORKSPACE_3_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_3_NAME);

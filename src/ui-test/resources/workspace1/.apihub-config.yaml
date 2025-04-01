@@ -1,0 +1,9 @@
+packageId: packageId
+files:
+  - src/docs/gql/testGql.gql
+  - src/docs/pets.yaml
+  - src/docs/store.yaml
+  - src/docs/testGql.gql
+  - src/docs/testGraphql.graphql
+  - src/docs/user.yaml
+version: 1

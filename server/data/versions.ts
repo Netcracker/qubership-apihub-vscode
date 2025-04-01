@@ -1,4 +1,4 @@
-import { PublishVersion } from '../../../common/models/publish.model';
+import { PublishVersion } from '../../src/common/models/publish.model';
 
 export const VERSION_LABEL = 'DRAFT';
 export const VERSION_1 = "2025.1";

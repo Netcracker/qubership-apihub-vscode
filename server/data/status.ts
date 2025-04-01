@@ -1,4 +1,4 @@
-import { ServerStatusDto } from '../../../common/models/common.model';
+import { ServerStatusDto } from '../../src/common/models/common.model';
 
 export const SERVER_STATUS_DTO: ServerStatusDto = {
     backendVersion: '',

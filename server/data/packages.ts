@@ -1,4 +1,5 @@
-import { PublishViewPackageIdData } from '../../../common/models/publish.model';
+import { PublishViewPackageIdData } from "../../src/common/models/publish.model";
+
 
 export const PACKAGE_ID_NAME = 'packageId';
 export const PACKAGE_ID_VERSIONS_NAME = 'packageId-version';

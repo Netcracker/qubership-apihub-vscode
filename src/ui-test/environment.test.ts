@@ -11,7 +11,6 @@ import {
 import { ENVIRONMENT_SECTION, EXTENTSION_NAME } from './constants/test.constants';
 import { LabelData } from './models/label.model';
 import { TEXT_FIELD_LOCATOR } from './models/webview.model';
-import { LocalServer } from './server/localServer';
 import { findWebElementById, getLabels, Until } from './utils/webview.utils';
 
 const LABELS_DATA: LabelData[] = [
@@ -80,16 +79,6 @@ describe('Environment Webview', () => {
     });
 
     describe('Test connection', function () {
-        let localServer: LocalServer;
-        before(async function () {
-            localServer = new LocalServer();
-            await localServer.start();
-        });
-
-        after(async () => {
-            localServer.stop();
-        });
-
         beforeEach(async () => {
             await new Promise((res) => setTimeout(res, 1000));
         });

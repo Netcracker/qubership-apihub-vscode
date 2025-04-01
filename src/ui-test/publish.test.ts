@@ -21,13 +21,12 @@ import {
     REQUIRED_ATTRIBUTE
 } from './constants/attribute.constants';
 import { LOCAL_SERVER_FULL_URL, TEST_PAT_TOKEN } from './constants/environment.constants';
-import { EXTENTSION_NAME, PLUGIN_SECTIONS } from './constants/test.constants';
-import { WORKSPACE_1_PATH } from './constants/tree.constants';
+import { EXTENTSION_NAME, PACKAGE_ID_NAME, PACKAGE_ID_VERSIONS_NAME, PLUGIN_SECTIONS, RELEASE_VERSION_PATTERN, VERSION_1, VERSION_2, VERSION_3, VERSION_LABEL } from './constants/test.constants';
+import { WORKSPACE_1_PATH, WORKSPACE_3_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
-import { PACKAGE_ID_NAME, PACKAGE_ID_VERSIONS_NAME, RELEASE_VERSION_PATTERN } from './server/data/packages';
-import { VERSION_1, VERSION_2, VERSION_3, VERSION_LABEL } from './server/data/versions';
-import { LocalServer } from './server/localServer';
+
+
 import {
     clearTextField,
     clickOption,
@@ -105,19 +104,10 @@ describe('Publsih Test', () => {
     });
 
     describe('Publish and Environment integration', function () {
-        let localServer: LocalServer;
+
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
         let testConnectionButton: WebElement | undefined;
-
-        before(async function () {
-            localServer = new LocalServer();
-            await localServer.start();
-        });
-
-        after(async () => {
-            localServer.stop();
-        });
 
         afterEach(async () => {
             await switchToPublish();
@@ -461,6 +451,11 @@ describe('Publsih Test', () => {
                     await findPublishFields();
                 });
 
+                after(async function () {
+                    await webview.switchBack();
+                    await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+                });
+
                 it('Check success of the draft Publish', async function () {
                     await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
@@ -479,7 +474,9 @@ describe('Publsih Test', () => {
 
                     const statusBarText = await statusBar.getText();
                     expect(statusBarText).includes(STATUS_BAR_PUBLISH_MESSAGE);
-                    await webview.switchBack();
+                    await webview.switchToFrame();
+
+                    await new Promise((res) => setTimeout(res, 2000));
                 });
             });
         });
