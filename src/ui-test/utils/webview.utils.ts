@@ -66,8 +66,6 @@ export const expandAll = async (sections: ViewSection[]): Promise<void> => {
     for (const section of sections) {
         try {
             await section.expand();
-
-            console.log();
         } catch {}
     }
 };

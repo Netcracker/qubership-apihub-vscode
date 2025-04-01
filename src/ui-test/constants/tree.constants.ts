@@ -14,3 +14,4 @@ export const UNITED_WORKSPACE = 'Untitled (Workspace)';
 export const WORKSPACE_1_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_1_NAME);
 export const WORKSPACE_2_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_2_NAME);
 export const WORKSPACE_3_PATH = path.join('src', 'ui-test', 'resources', WORKSPACE_3_NAME);
+export const CONFIG_FILE_1_PATH = path.join(WORKSPACE_1_PATH, '.apihub-config.yaml');

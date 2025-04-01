@@ -1,4 +1,5 @@
 import { expect } from 'chai';
+import * as fs from 'fs';
 import {
     ActivityBar,
     By,
@@ -11,7 +12,11 @@ import {
     WebElement,
     WebView
 } from 'vscode-extension-tester';
-import { PUBLISH_INPUT_DRAFT_PATTERN, PUBLISH_NO_PREVIOUS_VERSION, STATUS_BAR_PUBLISH_MESSAGE } from '../common/constants/publish.constants';
+import {
+    PUBLISH_INPUT_DRAFT_PATTERN,
+    PUBLISH_NO_PREVIOUS_VERSION,
+    STATUS_BAR_PUBLISH_MESSAGE
+} from '../common/constants/publish.constants';
 import { EnvironmentWebviewFields } from '../common/models/enviroment.model';
 import { PublishFields } from '../common/models/publish.model';
 import {
@@ -21,12 +26,20 @@ import {
     REQUIRED_ATTRIBUTE
 } from './constants/attribute.constants';
 import { LOCAL_SERVER_FULL_URL, TEST_PAT_TOKEN } from './constants/environment.constants';
-import { EXTENTSION_NAME, PACKAGE_ID_NAME, PACKAGE_ID_VERSIONS_NAME, PLUGIN_SECTIONS, RELEASE_VERSION_PATTERN, VERSION_1, VERSION_2, VERSION_3, VERSION_LABEL } from './constants/test.constants';
-import { WORKSPACE_1_PATH, WORKSPACE_3_PATH } from './constants/tree.constants';
+import {
+    EXTENTSION_NAME,
+    PACKAGE_ID_NAME,
+    PACKAGE_ID_VERSIONS_NAME,
+    PLUGIN_SECTIONS,
+    RELEASE_VERSION_PATTERN,
+    VERSION_1,
+    VERSION_2,
+    VERSION_3,
+    VERSION_LABEL
+} from './constants/test.constants';
+import { CONFIG_FILE_1_PATH, WORKSPACE_1_PATH, WORKSPACE_3_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SENGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
-
-
 import {
     clearTextField,
     clickOption,
@@ -73,9 +86,7 @@ describe('Publsih Test', () => {
     let publishButton: WebElement | undefined;
 
     before(async () => {
-        viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
-        sideBar = await viewControl?.openView();
-        sections = await sideBar?.getContent().getSections();
+        await prepareSections();
         webview = await getWebView(sideBar, PLUGIN_SECTIONS.PUBLISH);
         await webview.switchToFrame();
 
@@ -85,6 +96,12 @@ describe('Publsih Test', () => {
     after(async () => {
         await webview.switchBack();
         await expandAll(sections ?? []);
+    });
+
+    afterEach(() => {
+        if (fs.existsSync(CONFIG_FILE_1_PATH)) {
+            fs.unlinkSync(CONFIG_FILE_1_PATH);
+        }
     });
 
     it('Check labels required', async () => {
@@ -104,7 +121,6 @@ describe('Publsih Test', () => {
     });
 
     describe('Publish and Environment integration', function () {
-
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
         let testConnectionButton: WebElement | undefined;
@@ -443,9 +459,7 @@ describe('Publsih Test', () => {
                     await webview.switchBack();
 
                     await VSBrowser.instance.openResources(WORKSPACE_1_PATH);
-                    viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
-                    sideBar = await viewControl?.openView();
-                    sections = await sideBar?.getContent().getSections();
+                    await prepareSections();
                     statusBar = new StatusBar();
                     await switchToPublish();
                     await findPublishFields();
@@ -453,7 +467,6 @@ describe('Publsih Test', () => {
 
                 after(async function () {
                     await webview.switchBack();
-                    await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
                 });
 
                 it('Check success of the draft Publish', async function () {
@@ -545,5 +558,11 @@ describe('Publsih Test', () => {
 
         const isPreviousReleaseVersionDisabled = await previousReleaseVersion?.getAttribute(DISABLED_ATTRIBUTE);
         expect(isPreviousReleaseVersionDisabled).to.be.oneOf(list);
+    };
+
+    const prepareSections = async (): Promise<void> => {
+        viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
+        sideBar = await viewControl?.openView();
+        sections = await sideBar?.getContent().getSections();
     };
 });

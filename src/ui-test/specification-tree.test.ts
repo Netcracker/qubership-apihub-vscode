@@ -69,7 +69,6 @@ describe('Specification tree view tests', () => {
     let sideBar: SideBarView | undefined;
 
     const getTreeSection = async (): Promise<void> => {
-        // await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
         viewControl = await new ActivityBar().getViewControl(EXTENTSION_NAME);
         sideBar = await viewControl?.openView();
         if (!sideBar) {
@@ -114,6 +113,7 @@ describe('Specification tree view tests', () => {
     };
 
     before(async () => {
+        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
         await getTreeSection();
     });
 

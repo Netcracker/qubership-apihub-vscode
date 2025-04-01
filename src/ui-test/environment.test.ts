@@ -87,7 +87,7 @@ describe('Environment Webview', () => {
             await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
             await tokenField?.sendKeys(TEST_LOADING_PAT_TOKEN);
             await testConnectionButton?.click();
-            
+
             const icons = await webview.findWebElements(By.css('vscode-icon'));
             const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
             let testConnectionIconType = await testConnectionIcon
