@@ -221,8 +221,11 @@ export class PublishService extends Disposable {
                 packageId,
                 publishId
             );
-            if (publishStatus.status === PublishStatus.COMPLETE) {
-                return publishStatus;
+            switch (publishStatus.status) {
+                case PublishStatus.COMPLETE:
+                    return publishStatus;
+                case PublishStatus.ERROR:
+                    throw new Error(publishStatus.message);
             }
             attempts++;
             await new Promise((resolve) => setTimeout(resolve, STATUS_REFETCH_INTERVAL));

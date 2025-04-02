@@ -3,23 +3,29 @@ import { WorkfolderPath } from '../models/common.model';
 
 export class WorkspaceService extends Disposable {
     private _disposables: Disposable[] = [];
-    private _activeWorkfolderPath: WorkfolderPath;
-    private _listeners = new Map<string, Disposable>;
+    private _activeWorkfolderPath: WorkfolderPath = "";
+    private _workfolderPaths: WorkfolderPath[] = [];
+    private _listeners = new Map<string, Disposable>();
     private readonly _onDidChangeActiveWorkspace: EventEmitter<WorkfolderPath> = new EventEmitter();
     private readonly onDidChangeActiveWorkspace: Event<WorkfolderPath> = this._onDidChangeActiveWorkspace.event;
 
-    constructor(private readonly workfolderPaths: WorkfolderPath[]) {
+    constructor(readonly workfolderPaths: WorkfolderPath[]) {
         super(() => this.dispose());
 
-        this._activeWorkfolderPath = this.getActiveWorkspace();
+        this.updateWorkfolderPaths(workfolderPaths);
         this.subscribeChanges();
     }
 
+    public updateWorkfolderPaths(workfolderPaths: WorkfolderPath[]): void {
+        this._workfolderPaths = workfolderPaths;
+        this._activeWorkfolderPath = this.getActiveWorkspace();
+    }
+
     public subscribe(listenerName: string, listener: (value: WorkfolderPath) => void): void {
-        if(this._listeners.has(listenerName)){
+        if (this._listeners.has(listenerName)) {
             return;
         }
-        if(!this._listeners.size){
+        if (!this._listeners.size) {
             this._activeWorkfolderPath = this.getActiveWorkspace();
             this.subscribeChanges();
         }
@@ -28,13 +34,13 @@ export class WorkspaceService extends Disposable {
     }
 
     public unsubscribe(listenerName: string): void {
-        if(!this._listeners.has(listenerName)){
+        if (!this._listeners.has(listenerName)) {
             return;
         }
         this._listeners.get(listenerName)?.dispose();
         this._listeners.delete(listenerName);
 
-        if(!this._listeners.size){
+        if (!this._listeners.size) {
             this.dispose();
         }
     }
@@ -47,14 +53,14 @@ export class WorkspaceService extends Disposable {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
 
-        this._listeners.forEach((value: Disposable)=> value.dispose());
+        this._listeners.forEach((value: Disposable) => value.dispose());
         this._listeners = new Map();
     }
 
     private subscribeChanges(): void {
         window.onDidChangeActiveTextEditor(
             (data: TextEditor | undefined) => {
-                if (!data || this.workfolderPaths.length === 1) {
+                if (!data || this._workfolderPaths.length === 1) {
                     return;
                 }
                 this._activeWorkfolderPath = this.getActiveWorkspace();
@@ -68,9 +74,9 @@ export class WorkspaceService extends Disposable {
     private getActiveWorkspace(): WorkfolderPath {
         const fileUri: Uri | undefined = window.activeTextEditor?.document.uri;
         if (fileUri) {
-            return workspace.getWorkspaceFolder(fileUri)?.uri?.fsPath ?? this.workfolderPaths[0];
+            return workspace.getWorkspaceFolder(fileUri)?.uri?.fsPath ?? this._workfolderPaths[0];
         } else {
-            return this.workfolderPaths[0];
+            return this._workfolderPaths[0];
         }
     }
 }

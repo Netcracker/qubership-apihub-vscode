@@ -2,6 +2,7 @@ import path from 'path';
 import { SPECS_EXTENSIONS } from '../common/constants/specification.constants';
 import { WorkfolderPath } from '../common/models/common.model';
 import { SpecificationItem } from '../common/models/specification-item';
+import { workspace } from 'vscode';
 
 export const getFilePath = (workfolderPath: WorkfolderPath, filePath: string): string => {
     return path.posix.normalize(relative(workfolderPath, filePath));
@@ -41,4 +42,8 @@ export const isItemApispecFile = (item: SpecificationItem): boolean => {
 
 export const sortStrings = (arr: string[]): string[] => {
     return arr.sort((a, b) => a.localeCompare(b));
+};
+
+export const getWorkspaceFolders = (): WorkfolderPath[] => {
+    return workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [];
 };

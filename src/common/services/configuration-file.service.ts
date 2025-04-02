@@ -37,6 +37,10 @@ export class ConfigurationFileService extends Disposable {
 
     constructor(private readonly workfolderPaths: WorkfolderPath[]) {
         super(() => this.dispose());
+        this.initWorkfolderPaths(workfolderPaths);
+    }
+
+    public initWorkfolderPaths(workfolderPaths: WorkfolderPath[]): void{
         workfolderPaths.forEach((workfolderPath) => {
             const configFilePath = path.join(workfolderPath, CONFIG_FILE_NAME);
             this.calculateConfigFileDataChanged(workfolderPath, configFilePath);

@@ -17,4 +17,5 @@ dist/test/
 docs
 .github
 .prettierignore
+.test-extensions
 CODE-OF-CONDUCT.md

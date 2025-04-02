@@ -29,15 +29,26 @@ import { EnvironmentViewProvider } from './common/webview/environment-view';
 import { PublishViewProvider } from './common/webview/publish-view';
 import { SpecificationFileTreeProvider } from './specification-tree/specification-tree-provider';
 import { SecretStorageService } from './common/services/secret-storage.service';
+import { getWorkspaceFolders } from './utils/path.utils';
 
 export function activate(context: ExtensionContext): void {
-    const workspaceFolders: WorkfolderPath[] = workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [];
+    const workspaceFolders = getWorkspaceFolders();
+
     const workspaceFolderService = new WorkspaceService(workspaceFolders);
     context.subscriptions.push(workspaceFolderService);
+
     const itemCheckboxService = new ItemCheckboxService();
+
     const secretStorageService = new SecretStorageService(context);
+
     const configurationFileService = new ConfigurationFileService(workspaceFolders);
     context.subscriptions.push(configurationFileService);
+
+    context.subscriptions.push(workspace.onDidChangeWorkspaceFolders(()=> {
+        const workspaceFolders = getWorkspaceFolders();
+        configurationFileService.initWorkfolderPaths(workspaceFolders);
+        workspaceFolderService.updateWorkfolderPaths(workspaceFolders);
+    }));
 
     const fileTreeProvider = new SpecificationFileTreeProvider(
         workspaceFolderService,

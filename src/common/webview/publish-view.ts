@@ -293,6 +293,14 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         await this.crudService
             .getPackageId(host, token, packageId)
             .then((packageIdData: PublishViewPackageIdData) => {
+                if(packageIdData.kind === "package"){
+                    return packageIdData;
+                }
+                const errorMessage = `Package Id Error. The "${packageIdData.kind}" type of the ${packageIdData.packageId} is not allowed`;
+                window.showErrorMessage(errorMessage);
+                throw new Error(errorMessage);
+            })
+            .then((packageIdData: PublishViewPackageIdData) => {
                 publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
                 const pattern = this.getPettern(publishData, publishData.status);
                 this.updateWebviewPattern(PublishFields.VERSION, pattern);
