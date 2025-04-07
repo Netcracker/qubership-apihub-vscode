@@ -47,7 +47,7 @@ import {
     VERSION_3,
     VERSION_LABEL
 } from './constants/test.constants';
-import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH, WORKSPACE_3_PATH } from './constants/tree.constants';
+import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH, WORKSPACE_EMPTY_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SINGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
 import { deleteFile } from './utils/explorer.utils';
@@ -127,7 +127,7 @@ describe('Publish Tests', () => {
 
         await expandAll(sections ?? []);
 
-        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
     });
 
     describe('Publish Fields', function () {
