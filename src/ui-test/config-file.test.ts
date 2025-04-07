@@ -28,7 +28,7 @@ import {
     PETS_NAME,
     WORKSPACE_1_PATH,
     WORKSPACE_2_PATH,
-    WORKSPACE_3_PATH
+    WORKSPACE_EMPTY_PATH
 } from './constants/tree.constants';
 import { TestTreeItem } from './models/tree.model';
 import { TEXT_FIELD_LOCATOR } from './models/webview.model';
@@ -96,7 +96,7 @@ describe('Config File', () => {
     });
 
     after(async function () {
-        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
         await new Promise((res) => setTimeout(res, 1000));
 
         await closeSaveWorkspaceDialog();
