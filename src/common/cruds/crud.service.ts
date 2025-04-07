@@ -28,7 +28,7 @@ export const enum RequestNames {
 
 export class CrudService extends Disposable {
     private readonly abortControllers: Map<RequestNames, AbortController> = new Map();
-    private readonly VERSION_SERACH_PARAMS = new URLSearchParams({
+    private readonly VERSION_SEARCH_PARAMS = new URLSearchParams({
         status: VersionStatus.RELEASE,
         limit: '100',
         page: '0'
@@ -54,7 +54,7 @@ export class CrudService extends Disposable {
 
     public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishVersionDto> {
         const url = new URL(`${baseUrl}${API_V3}/${PACKAGES}/${packageId}/versions`);
-        url.search = this.VERSION_SERACH_PARAMS;
+        url.search = this.VERSION_SEARCH_PARAMS;
         return this.get(RequestNames.GET_VERSIONS, url, authorization);
     }
 

@@ -40,8 +40,8 @@ import {
 } from '../models/publish.model';
 import { WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { ConfigurationFileService } from '../services/configuration-file.service';
+import { EnvironmentStorageService } from '../services/environment-storage.service';
 import { PublishService } from '../services/publish.service';
-import { SecretStorageService } from '../services/secret-storage.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
 
@@ -50,15 +50,14 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     private readonly updateLabelsDebounced = debounce((data: PublishViewData, version: VersionId) =>
         this.wrapInProgress(async () => await this.updateLabels(data, version))
     );
-    private readonly updatePackageIdDebounced = debounce((publishData: PublishViewData) =>
-        this.wrapInProgress(async () => await this.loadPackageId(publishData))
+    private readonly updatePackageIdDebounced = debounce((workfolderPath: WorkfolderPath) =>
+        this.wrapInProgress(async () => await this.loadPackageId(workfolderPath))
     );
 
     constructor(
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
-        private readonly workfolderPaths: WorkfolderPath[],
-        private readonly secretStorageService: SecretStorageService,
+        private readonly environmentStorageService: EnvironmentStorageService,
         private readonly configurationFileService: ConfigurationFileService,
         private readonly workfolderService: WorkspaceService,
         private readonly publishService: PublishService
@@ -81,34 +80,25 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
 
         this._view.onDidChangeVisibility(() => {
-            if (!this._view) {
-                return;
-            }
-            this.activate(this._view.visible);
-        });
-
-        this.workfolderPaths.forEach((workfolderPath) => {
-            const configFile: ConfigurationFileLike | undefined =
-                this.configurationFileService.getConfigurationFile(workfolderPath);
-            this.restoreConfigPackageId(workfolderPath, configFile);
+            this.activate(this._view?.visible ?? false);
         });
 
         this.activate(true);
-    }
-
-    private activate(active: boolean): void {
-        if (active) {
-            this.subscribeChanges();
-            this.restoreLocalFields(this.workfolderService.activeWorkfolderPath);
-        } else {
-            this.dispose();
-        }
     }
 
     public dispose(): void {
         super.dispose();
         this.workfolderService.unsubscribe(PUBLISH_WEBVIEW);
         this.configurationFileService.unsubscribe(PUBLISH_WEBVIEW);
+    }
+
+    private activate(active: boolean): void {
+        if (!active) {
+            this.dispose();
+            return;
+        }
+        this.subscribeChanges();
+        this.restoreLocalFields(this.workfolderService.activeWorkfolderPath);
     }
 
     private subscribeChanges(): void {
@@ -139,28 +129,32 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this,
             this._disposables
         );
+
         this.workfolderService.subscribe(PUBLISH_WEBVIEW, (workfolderPath: string) =>
             this.restoreLocalFields(workfolderPath)
         );
+
         this.configurationFileService.subscribe(PUBLISH_WEBVIEW, (workfolderPath: string) => {
             const configFile: ConfigurationFileLike | undefined =
                 this.configurationFileService.getConfigurationFile(workfolderPath);
             this.restoreConfigPackageId(workfolderPath, configFile);
         });
-        this.secretStorageService.onDidChangeConfiguration(
+        this.environmentStorageService.onDidChangeConfiguration(
             () => {
                 this.disableDependentFields();
                 const activeWorkfolderPath = this.workfolderService.activeWorkfolderPath;
-                this.loadPackageId(this.getPublishViewData(activeWorkfolderPath));
+                this.loadPackageId(activeWorkfolderPath);
             },
             this,
             this._disposables
         );
-        this.updateWebviewLoading(this.publishService.isPublishProgress);
+        this.disableAllField(this.publishService.isPublishProgress);
         this.publishService.onPublish(
-            (isPiblishProgress) => {
-                this.updateWebviewLoading(isPiblishProgress);
-                this.wrapInProgress(async () => await this.loadPreviousVersions());
+            (isPublishProgress) => {
+                this.disableAllField(isPublishProgress);
+                if (!isPublishProgress) {
+                    this.wrapInProgress(async () => await this.loadPreviousVersions());
+                }
             },
             this,
             this._disposables
@@ -168,12 +162,13 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private restoreLocalFields(workfolderPath: WorkfolderPath): void {
-        this.restoreConfigPackageId(workfolderPath, this.configurationFileService.getConfigurationFile(workfolderPath));
+        const configurationFileLike = this.configurationFileService.getConfigurationFile(workfolderPath);
+        this.restoreConfigPackageId(workfolderPath, configurationFileLike);
         const publishData = this.getPublishViewData(workfolderPath);
         const { packageId, version, status, previousVersion, labels } = publishData;
         this.disableDependentFields(true);
         if (packageId) {
-            this.updatePackageIdDebounced(publishData);
+            this.updatePackageIdDebounced(workfolderPath);
         }
 
         this.updateWebviewField(PublishFields.VERSION, version);
@@ -188,32 +183,32 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
 
     private updateField(payload: WebviewPayload<PublishFields>): void {
         const workfolderPath = this.workfolderService.activeWorkfolderPath;
-        const pulbishViewData = this.getPublishViewData(workfolderPath);
+        const publishViewData = this.getPublishViewData(workfolderPath);
         switch (payload.field) {
             case PublishFields.PACKAGE_ID: {
-                pulbishViewData.packageId = payload.value as PackageId;
+                publishViewData.packageId = payload.value as PackageId;
                 this.disableDependentFields(true);
-                this.updatePackageIdDebounced(pulbishViewData);
+                this.updatePackageIdDebounced(workfolderPath);
                 break;
             }
             case PublishFields.VERSION: {
                 const version = payload.value as VersionId;
-                pulbishViewData.version = version;
-                this.updateLabelsDebounced(pulbishViewData, version);
+                publishViewData.version = version;
+                this.updateLabelsDebounced(publishViewData, version);
                 break;
             }
             case PublishFields.STATUS: {
                 const status: VersionStatus = payload.value as VersionStatus;
-                pulbishViewData.status = status;
-                this.updateVersionPattern(pulbishViewData, status);
+                publishViewData.status = status;
+                this.updateVersionPattern(publishViewData, status);
                 break;
             }
             case PublishFields.PREVIOUS_VERSION: {
-                pulbishViewData.previousVersion = payload.value as string;
+                publishViewData.previousVersion = payload.value as string;
                 break;
             }
             case PublishFields.LABELS: {
-                const labels = pulbishViewData.labels;
+                const labels = publishViewData.labels;
                 labels.add(payload.value as string);
                 this.updateWebviewLabels(labels);
                 break;
@@ -226,7 +221,12 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.updateWebviewDisable(PublishFields.STATUS, disable);
         this.updateWebviewDisable(PublishFields.LABELS, disable);
         this.updateWebviewDisable(PublishFields.PREVIOUS_VERSION, disable);
-        this.updateWebviewDisable(PublishFields.PUBLISH_BUTTON, this.publishService.isPublishProgress || disable);
+        this.updateWebviewDisable(PublishFields.PUBLISH_BUTTON, disable);
+    }
+
+    private disableAllField(disable: boolean = true): void {
+        this.updateWebviewDisable(PublishFields.PACKAGE_ID, disable);
+        this.disableDependentFields(disable);
     }
 
     private requestField(payload: WebviewPayload<PublishFields>): void {
@@ -238,53 +238,44 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
     }
 
-    private restoreLocalPackageId(workfolderPath: WorkfolderPath): void {
-        const { packageId } = this.getPublishViewData(workfolderPath);
-        this.updatePackageId(workfolderPath, packageId);
-    }
-
     private restoreConfigPackageId(
         workfolderPath: WorkfolderPath,
         configFile: ConfigurationFileLike | undefined
     ): void {
-        const pulbishViewData = this.getPublishViewData(workfolderPath);
+        const publishViewData = this.getPublishViewData(workfolderPath);
 
         const newConfigFileId = configFile?.id ?? '';
-        if (pulbishViewData.configId === newConfigFileId) {
-            this.restoreLocalPackageId(workfolderPath);
+        if (publishViewData.configId === newConfigFileId) {
+            const { packageId } = publishViewData;
+            this.updateWebviewPackageId(workfolderPath, packageId);
             return;
         }
 
-        pulbishViewData.configId = newConfigFileId;
+        publishViewData.configId = newConfigFileId;
         const packageId: PackageId = configFile?.packageId ?? '';
-        this.updatePackageId(workfolderPath, packageId);
+        publishViewData.packageId = packageId;
+        this.updateWebviewPackageId(workfolderPath, packageId);
     }
 
-    private updatePackageId(workfolderPath: WorkfolderPath, value: PackageId): void {
-        const pulbishViewData = this.getPublishViewData(workfolderPath);
-        pulbishViewData.packageId = value;
-
-        if (workfolderPath === this.workfolderService.activeWorkfolderPath) {
-            this.updateWebviewField(PublishFields.PACKAGE_ID, value);
-            if (value) {
-                this.disableDependentFields(true);
-                this.updatePackageIdDebounced(pulbishViewData);
-            }
+    private updateWebviewPackageId(workfolderPath: WorkfolderPath, packageId: PackageId): void {
+        if (workfolderPath !== this.workfolderService.activeWorkfolderPath) {
+            return;
+        }
+        this.updateWebviewField(PublishFields.PACKAGE_ID, packageId);
+        this.disableDependentFields(true);
+        if (packageId) {
+            this.updatePackageIdDebounced(workfolderPath);
         }
     }
 
-    private updateWebviewLoading(isLoading: boolean): void {
-        this.updateWebview(WebviewMessages.UPDATE_FIELD, PublishFields.PUBLISH_BUTTON, isLoading.toString());
-    }
-
-    private async loadPackageId(publishData: PublishViewData): Promise<void> {
+    private async loadPackageId(workfolderPath: WorkfolderPath): Promise<void> {
+        const publishData = this.getPublishViewData(workfolderPath);
         const { packageId } = publishData;
         if (!packageId) {
             this.updateWebviewInvalid(PublishFields.PACKAGE_ID, true);
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -293,18 +284,18 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         await this.crudService
             .getPackageId(host, token, packageId)
             .then((packageIdData: PublishViewPackageIdData) => {
-                if(packageIdData.kind === "package"){
+                if (packageIdData.kind === 'package') {
                     return packageIdData;
                 }
-                const errorMessage = `Package Id Error. The "${packageIdData.kind}" type of the ${packageIdData.packageId} is not allowed`;
+                const errorMessage = `Package Id does not exist`;
                 window.showErrorMessage(errorMessage);
                 throw new Error(errorMessage);
             })
             .then((packageIdData: PublishViewPackageIdData) => {
                 publishData.releaseVersionPattern = packageIdData.releaseVersionPattern;
-                const pattern = this.getPettern(publishData, publishData.status);
+                const pattern = this.getPattern(publishData, publishData.status);
                 this.updateWebviewPattern(PublishFields.VERSION, pattern);
-                this.disableDependentFields(false);
+                this.disableDependentFields(this.publishService.isPublishProgress || false);
                 this.updateWebviewInvalid(PublishFields.PACKAGE_ID, false);
                 this.wrapInProgress(async () => await this.loadPreviousVersions());
             })
@@ -326,8 +317,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId) {
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -343,7 +333,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private updateVersionPattern(publishData: PublishViewData, status: VersionStatus): void {
-        this.updateWebviewPattern(PublishFields.VERSION, this.getPettern(publishData, status));
+        this.updateWebviewPattern(PublishFields.VERSION, this.getPattern(publishData, status));
     }
 
     private deleteWebviewLabels(label: string): void {
@@ -365,8 +355,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         if (!packageId || labels.size) {
             return;
         }
-        const host: string = await this.secretStorageService.getHost();
-        const token: string = await this.secretStorageService.getToken();
+        const { host, token } = await this.environmentStorageService.getEnvironment();
         if (!host || !token) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
@@ -395,7 +384,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this.updateWebviewRequired(PublishFields.VERSION);
             return;
         }
-        const pattern = this.getPettern(data, status);
+        const pattern = this.getPattern(data, status);
         const regexp = new RegExp(pattern);
         if (!regexp.test(version)) {
             return;
@@ -409,7 +398,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         this.publishService.publish(this.workfolderService.activeWorkfolderPath, data);
     }
 
-    private getPettern(publishData: PublishViewData, status: VersionStatus): string {
+    private getPattern(publishData: PublishViewData, status: VersionStatus): string {
         switch (status) {
             case VersionStatus.ARCHIVED:
             case VersionStatus.DRAFT: {
@@ -479,7 +468,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
                         <vscode-single-select id="${PublishFields.STATUS}">${statusOptions}</vscode-single-select>
                     </p>
                     <p>
-                        <vscode-label for="${PublishFields.LABELS}" id="labelForLables">Labels:</vscode-label>
+                        <vscode-label for="${PublishFields.LABELS}" id="labelForLabels">Labels:</vscode-label>
                         <vscode-textfield id="${PublishFields.LABELS}" placeholder="↵"></vscode-textfield>
                     </p>
                     <p>

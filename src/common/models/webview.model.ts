@@ -16,7 +16,7 @@ export enum WebviewMessages {
     UPDATE_REQUIRED = 'updateRequired',
     UPDATE_INVALID = 'updateInvalid',
     UPDATE_ICON = 'updateIcon',
-    UPDATE_SPIN = 'updateSpin',
+    UPDATE_SPIN = 'updateSpin'
 }
 
 export interface WebviewOption {
@@ -28,4 +28,8 @@ export interface WebviewOption {
 export interface WebviewPayload<T> {
     field: T;
     value: string | string[] | void;
+}
+export interface EnvironmentWebviewTestConnectionDto {
+    token: string;
+    host: string;
 }

@@ -1,4 +1,5 @@
 // @ts-check
+
 (function () {
     const PublishFields = {
         PACKAGE_ID: 'packageId',
@@ -9,29 +10,19 @@
         PUBLISH_BUTTON: 'publish-button'
     };
 
-    const packageId = document.querySelector(`#${PublishFields.PACKAGE_ID}`);
-    const version = document.querySelector(`#${PublishFields.VERSION}`);
-    const status = document.querySelector(`#${PublishFields.STATUS}`);
-    const previousVersion = document.querySelector(`#${PublishFields.PREVIOUS_VERSION}`);
+    typeFieldMapper.set(PublishFields.PACKAGE_ID, FieldTypes.INPUT);
+    typeFieldMapper.set(PublishFields.VERSION, FieldTypes.INPUT);
+    typeFieldMapper.set(PublishFields.STATUS, FieldTypes.SINGLE_SELECT);
+    typeFieldMapper.set(PublishFields.PREVIOUS_VERSION, FieldTypes.SINGLE_SELECT_COMBOBOX);
+    typeFieldMapper.set(PublishFields.LABELS, FieldTypes.LABELS);
+    typeFieldMapper.set(PublishFields.PUBLISH_BUTTON, FieldTypes.BUTTON);
+
+    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.PACKAGE_ID))(PublishFields.PACKAGE_ID);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.VERSION))(PublishFields.VERSION);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.STATUS))(PublishFields.STATUS);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.PREVIOUS_VERSION))(PublishFields.PREVIOUS_VERSION);
+
     const labels = document.querySelector(`#${PublishFields.LABELS}`);
-    const publishButton = document.querySelector(`#${PublishFields.PUBLISH_BUTTON}`);
-
-    fieldMapper.set(PublishFields.PACKAGE_ID, { type: FieldTypes.INPUT, field: packageId });
-    fieldMapper.set(PublishFields.VERSION, { type: FieldTypes.INPUT, field: version });
-    fieldMapper.set(PublishFields.STATUS, { type: FieldTypes.SINGLE_SELECT, field: status });
-    fieldMapper.set(PublishFields.PREVIOUS_VERSION, { type: FieldTypes.SINGLE_SELECT, field: previousVersion });
-    fieldMapper.set(PublishFields.LABELS, { type: FieldTypes.LABELS, field: labels });
-    fieldMapper.set(PublishFields.PUBLISH_BUTTON, { type: FieldTypes.BUTTON, field: publishButton });
-
-    if (packageId) {
-        fieldListenersMapper.get(FieldTypes.INPUT)(PublishFields.PACKAGE_ID, packageId);
-    }
-    if (version) {
-        fieldListenersMapper.get(FieldTypes.INPUT)(PublishFields.VERSION, version);
-    }
-    if (status) {
-        status.addEventListener('change', () => sendFieldValue(PublishFields.STATUS, status));
-    }
     if (labels) {
         // @ts-ignore
         labels.addEventListener('focusout', () => {
@@ -44,10 +35,8 @@
             }
         });
     }
-    if (previousVersion) {
-        fieldListenersMapper.get(FieldTypes.SINGLE_SELECT)(PublishFields.PREVIOUS_VERSION, previousVersion);
-    }
 
+    const publishButton = document.querySelector(`#${PublishFields.PUBLISH_BUTTON}`);
     if (publishButton) {
         publishButton.addEventListener('click', publish);
     }
@@ -67,7 +56,7 @@
         if (!input.value?.trim()?.length) {
             return;
         }
-        sendFieldValue(PublishFields.LABELS, labels);
+        sendFieldValue(PublishFields.LABELS);
         // @ts-ignore
         input.value = '';
     }

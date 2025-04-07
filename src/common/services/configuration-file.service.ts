@@ -4,7 +4,7 @@ import path from 'path';
 import { Disposable, Event, EventEmitter, Uri, window, workspace } from 'vscode';
 import YAML from 'yaml';
 import { convertConfigurationFileToLike, validateYAML } from '../../utils/files.utils';
-import { getFilePath, sortStrings } from '../../utils/path.utils';
+import { getFilePath, getWorkspaceFolders, sortStrings } from '../../utils/path.utils';
 import {
     CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE,
     CONFIGURATION_FILE_UNABLE_TO_READ_ERROR_MESSAGE,
@@ -32,19 +32,12 @@ export class ConfigurationFileService extends Disposable {
     private readonly _configurationFileDates = new Map<WorkfolderPath, ConfigurationData>();
     private readonly _onDidChangeConfigFile: EventEmitter<WorkfolderPath> = new EventEmitter();
     private _disposables: Disposable[] = [];
+    private _configFileDisposables: Disposable[] = [];
     private _listeners = new Map<string, Disposable>();
     private readonly onDidChangeConfigFile: Event<WorkfolderPath> = this._onDidChangeConfigFile.event;
 
-    constructor(private readonly workfolderPaths: WorkfolderPath[]) {
+    constructor() {
         super(() => this.dispose());
-        this.initWorkfolderPaths(workfolderPaths);
-    }
-
-    public initWorkfolderPaths(workfolderPaths: WorkfolderPath[]): void{
-        workfolderPaths.forEach((workfolderPath) => {
-            const configFilePath = path.join(workfolderPath, CONFIG_FILE_NAME);
-            this.calculateConfigFileDataChanged(workfolderPath, configFilePath);
-        });
     }
 
     public subscribe(listenerName: string, listener: (value: WorkfolderPath) => void): void {
@@ -52,7 +45,8 @@ export class ConfigurationFileService extends Disposable {
             return;
         }
         if (!this._listeners.size) {
-            this.subscribeChanges();
+            this.subscribeWorkfolderChanges();
+            this.subscribeConfigFileChanges();
         }
         const disposable: Disposable = this.onDidChangeConfigFile(listener, this, this._disposables);
         this._listeners.set(listenerName, disposable);
@@ -68,36 +62,6 @@ export class ConfigurationFileService extends Disposable {
         if (!this._listeners.size) {
             this.dispose();
         }
-    }
-
-    private subscribeChanges(): void {
-        this.workfolderPaths.forEach((workfolderPath: WorkfolderPath) => {
-            const configFilePath = path.join(workfolderPath, CONFIG_FILE_NAME);
-
-            const wathcer = workspace.createFileSystemWatcher(configFilePath);
-            wathcer.onDidChange(
-                () => {
-                    if (this.calculateConfigFileDataChanged(workfolderPath, configFilePath)) {
-                        this._onDidChangeConfigFile.fire(workfolderPath);
-                    }
-                },
-                this,
-                this._disposables
-            );
-            wathcer.onDidCreate(
-                () => {
-                    if (this.calculateConfigFileDataChanged(workfolderPath, configFilePath)) {
-                        this._onDidChangeConfigFile.fire(workfolderPath);
-                    }
-                },
-                this,
-                this._disposables
-            );
-
-            if (this.calculateConfigFileDataChanged(workfolderPath, configFilePath)) {
-                this._onDidChangeConfigFile.fire(workfolderPath);
-            }
-        });
     }
 
     public getConfigurationFile(workfolderPath: WorkfolderPath): ConfigurationFileLike | undefined {
@@ -123,12 +87,68 @@ export class ConfigurationFileService extends Disposable {
         }
     }
 
-    public dispose() {
+    public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
 
+        this.disposeConfigFileSubscribers();
+
         this._listeners.forEach((value: Disposable) => value.dispose());
         this._listeners = new Map();
+    }
+
+    private disposeConfigFileSubscribers(): void{
+        this._configFileDisposables.forEach((disposable) => disposable.dispose());
+        this._configFileDisposables = [];
+    }
+
+    private subscribeWorkfolderChanges(): void {
+        workspace.onDidChangeWorkspaceFolders(
+            () => {
+                this.subscribeConfigFileChanges();
+            },
+            this,
+            this._disposables
+        );
+    }
+
+    private subscribeConfigFileChanges(): void {
+        this.disposeConfigFileSubscribers();
+
+        const workspaceFolders = getWorkspaceFolders();
+
+        workspaceFolders.forEach((workspaceFolder: WorkfolderPath) => {
+            const configFilePath = path.join(workspaceFolder, CONFIG_FILE_NAME);
+
+            const watcher = workspace.createFileSystemWatcher(configFilePath);
+            watcher.onDidChange(
+                () => {
+                    if (this.calculateConfigFileDataChanged(workspaceFolder, configFilePath)) {
+                        this._onDidChangeConfigFile.fire(workspaceFolder);
+                    }
+                },
+                this,
+                this._configFileDisposables
+            );
+            watcher.onDidCreate(
+                () => {
+                    if (this.calculateConfigFileDataChanged(workspaceFolder, configFilePath)) {
+                        this._onDidChangeConfigFile.fire(workspaceFolder);
+                    }
+                },
+                this,
+                this._configFileDisposables
+            );
+            watcher.onDidDelete(
+                () => this._configurationFileDates.delete(workspaceFolder),
+                this,
+                this._configFileDisposables
+            );
+
+            if (this.calculateConfigFileDataChanged(workspaceFolder, configFilePath)) {
+                this._onDidChangeConfigFile.fire(workspaceFolder);
+            }
+        });
     }
 
     private calculateConfigFileDataChanged(workfolderPath: WorkfolderPath, configFilePath: string): boolean {

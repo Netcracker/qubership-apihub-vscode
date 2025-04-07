@@ -1,5 +1,5 @@
 import path from 'path';
-import { SPECS_EXTENSIONS } from '../common/constants/specification.constants';
+import { SPECS_MAIN_EXTENSIONS } from '../common/constants/specification.constants';
 import { WorkfolderPath } from '../common/models/common.model';
 import { SpecificationItem } from '../common/models/specification-item';
 import { workspace } from 'vscode';
@@ -33,7 +33,7 @@ export const getExtension = (fileName: string): string => {
 };
 
 export const isApispecFile = (extension: string): boolean => {
-    return SPECS_EXTENSIONS.includes(extension ?? '');
+    return SPECS_MAIN_EXTENSIONS.includes(extension ?? '');
 };
 
 export const isItemApispecFile = (item: SpecificationItem): boolean => {
@@ -42,6 +42,14 @@ export const isItemApispecFile = (item: SpecificationItem): boolean => {
 
 export const sortStrings = (arr: string[]): string[] => {
     return arr.sort((a, b) => a.localeCompare(b));
+};
+
+export const normalizeUrl = (url: string): string => {
+    let normalizedUrl = '';
+    try {
+        normalizedUrl = new URL(url).origin;
+    } catch {}
+    return normalizedUrl;
 };
 
 export const getWorkspaceFolders = (): WorkfolderPath[] => {

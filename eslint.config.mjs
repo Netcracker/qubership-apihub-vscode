@@ -23,6 +23,7 @@ export default [{
         curly: "warn",
         eqeqeq: "warn",
         "no-throw-literal": "warn",
-        semi: "warn",
+        semi: ["error", "always"],
+        "@typescript-eslint/explicit-function-return-type": ["error"]
     },
 }];

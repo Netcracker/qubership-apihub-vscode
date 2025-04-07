@@ -1,5 +1,4 @@
-// @ts-check
-
+// @ts-ignore
 (function () {
     const PASSWORD_TYPE = 'password';
     const TEXT_TYPE = 'text';
@@ -14,26 +13,23 @@
         TEST_CONNECTION_ICON: 'testConnectionIcon'
     };
 
-    const inputUrl = document.querySelector('#url');
-    const inputToken = document.querySelector('#token');
+    const inputToken = document.querySelector(`#${EnvironmentWebviewFields.TOKEN}`);
     const togglePasswordButton = document.querySelector('#eye-icon');
     const testConnectionButton = document.querySelector('#testConnectionButton');
-    const testConnectionIcon = document.querySelector('#testConnectionIcon');
 
-    fieldMapper.set(EnvironmentWebviewFields.URL, {type: FieldTypes.INPUT, field: inputUrl});
-    fieldMapper.set(EnvironmentWebviewFields.TOKEN, {type: FieldTypes.INPUT, field: inputToken});
-    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, {type: FieldTypes.BUTTON, field: testConnectionButton});
-    fieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_ICON, {type: FieldTypes.BUTTON, field: testConnectionIcon});
+    typeFieldMapper.set(EnvironmentWebviewFields.URL, FieldTypes.INPUT);
+    typeFieldMapper.set(EnvironmentWebviewFields.TOKEN, FieldTypes.INPUT);
+    typeFieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_BUTTON, FieldTypes.BUTTON);
+    typeFieldMapper.set(EnvironmentWebviewFields.TEST_CONNECTION_ICON, FieldTypes.BUTTON);
 
-    if (inputUrl) {
-        fieldListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.URL, inputUrl);
-    }
+    defaultListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.URL);
+
     if (inputToken) {
-        fieldListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.TOKEN, inputToken);
+        defaultListenersMapper.get(FieldTypes.INPUT)(EnvironmentWebviewFields.TOKEN);
     }
     if (togglePasswordButton) {
         togglePasswordButton.addEventListener('click', updateTogglePasswordButton);
-    }    
+    }
     if (testConnectionButton) {
         testConnectionButton.addEventListener('click', testConnection);
     }
@@ -63,12 +59,12 @@
         requestField(EnvironmentWebviewFields.TOKEN);
     }
 
-    function testConnection(){
+    function testConnection() {
         vscode.postMessage({
             command: 'testConnection',
             payload: {
-                token: getInput(inputToken).value,
-                host: getInput(inputUrl).value,
+                token: getInput(EnvironmentWebviewFields.TOKEN).value,
+                host: getInput(EnvironmentWebviewFields.URL).value
             }
         });
     }

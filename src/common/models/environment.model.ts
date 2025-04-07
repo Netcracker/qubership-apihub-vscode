@@ -1,4 +1,9 @@
-import { WebviewMessage, WebviewMessages, WebviewPayloadType } from "./webview.model";
+import {
+    EnvironmentWebviewTestConnectionDto,
+    WebviewMessage,
+    WebviewMessages,
+    WebviewPayloadType
+} from './webview.model';
 
 export enum EnvironmentWebviewFields {
     URL = 'url',
@@ -12,4 +17,7 @@ export enum EnvironmentWebviewMessages {
 }
 
 export interface EnvironmentWebviewDto
-    extends WebviewMessage<WebviewMessages | EnvironmentWebviewMessages, WebviewPayloadType> {}
+    extends WebviewMessage<
+        WebviewMessages | EnvironmentWebviewMessages,
+        WebviewPayloadType | EnvironmentWebviewTestConnectionDto
+    > {}
