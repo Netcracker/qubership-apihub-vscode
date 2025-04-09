@@ -185,14 +185,16 @@ describe('Config File', () => {
             });
 
             it('Check: Config Files in two workspaces', async function () {
+                console.log(await VSBrowser.instance.driver.takeScreenshot());
                 await getTreeSection();
+                console.log(await VSBrowser.instance.driver.takeScreenshot());
                 writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
                 writeConfigFile(CONFIG_FILE_2_PATH, CONFIG_FILE_6);
                 await delay(1000);
-
+                console.log(await VSBrowser.instance.driver.takeScreenshot());
                 await openFileFromExplorer(CONFIG_FILE_NAME);
                 await validateTreeContent(WORKSPACE_2_CONTENT);
-
+                console.log(await VSBrowser.instance.driver.takeScreenshot());
                 await openFileFromExplorer(CARS_NAME);
                 await validateTreeContent(WORKSPACE_4_CONTENT);
             });
