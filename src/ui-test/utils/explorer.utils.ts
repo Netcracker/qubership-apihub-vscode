@@ -17,6 +17,7 @@ export const openFileFromExplorer = async (fileName: string): Promise<void> => {
     const item = await section.findItem(fileName);
     await delay(1000);
     await item?.click();
+    await delay(1000);
 };
 
 export const deleteFile = (path: string): void => {
