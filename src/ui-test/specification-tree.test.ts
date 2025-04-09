@@ -18,12 +18,13 @@ import {
     WORKSPACE_1_NAME,
     WORKSPACE_1_PATH,
     WORKSPACE_2_PATH,
-    WORKSPACE_3_PATH
+    WORKSPACE_EMPTY_PATH,
+    WORKSPACE_APISPEC_VERSIONS_PATH
 } from './constants/tree.constants';
 import { TestTreeItem } from './models/tree.model';
 import { openExplorer, openFileFromExplorer } from './utils/explorer.utils';
 import { checkItemCheckboxes, clickCheckbox, getTestTreeItems } from './utils/tree.utils';
-import { collapseAll, expandAll, findAsync } from './utils/webview.utils';
+import { closeSaveWorkspaceDialog, collapseAll, expandAll, findAsync } from './utils/webview.utils';
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },
@@ -61,6 +62,13 @@ const WORKSPACE_2_CHECKBOX_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/docs/', label: CARS_NAME },
     { checkbox: true, description: '/docs/car/', label: CARS_NAME },
     { checkbox: false, description: '/docs/car/', label: CHECKBOX_CARS_NAME }
+];
+
+const WORKSPACE_APISPEC_VERSIONS_CONTENT: TestTreeItem[] = [
+    {checkbox: true, description: '', label: 'openapi2.json'},
+    {checkbox: true, description: '', label: 'openapi2.yaml'},
+    {checkbox: true, description: '', label: 'openapi3.json'},
+    {checkbox: true, description: '', label: 'openapi3.yaml'}
 ];
 
 describe('Specification tree view tests', () => {
@@ -106,14 +114,14 @@ describe('Specification tree view tests', () => {
     };
 
     before(async () => {
-        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
         await getTreeSection();
         await expandAll(await sideBar?.getContent().getSections());
     });
 
     after(async () => {
         await expandAll(await sideBar?.getContent().getSections());
-        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
     });
 
     it('Welcome content', async () => {
@@ -152,6 +160,15 @@ describe('Specification tree view tests', () => {
             await getTreeSection();
         });
 
+        after(async () => {
+            await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
+            await new Promise((res) => setTimeout(res, 1000));
+
+            await closeSaveWorkspaceDialog();
+
+            await new Promise((res) => setTimeout(res, 2000));
+        });
+
         it('Look at the default workspace items', async () => {
             const data = await checkItemCheckboxes(treeSection);
             expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
@@ -180,6 +197,18 @@ describe('Specification tree view tests', () => {
         it('Checking the status of workspace_2 checkboxes when leaving the plugin', async () => {
             await openFileFromExplorer(CHECKBOX_CARS_NAME);
             await checkSavedCheckboxContext(CHECKBOX_CARS_NAME, WORKSPACE_2_CHECKBOX_CONTENT, UNITED_WORKSPACE);
+        });
+    });
+
+    describe('Different API versions of specifications', () => {
+        before(async () => {
+            await VSBrowser.instance.openResources(WORKSPACE_APISPEC_VERSIONS_PATH);
+            await getTreeSection();
+        });
+
+        it('Check: Apispec 2.0 and 3.0', async () => {
+            const data = await checkItemCheckboxes(treeSection);
+            expect(data).to.deep.equal(WORKSPACE_APISPEC_VERSIONS_CONTENT);
         });
     });
 });

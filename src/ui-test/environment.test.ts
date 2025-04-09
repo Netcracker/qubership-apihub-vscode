@@ -22,7 +22,7 @@ import { ENVIRONMENT_SECTION, EXTENSION_NAME, PLUGIN_SECTIONS } from './constant
 import { LabelData } from './models/label.model';
 import { TEXT_FIELD_LOCATOR } from './models/webview.model';
 import { clearTextField, findWebElementById, getFieldLabels, getWebView, Until } from './utils/webview.utils';
-import { WORKSPACE_3_PATH } from './constants/tree.constants';
+import { WORKSPACE_EMPTY_PATH } from './constants/tree.constants';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'APIHUB URL:', required: true },
@@ -36,7 +36,7 @@ describe('Environment Webview', () => {
     let testConnectionButton: WebElement | undefined;
 
     before(async () => {
-        await VSBrowser.instance.openResources(WORKSPACE_3_PATH);
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
         const viewControl: ViewControl | undefined = await new ActivityBar().getViewControl(EXTENSION_NAME);
         const sideBar: SideBarView | undefined = await viewControl?.openView();
         webview = await getWebView(sideBar, PLUGIN_SECTIONS.ENVIRONMENT);
