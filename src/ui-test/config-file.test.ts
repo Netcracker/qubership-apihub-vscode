@@ -181,7 +181,7 @@ describe('Config File', () => {
         describe('Two workspaces content', function () {
             before(async function () {
                 await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
-                await delay(1000);
+                await delay(3000);
             });
 
             it('Check: Config Files in two workspaces', async function () {
