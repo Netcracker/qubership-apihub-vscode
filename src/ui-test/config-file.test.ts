@@ -182,10 +182,10 @@ describe('Config File', () => {
             before(async function () {
                 await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
                 await delay(1000);
-                await getTreeSection();
             });
 
             it('Check: Config Files in two workspaces', async function () {
+                await getTreeSection();
                 writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
                 writeConfigFile(CONFIG_FILE_2_PATH, CONFIG_FILE_6);
                 await delay(1000);
