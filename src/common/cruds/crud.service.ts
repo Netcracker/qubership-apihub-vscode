@@ -39,22 +39,20 @@ export class CrudService extends Disposable {
     }
 
     public abort(requestName: RequestNames): void {
-        if (this.abortControllers.has(requestName)) {
-            this.abortControllers.get(requestName)?.abort();
-        }
+        this.abortControllers.get(requestName)?.abort();
     }
 
     public dispose(): void {
         this.abortControllers.forEach((controller) => controller.abort());
+        this.abortControllers.clear();
     }
 
     public getSystemInfo(baseUrl: string, authorization: string): Promise<ServerStatusDto> {
-        return this.get(RequestNames.GET_SYSTEM_INFO, `${baseUrl}${API_V1}/system/info`, authorization);
+        return this.get(RequestNames.GET_SYSTEM_INFO, this.buildUrl(baseUrl, API_V1, 'system/info'), authorization);
     }
 
     public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishVersionDto> {
-        const url = new URL(`${baseUrl}${API_V3}/${PACKAGES}/${packageId}/versions`);
-        url.search = this.VERSION_SEARCH_PARAMS;
+        const url = this.buildUrl(baseUrl, API_V3, `${PACKAGES}/${packageId}/versions`, this.VERSION_SEARCH_PARAMS);
         return this.get(RequestNames.GET_VERSIONS, url, authorization);
     }
 
@@ -63,7 +61,7 @@ export class CrudService extends Disposable {
         authorization: string,
         packageId: PackageId
     ): Promise<PublishViewPackageIdData> {
-        return this.get(RequestNames.GET_PACKAGE_ID, `${baseUrl}${API_V2}/${PACKAGES}/${packageId}`, authorization);
+        return this.get(RequestNames.GET_PACKAGE_ID, this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}`), authorization);
     }
 
     public getLabels(
@@ -72,10 +70,7 @@ export class CrudService extends Disposable {
         packageId: PackageId,
         version: VersionId
     ): Promise<PublishVersionDto> {
-        const url = new URL(`${baseUrl}${API_V3}/${PACKAGES}/${packageId}/versions`);
-        url.search = new URLSearchParams({
-            textFilter: version
-        }).toString();
+        const url = this.buildUrl(baseUrl, API_V3, `${PACKAGES}/${packageId}/versions`, `textFilter=${version}`);
         return this.get(RequestNames.GET_LABELS, url, authorization);
     }
 
@@ -87,7 +82,7 @@ export class CrudService extends Disposable {
     ): Promise<PublishStatusDto> {
         return this.get(
             RequestNames.GET_STATUS,
-            `${baseUrl}${API_V2}/${PACKAGES}/${packageId}/publish/${publishId}/status`,
+            this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}/publish/${publishId}/status`),
             authorization
         );
     }
@@ -100,7 +95,7 @@ export class CrudService extends Disposable {
     ): Promise<PublishConfig> {
         return this.post(
             RequestNames.PUBLISH,
-            `${baseUrl}${API_V2}/${PACKAGES}/${packageId}/publish`,
+            this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}/publish`),
             formData,
             authorization
         );
@@ -124,51 +119,59 @@ export class CrudService extends Disposable {
         url: string | URL,
         method: CrudMethod,
         authorization: string,
-        body?: BodyInit | undefined
+        body?: BodyInit
     ): Promise<T> {
         this.abort(requestName);
         const controller = new AbortController();
         this.abortControllers.set(requestName, controller);
 
-        const promise = fetch(url, {
-            method,
-            headers: {
-                [PAT_HEADER]: authorization
-            },
-            ...(method === CrudMethod.POST && { body }),
-            signal: controller.signal
-        })
-            .then(async (response) => {
-                if (!response.ok) {
-                    const errorData = await this.getErrorData(response);
-                    throw new CrudError(
-                        errorData?.message || response?.statusText,
-                        errorData?.code ?? '',
-                        errorData?.debug ?? '',
-                        errorData?.status || response?.status
-                    );
-                }
-
-                return (await response.json()) as T;
-            })
-            .catch((error) => {
-                if (error instanceof CrudError) {
-                    throw error;
-                }
-                const defaultError = error as DefaultError;
-                throw new CrudError(defaultError.message, '', defaultError.stack, defaultError?.code);
-            })
-            .finally(() => {
-                this.abortControllers.delete(requestName);
+        try {
+            const response = await fetch(url, {
+                method,
+                headers: { [PAT_HEADER]: authorization },
+                ...(method === CrudMethod.POST && { body }),
+                signal: controller.signal
             });
 
-        return promise;
+            if (!response.ok) {
+                const errorData = await this.getErrorData(response);
+                throw new CrudError(
+                    errorData?.message || response.statusText,
+                    errorData?.code ?? '',
+                    errorData?.debug ?? '',
+                    errorData?.status || response.status
+                );
+            }
+
+            return (await response.json()) as T;
+        } catch (error) {
+            this.handleError(error);
+        } finally {
+            this.abortControllers.delete(requestName);
+        }
     }
 
     private async getErrorData(response: Response): Promise<CrudResponse> {
         try {
             return (await response.json()) as CrudResponse;
-        } catch {}
-        return {};
+        } catch {
+            return {};
+        }
+    }
+
+    private buildUrl(baseUrl: string, apiVersion: string, path: string, searchParams?: string): string {
+        const url = new URL(`${baseUrl}${apiVersion}/${path}`);
+        if (searchParams) {
+            url.search = searchParams;
+        }
+        return url.toString();
+    }
+
+    private handleError(error: unknown): never {
+        if (error instanceof CrudError) {
+            throw error;
+        }
+        const defaultError = error as DefaultError;
+        throw new CrudError(defaultError.message, '', defaultError.stack, defaultError?.code);
     }
 }

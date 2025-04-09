@@ -1,9 +1,11 @@
 import path from 'path';
 import {
     commands,
+    Disposable,
     ExtensionContext,
     TreeCheckboxChangeEvent,
     TreeItemCheckboxState,
+    TreeView,
     TreeViewVisibilityChangeEvent,
     Uri,
     ViewColumn,
@@ -25,36 +27,73 @@ import { PublishService } from './common/services/publish.service';
 import { WorkspaceService } from './common/services/workspace.service';
 import { EnvironmentViewProvider } from './common/webview/environment-view';
 import { PublishViewProvider } from './common/webview/publish-view';
-import { SpecificationFileTreeProvider } from './specification-tree/specification-tree-provider';
+import { SpecificationFileTreeProvider } from './common/specification-tree/specification-tree-provider';
 
 export function activate(context: ExtensionContext): void {
-    const workspaceFolderService = new WorkspaceService();
-    context.subscriptions.push(workspaceFolderService);
-
+    const workspaceFolderService = registerDisposable(context, new WorkspaceService());
     const itemCheckboxService = new ItemCheckboxService();
     const environmentStorageService = new EnvironmentStorageService(context);
-
-    const configurationFileService = new ConfigurationFileService();
-    context.subscriptions.push(configurationFileService);
+    const configurationFileService = registerDisposable(context, new ConfigurationFileService());
 
     const fileTreeProvider = new SpecificationFileTreeProvider(
         workspaceFolderService,
         itemCheckboxService,
         configurationFileService
     );
-    const treeView = window.createTreeView(EXTENSION_EXPLORER_NAME, {
-        treeDataProvider: fileTreeProvider
-    });
-    context.subscriptions.push(treeView);
+    const treeView = registerTreeView(context, EXTENSION_EXPLORER_NAME, fileTreeProvider);
 
-    context.subscriptions.push(
+    registerTreeViewEvents(context, treeView, fileTreeProvider, workspaceFolderService, itemCheckboxService);
+    registerCommands(context);
+
+    const crudService = registerDisposable(context, new CrudService());
+    const publishService = registerDisposable(
+        context,
+        new PublishService(fileTreeProvider, environmentStorageService, configurationFileService)
+    );
+
+    registerWebviewProviders(
+        context,
+        crudService,
+        environmentStorageService,
+        configurationFileService,
+        workspaceFolderService,
+        publishService
+    );
+}
+
+export function deactivate(): void {}
+
+function registerDisposable<T extends Disposable>(context: ExtensionContext, disposable: T): T {
+    context.subscriptions.push(disposable);
+    return disposable;
+}
+
+function registerTreeView(
+    context: ExtensionContext,
+    viewId: string,
+    treeDataProvider: SpecificationFileTreeProvider
+): TreeView<SpecificationItem> {
+    return registerDisposable(context, window.createTreeView(viewId, { treeDataProvider }));
+}
+
+function registerTreeViewEvents(
+    context: ExtensionContext,
+    treeView: ReturnType<typeof window.createTreeView>,
+    fileTreeProvider: SpecificationFileTreeProvider,
+    workspaceFolderService: WorkspaceService,
+    itemCheckboxService: ItemCheckboxService
+): void {
+    registerDisposable(
+        context,
         treeView.onDidChangeVisibility((event: TreeViewVisibilityChangeEvent) =>
             fileTreeProvider.activate(event.visible)
         )
     );
 
-    context.subscriptions.push(
-        treeView.onDidChangeCheckboxState(({ items }: TreeCheckboxChangeEvent<SpecificationItem>) => {
+    registerDisposable(
+        context,
+        treeView.onDidChangeCheckboxState((event: TreeCheckboxChangeEvent<unknown>) => {
+            const { items } = event as TreeCheckboxChangeEvent<SpecificationItem>;
             const workspace = workspaceFolderService.activeWorkfolderPath;
             items.forEach(([item, checked]) =>
                 checked === TreeItemCheckboxState.Checked
@@ -63,7 +102,9 @@ export function activate(context: ExtensionContext): void {
             );
         })
     );
+}
 
+function registerCommands(context: ExtensionContext): void {
     context.subscriptions.push(
         commands.registerCommand(
             EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
@@ -77,27 +118,36 @@ export function activate(context: ExtensionContext): void {
             commands.executeCommand('markdown.showPreview', readmeUri);
         })
     );
+}
 
-    const crudService: CrudService = new CrudService();
-    context.subscriptions.push(crudService);
-
-    const publishService = new PublishService(fileTreeProvider, environmentStorageService, configurationFileService);
-    context.subscriptions.push(publishService);
-
-    const publishViewProvider = new PublishViewProvider(
+function registerWebviewProviders(
+    context: ExtensionContext,
+    crudService: CrudService,
+    environmentStorageService: EnvironmentStorageService,
+    configurationFileService: ConfigurationFileService,
+    workspaceFolderService: WorkspaceService,
+    publishService: PublishService
+): void {
+    const publishViewProvider = registerDisposable(
         context,
-        crudService,
-        environmentStorageService,
-        configurationFileService,
-        workspaceFolderService,
-        publishService
+        new PublishViewProvider(
+            context,
+            crudService,
+            environmentStorageService,
+            configurationFileService,
+            workspaceFolderService,
+            publishService
+        )
     );
-    context.subscriptions.push(window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishViewProvider));
+    registerDisposable(context, window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishViewProvider));
 
-    const environmentViewProvider = new EnvironmentViewProvider(context, crudService, environmentStorageService, publishService);
-    context.subscriptions.push(
+    const environmentViewProvider = registerDisposable(
+        context,
+        new EnvironmentViewProvider(context, crudService, environmentStorageService, publishService)
+    );
+
+    registerDisposable(
+        context,
         window.registerWebviewViewProvider(EXTENSION_ENVIRONMENT_VIEW_NAME, environmentViewProvider)
     );
 }
-
-export function deactivate(): void {}

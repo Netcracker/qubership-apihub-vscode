@@ -20,24 +20,25 @@ export const bundledFileDataWithDependencies = async (
     const rootApispecName = getFilePath(workspacePath, rootApispecPath);
     const rootApispecDirectory = getFileDirectory(rootApispecPath);
 
-    const resolver: Resolver = async (sourcePath: string) => {
-        let normalizePath = sourcePath;
-
-        if (sourcePath !== rootApispecPath) {
-            if (!path.isAbsolute(sourcePath)) {
-                normalizePath = path.join(rootApispecDirectory, sourcePath);
-            }
-            dependencies.push(normalizePath);
-        }
-
-        const apispecName = getFilePath(workspacePath, normalizePath);
+    const resolver: Resolver = async (sourcePath: string): Promise<object> => {
         try {
-            const apispecData = await fs.readFile(normalizePath, 'utf8');
+            let normalizedPath = sourcePath;
+
+            if (sourcePath !== rootApispecPath) {
+                if (!path.isAbsolute(sourcePath)) {
+                    normalizedPath = path.join(rootApispecDirectory, sourcePath);
+                }
+                dependencies.push(normalizedPath);
+            }
+
+            const apispecName = getFilePath(workspacePath, normalizedPath);
+            const apispecData = await fs.readFile(normalizedPath, 'utf8');
             const apispecFile = new File([apispecData], apispecName);
             files.push(apispecFile);
+
             return YAML.parse(apispecData) as object;
         } catch (error) {
-            errorMessages.push(String(error));
+            errorMessages.push(`Error resolving path ${sourcePath}: ${error}`);
             return {};
         }
     };
@@ -53,7 +54,7 @@ export const bundledFileDataWithDependencies = async (
 };
 
 export const createBuildConfigFiles = (publishFileNames: string[], allFileNames: string[]): BuildConfigFile[] => {
-    if (!publishFileNames || !publishFileNames.length) {
+    if (!publishFileNames?.length) {
         return [];
     }
     return allFileNames.map((fileName) => ({ fileId: fileName, publish: publishFileNames.includes(fileName) }));
@@ -61,6 +62,8 @@ export const createBuildConfigFiles = (publishFileNames: string[], allFileNames:
 
 export const convertBundleDataToFiles = (bundleData: BundleData[]): File[] => {
     const fileMap = new Map<string, File>();
-    bundleData.flatMap((data) => data.files).forEach((file) => fileMap.set(file.name, file));
+    bundleData.forEach((data) => {
+        data.files.forEach((file) => fileMap.set(file.name, file));
+    });
     return Array.from(fileMap.values());
 };

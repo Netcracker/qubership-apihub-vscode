@@ -68,6 +68,7 @@ import {
     openSelect,
     Until
 } from './utils/webview.utils';
+import { delay } from './utils/common.utils';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -102,39 +103,16 @@ describe('Publish Tests', () => {
     let publishButton: WebElement | undefined;
 
     before(async () => {
-        await prepareSections();
-
-        await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-
-        await findPublishFields();
-
-        await webview.switchBack();
-
-        deleteConfigFile();
+        await setupTestEnvironment();
     });
 
     after(async () => {
-        await webview?.switchBack();
-
-        await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-
-        await findPublishFields();
-        await cleanPublishFields();
-
-        await webview.switchBack();
-
-        deleteConfigFile();
-
-        await expandAll(sections ?? []);
-
-        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
+        await cleanupTestEnvironment();
     });
 
     describe('Publish Fields', function () {
         before(async () => {
-            await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-            await findPublishFields();
-            await clearTextField(packageIdField);
+            await setupPublishFields();
         });
 
         after(async () => {
@@ -142,23 +120,15 @@ describe('Publish Tests', () => {
         });
 
         it('Check labels required', async () => {
-            const vsLabels = await webview.findWebElements(By.css('vscode-label'));
-            const labels: LabelData[] = await getFieldLabels(vsLabels);
-            expect(labels).to.deep.equal(LABELS_DATA);
+            await validateLabelsRequired();
         });
 
         it('Check disabled fields if package Id is empty', async () => {
-            const isPackageIdFieldDisabled = await packageIdField?.getAttribute(DISABLED_ATTRIBUTE);
-            expect(isPackageIdFieldDisabled).to.be.oneOf([false, null]);
-
-            await new Promise((res) => setTimeout(res, 500));
-
-            await checkDependentFieldsAreDisabled(true);
+            await validateDisabledFieldsWhenPackageIdEmpty();
         });
 
         it('Check "Previous Version" set default value', async function () {
-            const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
-            expect(previousReleaseVersionValue).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+            await validatePreviousVersionDefaultValue();
         });
     });
 
@@ -651,32 +621,121 @@ describe('Publish Tests', () => {
     };
 
     const cleanPublishFields = async (): Promise<void> => {
-        try {
-            await clearTextField(previousReleaseVersion);
-        } catch {}
+        const fieldsToClear = [
+            { field: previousReleaseVersion, name: 'previousReleaseVersion' },
+            { field: versionField, name: 'versionField' },
+            { field: packageIdField, name: 'packageIdField' },
+        ];
+
+        for (const { field, name } of fieldsToClear) {
+            try {
+                await clearTextField(field);
+            } catch (error) {
+                console.warn(`Error clearing ${name}:`, error);
+            }
+        }
+
         try {
             const labels = await getLabels();
             for (const label of labels) {
                 await deleteLabel(label);
             }
-        } catch {}
+        } catch (error) {
+            console.warn('Error deleting labels:', error);
+        }
+
         try {
             await clickOption(statusField, DRAFT);
-        } catch {}
-        try {
-            await clearTextField(versionField);
-        } catch {}
-        try {
-            await clearTextField(packageIdField);
-        } catch {}
+        } catch (error) {
+            console.warn('Error resetting status field to DRAFT:', error);
+        }
     };
 
     const deleteConfigFile = (): void => {
-        deleteFile(CONFIG_FILE_1_PATH);
+        try {
+            deleteFile(CONFIG_FILE_1_PATH);
+        } catch (error) {
+            console.warn('Error deleting config file:', error);
+        }
     };
 
     const switchToFrame = async (section: PLUGIN_SECTIONS): Promise<void> => {
         webview = await getWebView(sideBar, section);
         await webview.switchToFrame();
+    };
+
+    const setupTestEnvironment = async (): Promise<void> => {
+        try {
+            await prepareSections();
+            await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
+            await findPublishFields();
+        } catch (error) {
+            console.error('Error during setup in before hook:', error);
+            throw error;
+        } finally {
+            await webview?.switchBack();
+            deleteConfigFile();
+        }
+    };
+
+    const cleanupTestEnvironment = async (): Promise<void> => {
+        try {
+            await webview?.switchBack();
+            await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
+            await findPublishFields();
+            await cleanPublishFields();
+        } catch (error) {
+            console.error('Error during cleanup in after hook:', error);
+        } finally {
+            await webview?.switchBack();
+            deleteConfigFile();
+            await expandAll(sections ?? []);
+        }
+    };
+
+    const setupPublishFields = async (): Promise<void> => {
+        try {
+            await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
+            await findPublishFields();
+            await clearTextField(packageIdField);
+        } catch (error) {
+            console.error('Error in Publish Fields before hook:', error);
+            throw error;
+        }
+    };
+
+    const validateLabelsRequired = async (): Promise<void> => {
+        try {
+            const vsLabels = await webview.findWebElements(By.css('vscode-label'));
+            const labels: LabelData[] = await getFieldLabels(vsLabels);
+            expect(labels).to.deep.equal(LABELS_DATA);
+        } catch (error) {
+            console.error('Error in Check labels required test:', error);
+            throw error;
+        }
+    };
+
+    const validateDisabledFieldsWhenPackageIdEmpty = async (): Promise<void> => {
+        try {
+            const isPackageIdFieldDisabled = await packageIdField?.getAttribute(DISABLED_ATTRIBUTE);
+            expect(isPackageIdFieldDisabled).to.be.oneOf([false, null]);
+
+            await delay(500);
+
+            await checkDependentFieldsAreDisabled(true);
+        } catch (error) {
+            console.error('Error in Check disabled fields test:', error);
+            throw error;
+        }
+    };
+
+    const validatePreviousVersionDefaultValue = async (): Promise<void> => {
+        try {
+            const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
+            expect(previousReleaseVersionValue).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+        } catch (error) {
+            console.error('Error in Check "Previous Version" test:', error);
+            throw error;
+        }
     };
 });

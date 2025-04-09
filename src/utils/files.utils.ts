@@ -8,56 +8,50 @@ import { VersionId } from '../common/models/publish.model';
 import { SpecificationItem } from '../common/models/specification-item';
 import { getFilePath } from './path.utils';
 
-export const packToZip = (files: File[]): Promise<Blob> => {
+export const packToZip = async (files: File[]): Promise<Blob> => {
     const zip = new JSZip();
     files.forEach((file) => zip.file(file.name, file.arrayBuffer()));
     return zip.generateAsync({
         type: 'blob',
         compression: 'DEFLATE',
-        compressionOptions: {
-            level: 9
-        }
+        compressionOptions: { level: 9 }
     });
 };
 
 export const specificationItemToFile = (item: SpecificationItem): File => {
-    return new File([fs.readFileSync(item.uri.fsPath)], getFilePath(item.workspacePath, item.uri.fsPath));
+    const fileContent = fs.readFileSync(item.uri.fsPath);
+    const fileName = getFilePath(item.workspacePath, item.uri.fsPath);
+    return new File([fileContent], fileName);
 };
 
 export const isPathExists = (path: string): boolean => {
     try {
         fs.accessSync(path);
+        return true;
     } catch {
         return false;
     }
-    return true;
 };
 
 export const convertConfigurationFileToLike = (config: ConfigurationFile): ConfigurationFileLike => {
     return {
         files: new Set(config.files ?? []),
-        packageId: config?.packageId ?? '',
-        version: config?.version ?? 1,
+        packageId: config.packageId || '',
+        version: config.version || 1,
         id: uuidv4()
     };
 };
 
 export const splitVersion = (version: VersionId): { version: string; revision: string } => {
     if (!version) {
-        return { revision: '', version: '' };
+        return { version: '', revision: '' };
     }
     const [versionKey, revisionKey] = version.split('@');
-    return {
-        version: versionKey,
-        revision: revisionKey ?? ''
-    };
+    return { version: versionKey, revision: revisionKey || '' };
 };
 
 export const convertPreviousVersion = (version: VersionId): string => {
-    if (!version) {
-        return '';
-    }
-    if (version === PUBLISH_NO_PREVIOUS_VERSION) {
+    if (!version || version === PUBLISH_NO_PREVIOUS_VERSION) {
         return '';
     }
     return splitVersion(version).version;
@@ -69,21 +63,16 @@ export function debounce<T extends (...args: any[]) => void>(
 ): (...args: Parameters<T>) => void {
     let timer: ReturnType<typeof setTimeout>;
     return (...args: Parameters<T>) => {
-        if (timer) {
-            clearTimeout(timer);
-        }
+        clearTimeout(timer);
         timer = setTimeout(() => func(...args), delay);
     };
 }
 
-export const validateYAML = <T>(yamlData: Object, schema: JSONSchemaType<T>): boolean => {
+export const validateYAML = <T>(yamlData: object, schema: JSONSchemaType<T>): boolean => {
     const ajv = new Ajv();
-    try {
-        const validate = ajv.compile(schema);
-        const valid = validate(yamlData);
-
-        return valid;
-    } catch (error) {
-        throw new Error('Errors: ' + String(error));
+    const validate = ajv.compile(schema);
+    if (!validate(yamlData)) {
+        throw new Error(`Validation errors: ${JSON.stringify(validate.errors)}`);
     }
+    return true;
 };

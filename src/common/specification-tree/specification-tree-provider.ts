@@ -17,14 +17,14 @@ import {
     SPECIFICATION_TREE,
     SPECS_ADDITIONAL_EXTENSIONS,
     SPECS_MAIN_EXTENSIONS
-} from '../common/constants/specification.constants';
-import { FilePath, WorkfolderPath } from '../common/models/common.model';
-import { SpecificationItem, SpecificationTreeData } from '../common/models/specification-item';
-import { ItemCheckboxService } from '../common/services/Item-checkbox.service';
-import { ConfigurationFileService } from '../common/services/configuration-file.service';
-import { WorkspaceService } from '../common/services/workspace.service';
-import { isPathExists } from '../utils/files.utils';
-import { getExtension, isApispecFile } from '../utils/path.utils';
+} from '../constants/specification.constants';
+import { FilePath, WorkfolderPath } from '../models/common.model';
+import { SpecificationItem, SpecificationTreeData } from '../models/specification-item';
+import { ItemCheckboxService } from '../services/Item-checkbox.service';
+import { ConfigurationFileService } from '../services/configuration-file.service';
+import { WorkspaceService } from '../services/workspace.service';
+import { isPathExists } from '../../utils/files.utils';
+import { getExtension, isApispecFile } from '../../utils/path.utils';
 
 export class SpecificationFileTreeProvider extends Disposable implements TreeDataProvider<SpecificationItem> {
     private readonly _onDidChangeTreeData: EventEmitter<void> = new EventEmitter();

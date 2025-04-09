@@ -21,40 +21,40 @@ export abstract class WebviewBase<T> extends Disposable implements WebviewViewPr
     }
 
     protected updateWebviewField(field: T, value: string | string[]): void {
-        this.updateWebview(WebviewMessages.UPDATE_FIELD, field, value);
+        this.sendWebviewMessage(WebviewMessages.UPDATE_FIELD, field, value);
     }
 
     protected updateWebviewOptions(field: T, value: WebviewOption[]): void {
-        this.updateWebview(WebviewMessages.UPDATE_OPTIONS, field, value);
+        this.sendWebviewMessage(WebviewMessages.UPDATE_OPTIONS, field, value);
     }
 
     protected updateWebviewPattern(field: T, value: string): void {
-        this.updateWebview(WebviewMessages.UPDATE_PATTERN, field, value);
+        this.sendWebviewMessage(WebviewMessages.UPDATE_PATTERN, field, value);
     }
 
     protected updateWebviewDisable(field: T, value: boolean): void {
-        this.updateWebview(WebviewMessages.UPDATE_DISABLE, field, value.toString());
+        this.sendWebviewMessage(WebviewMessages.UPDATE_DISABLE, field, value.toString());
     }
 
     protected updateWebviewRequired(field: T, value: boolean = true): void {
-        this.updateWebview(WebviewMessages.UPDATE_REQUIRED, field, value.toString());
+        this.sendWebviewMessage(WebviewMessages.UPDATE_REQUIRED, field, value.toString());
     }
 
     protected updateWebviewSpin(field: T, value: boolean = true): void {
-        this.updateWebview(WebviewMessages.UPDATE_SPIN, field, value.toString());
+        this.sendWebviewMessage(WebviewMessages.UPDATE_SPIN, field, value.toString());
     }
 
     protected updateWebviewIcon(field: T, value: string): void {
-        this.updateWebview(WebviewMessages.UPDATE_ICON, field, value);
+        this.sendWebviewMessage(WebviewMessages.UPDATE_ICON, field, value);
     }
 
     protected updateWebviewInvalid(field: T, value: boolean = true): void {
-        this.updateWebview(WebviewMessages.UPDATE_INVALID, field, value.toString());
+        this.sendWebviewMessage(WebviewMessages.UPDATE_INVALID, field, value.toString());
     }
 
-    protected updateWebview(command: WebviewMessages, field: T, value: WebviewPayloadType): void {
+    private sendWebviewMessage(command: WebviewMessages, field: T, value: WebviewPayloadType): void {
         this._view?.webview.postMessage({
-            command: command,
+            command,
             payload: {
                 field,
                 value
