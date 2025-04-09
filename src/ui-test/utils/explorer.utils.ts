@@ -1,5 +1,6 @@
 import * as fs from 'fs';
-import { ActivityBar, SideBarView, ViewSection, VSBrowser } from 'vscode-extension-tester';
+import { ActivityBar, SideBarView, ViewSection } from 'vscode-extension-tester';
+import { delay } from './common.utils';
 
 export const openExplorer = async (): Promise<ViewSection> => {
     const activityBar = new ActivityBar();
@@ -12,11 +13,10 @@ export const openExplorer = async (): Promise<ViewSection> => {
 
 export const openFileFromExplorer = async (fileName: string): Promise<void> => {
     const section = await openExplorer();
-    console.log(await VSBrowser.instance.driver.takeScreenshot());
+    await delay(1000);
     const item = await section.findItem(fileName);
-    console.log(await VSBrowser.instance.driver.takeScreenshot());
+    await delay(1000);
     await item?.click();
-    console.log(await VSBrowser.instance.driver.takeScreenshot());
 };
 
 export const deleteFile = (path: string): void => {
