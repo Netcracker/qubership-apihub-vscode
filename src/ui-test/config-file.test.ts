@@ -182,6 +182,7 @@ describe('Config File', () => {
             before(async function () {
                 await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
                 await delay(1000);
+                await getTreeSection();
             });
 
             it('Check: Config Files in two workspaces', async function () {

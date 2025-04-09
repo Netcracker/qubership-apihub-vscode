@@ -85,6 +85,7 @@ describe('Specification tree view tests', () => {
                 throw new Error(`Sidebar not found`);
             }
             treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+            await treeSection.expand();
             if (!treeSection) {
                 throw new Error(`Tree section not found`);
             }
@@ -99,10 +100,9 @@ describe('Specification tree view tests', () => {
         expect(data).to.deep.equal(expectedContent);
     };
 
-    const openWorkspaceAndValidate = async (workspacePath: string, expectedContent: TestTreeItem[]): Promise<void> => {
+    const openWorkspace = async (workspacePath: string): Promise<void> => {
         await VSBrowser.instance.openResources(workspacePath);
         await getTreeSection();
-        await validateTreeItems(expectedContent);
     };
 
     const checkSavedCheckboxContext = async (
@@ -137,11 +137,11 @@ describe('Specification tree view tests', () => {
     };
 
     before(async () => {
-        await openWorkspaceAndValidate(WORKSPACE_EMPTY_PATH, []);
+        await openWorkspace(WORKSPACE_EMPTY_PATH);
     });
 
     after(async () => {
-        await openWorkspaceAndValidate(WORKSPACE_EMPTY_PATH, []);
+        await openWorkspace(WORKSPACE_EMPTY_PATH);
     });
 
     it('Welcome content', async () => {
@@ -152,7 +152,7 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async () => {
-            await openWorkspaceAndValidate(WORKSPACE_1_PATH, WORKSPACE_1_CONTENT);
+            await openWorkspace(WORKSPACE_1_PATH);
         });
 
         it('Look at the items', async () => {
@@ -178,7 +178,7 @@ describe('Specification tree view tests', () => {
         });
 
         after(async () => {
-            await openWorkspaceAndValidate(WORKSPACE_EMPTY_PATH, []);
+            await openWorkspace(WORKSPACE_EMPTY_PATH);
             await closeSaveWorkspaceDialog();
             await delay(2000);
         });
@@ -211,7 +211,7 @@ describe('Specification tree view tests', () => {
 
     describe('Different API versions of specifications', () => {
         before(async () => {
-            await openWorkspaceAndValidate(WORKSPACE_APISPEC_VERSIONS_PATH, WORKSPACE_APISPEC_VERSIONS_CONTENT);
+            await openWorkspace(WORKSPACE_APISPEC_VERSIONS_PATH);
         });
 
         it('Check: Apispec 2.0 and 3.0', async () => {

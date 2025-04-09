@@ -627,12 +627,10 @@ describe('Publish Tests', () => {
             { field: packageIdField, name: 'packageIdField' },
         ];
 
-        for (const { field, name } of fieldsToClear) {
+        for (const { field } of fieldsToClear) {
             try {
                 await clearTextField(field);
-            } catch (error) {
-                console.warn(`Error clearing ${name}:`, error);
-            }
+            } catch {}
         }
 
         try {
@@ -640,15 +638,11 @@ describe('Publish Tests', () => {
             for (const label of labels) {
                 await deleteLabel(label);
             }
-        } catch (error) {
-            console.warn('Error deleting labels:', error);
-        }
+        } catch {}
 
         try {
             await clickOption(statusField, DRAFT);
-        } catch (error) {
-            console.warn('Error resetting status field to DRAFT:', error);
-        }
+        } catch  {}
     };
 
     const deleteConfigFile = (): void => {
