@@ -362,8 +362,9 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         }
         await this.crudService
             .getLabels(host, token, packageId, version)
-            .then((versions) => {
-                versions.versions
+            .then((publishVersionDto) => {
+                publishVersionDto.versions
+                    .filter((publishVersion) => splitVersion(publishVersion.version).version === version)
                     .map((version) => version.versionLabels)
                     .flat()
                     .forEach((version) => labels.add(version));
