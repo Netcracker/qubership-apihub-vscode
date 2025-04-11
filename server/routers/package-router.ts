@@ -1,11 +1,11 @@
 import { Router } from 'express';
 import {
     BuildConfig,
-    PublishConfig,
-    PublishStatus,
-    PublishStatusDto,
-    PublishVersionDto,
-    PublishViewPackageIdData
+    PublishingConfig,
+    PublishingStatus,
+    PublishingStatusDto,
+    PublishingVersionDto,
+    PublishingViewPackageIdData
 } from '../../src/common/models/publish.model';
 import { PACKAGE_ID_NAME, PACKAGES_DATA } from '../data/packages';
 import { VERSIONS } from '../data/versions';
@@ -31,18 +31,18 @@ export function PackageRouter(): PackageRouter {
 export function getVersions(router: PackageRouter): void {
     router.get('/:packageId/versions/', (req, res) => {
         const packageId = req.params.packageId;
-        res.status(200).json(packageId === PACKAGE_ID_NAME ? ({ versions: VERSIONS } as PublishVersionDto) : []);
+        res.status(200).json(packageId === PACKAGE_ID_NAME ? ({ versions: VERSIONS } as PublishingVersionDto) : []);
     });
 }
 
 export function getPackageIdData(router: PackageRouter): void {
     router.get('/:packageId/', (req, res) => {
         const packageId = req.params.packageId;
-        const packageIdData: PublishViewPackageIdData | undefined = PACKAGES_DATA.find(
+        const packageIdData: PublishingViewPackageIdData | undefined = PACKAGES_DATA.find(
             (data) => data.packageId === packageId
         );
         if (packageIdData) {
-            res.status(200).json(packageIdData as PublishViewPackageIdData);
+            res.status(200).json(packageIdData as PublishingViewPackageIdData);
             return;
         }
         res.status(404).json();
@@ -56,7 +56,7 @@ export function postPublish(router: PackageRouter): void {
         const body = JSON.parse(req.body.config);
         if (deepEqualBuildConfig(buildConfig, body)) {
             setTimeout(
-                () => res.status(200).json({ config: buildConfig, publishId: PUBLISH_ID } as PublishConfig),
+                () => res.status(200).json({ config: buildConfig, publishId: PUBLISH_ID } as PublishingConfig),
                 500
             );
         } else {
@@ -73,7 +73,7 @@ export function getPublishStatus(router: PackageRouter): void {
                 () =>
                     res
                         .status(200)
-                        .json({ message: '', publishId: '', status: PublishStatus.COMPLETE } as PublishStatusDto),
+                        .json({ message: '', publishId: '', status: PublishingStatus.COMPLETE } as PublishingStatusDto),
                 500
             );
         } else {

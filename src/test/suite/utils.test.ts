@@ -7,11 +7,11 @@ import {
     getExtension,
     getFileDirectory,
     getMiddlePath,
-    isApispecFile,
-    isItemApispecFile,
-    sortStrings
+    isApiSpecFile,
+    isItemApiSpecFile
 } from '../../utils/path.utils';
 import { convertOptionsToDto } from '../../utils/publish.utils';
+import { sortStrings } from '../../utils/common.utils';
 
 const OPTION_1 = 'option1';
 const OPTION_2 = 'option2';
@@ -64,21 +64,21 @@ suite('Utils', () => {
         assert.equal(getExtension(`${NAME_1}.${DOC}`), DOC);
     });
 
-    test('isApispecFile', async () => {
-        assert.equal(isApispecFile(YAML), true);
-        assert.equal(isApispecFile(YML), true);
-        assert.equal(isApispecFile(JSON), true);
-        assert.equal(isApispecFile(DOC), false);
-        assert.equal(isApispecFile(GQL), false);
-        assert.equal(isApispecFile(GRAPHQL), false);
+    test('isApiSpecFile', async () => {
+        assert.equal(isApiSpecFile(YAML), true);
+        assert.equal(isApiSpecFile(YML), true);
+        assert.equal(isApiSpecFile(JSON), true);
+        assert.equal(isApiSpecFile(DOC), false);
+        assert.equal(isApiSpecFile(GQL), false);
+        assert.equal(isApiSpecFile(GRAPHQL), false);
     });
 
-    test('isItemApispecFile', async () => {
+    test('isItemApiSpecFile', async () => {
         const item1: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${YAML}`), '', 0);
-        assert.equal(isItemApispecFile(item1), true);
+        assert.equal(isItemApiSpecFile(item1), true);
 
         const item2: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${GRAPHQL}`), '', 0);
-        assert.equal(isItemApispecFile(item2), false);
+        assert.equal(isItemApiSpecFile(item2), false);
     });
 
     test('sortStrings', async () => {

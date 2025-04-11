@@ -4,8 +4,9 @@ import path from 'path';
 import { Disposable, Event, EventEmitter, Uri, window, workspace } from 'vscode';
 import YAML from 'yaml';
 import { convertConfigurationFileToLike, validateYAML } from '../../utils/files.utils';
-import { getFilePath, getWorkspaceFolders, sortStrings } from '../../utils/path.utils';
+import { getFilePath, getWorkspaceFolders } from '../../utils/path.utils';
 import {
+    CONFIGURATION_FILE_DEFAULT_VERSION,
     CONFIGURATION_FILE_NOT_VALID_ERROR_MESSAGE,
     CONFIGURATION_FILE_UNABLE_TO_READ_ERROR_MESSAGE,
     CONFIGURATION_UNABLE_TO_CREATE_ERROR_MESSAGE
@@ -13,6 +14,7 @@ import {
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
 import { PackageId } from '../models/publish.model';
+import { sortStrings } from '../../utils/common.utils';
 
 const CONFIG_FILE_NAME = '.apihub-config.yaml';
 const CONFIG_FILE_SCHEMA: JSONSchemaType<{ packageId: string; files: string[]; version: number }> = {
@@ -73,7 +75,7 @@ export class ConfigurationFileService extends Disposable {
             return;
         }
         const files = sortStrings(filePaths.map((path) => getFilePath(workfolderPath, path)));
-        const configFile: ConfigurationFile = { packageId, files, version: 1 };
+        const configFile: ConfigurationFile = { packageId, files, version: CONFIGURATION_FILE_DEFAULT_VERSION};
         const configFilePath = path.join(workfolderPath, CONFIG_FILE_NAME);
 
         try {

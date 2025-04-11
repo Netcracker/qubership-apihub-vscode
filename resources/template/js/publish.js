@@ -1,7 +1,7 @@
 // @ts-check
 
 (function () {
-    const PublishFields = {
+    const PublishingFields = {
         PACKAGE_ID: 'packageId',
         VERSION: 'version',
         STATUS: 'status',
@@ -10,19 +10,19 @@
         PUBLISH_BUTTON: 'publish-button'
     };
 
-    typeFieldMapper.set(PublishFields.PACKAGE_ID, FieldTypes.INPUT);
-    typeFieldMapper.set(PublishFields.VERSION, FieldTypes.INPUT);
-    typeFieldMapper.set(PublishFields.STATUS, FieldTypes.SINGLE_SELECT);
-    typeFieldMapper.set(PublishFields.PREVIOUS_VERSION, FieldTypes.SINGLE_SELECT_COMBOBOX);
-    typeFieldMapper.set(PublishFields.LABELS, FieldTypes.LABELS);
-    typeFieldMapper.set(PublishFields.PUBLISH_BUTTON, FieldTypes.BUTTON);
+    typeFieldMapper.set(PublishingFields.PACKAGE_ID, FieldTypes.INPUT);
+    typeFieldMapper.set(PublishingFields.VERSION, FieldTypes.INPUT);
+    typeFieldMapper.set(PublishingFields.STATUS, FieldTypes.SINGLE_SELECT);
+    typeFieldMapper.set(PublishingFields.PREVIOUS_VERSION, FieldTypes.SINGLE_SELECT_COMBOBOX);
+    typeFieldMapper.set(PublishingFields.LABELS, FieldTypes.LABELS);
+    typeFieldMapper.set(PublishingFields.PUBLISH_BUTTON, FieldTypes.BUTTON);
 
-    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.PACKAGE_ID))(PublishFields.PACKAGE_ID);
-    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.VERSION))(PublishFields.VERSION);
-    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.STATUS))(PublishFields.STATUS);
-    defaultListenersMapper.get(typeFieldMapper.get(PublishFields.PREVIOUS_VERSION))(PublishFields.PREVIOUS_VERSION);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.PACKAGE_ID))(PublishingFields.PACKAGE_ID);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.VERSION))(PublishingFields.VERSION);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.STATUS))(PublishingFields.STATUS);
+    defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.PREVIOUS_VERSION))(PublishingFields.PREVIOUS_VERSION);
 
-    const labels = document.querySelector(`#${PublishFields.LABELS}`);
+    const labels = document.querySelector(`#${PublishingFields.LABELS}`);
     if (labels) {
         // @ts-ignore
         labels.addEventListener('focusout', () => {
@@ -36,7 +36,7 @@
         });
     }
 
-    const publishButton = document.querySelector(`#${PublishFields.PUBLISH_BUTTON}`);
+    const publishButton = document.querySelector(`#${PublishingFields.PUBLISH_BUTTON}`);
     if (publishButton) {
         publishButton.addEventListener('click', publish);
     }
@@ -56,7 +56,7 @@
         if (!input.value?.trim()?.length) {
             return;
         }
-        sendFieldValue(PublishFields.LABELS);
+        sendFieldValue(PublishingFields.LABELS);
         // @ts-ignore
         input.value = '';
     }

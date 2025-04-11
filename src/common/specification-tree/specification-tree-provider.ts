@@ -24,7 +24,7 @@ import { ItemCheckboxService } from '../services/Item-checkbox.service';
 import { ConfigurationFileService } from '../services/configuration-file.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { isPathExists } from '../../utils/files.utils';
-import { getExtension, isApispecFile } from '../../utils/path.utils';
+import { getExtension, isApiSpecFile } from '../../utils/path.utils';
 
 export class SpecificationFileTreeProvider extends Disposable implements TreeDataProvider<SpecificationItem> {
     private readonly _onDidChangeTreeData: EventEmitter<void> = new EventEmitter();
@@ -40,8 +40,8 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         private readonly configurationFileService: ConfigurationFileService
     ) {
         super(() => this.dispose());
-        const apispecFileExtensions: string = [...SPECS_MAIN_EXTENSIONS, ...SPECS_ADDITIONAL_EXTENSIONS].join(',');
-        this._watcher = workspace.createFileSystemWatcher(`**/*.{${apispecFileExtensions}}`);
+        const apiSpecFileExtensions: string = [...SPECS_MAIN_EXTENSIONS, ...SPECS_ADDITIONAL_EXTENSIONS].join(',');
+        this._watcher = workspace.createFileSystemWatcher(`**/*.{${apiSpecFileExtensions}}`);
     }
 
     public activate(active: boolean): void {
@@ -68,7 +68,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         this._onDidChangeTreeData.fire();
     }
 
-    public async getFilesForPublish(): Promise<SpecificationItem[]> {
+    public async getFilesForPublishing(): Promise<SpecificationItem[]> {
         const activeWorkspace = this.workspaceFolderService.activeWorkfolderPath;
         this.setFilesFromConfig(activeWorkspace);
         const items = await this.getChildrenFromWorkspace(activeWorkspace);
@@ -193,7 +193,7 @@ export class SpecificationFileTreeProvider extends Disposable implements TreeDat
         if (SPECS_ADDITIONAL_EXTENSIONS.includes(extension)) {
             return true;
         }
-        if (isApispecFile(extension)) {
+        if (isApiSpecFile(extension)) {
             const fileContent = fs.readFileSync(filePath, 'utf8');
             return OPENAPI_SPEC_KEY_REGEXP.test(fileContent);
         }

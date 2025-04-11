@@ -16,17 +16,17 @@ export const bundledFileDataWithDependencies = async (
     const errorMessages: string[] = [];
 
     const workspacePath = item.workspacePath;
-    const rootApispecPath = item.uri.fsPath;
-    const rootApispecName = getFilePath(workspacePath, rootApispecPath);
-    const rootApispecDirectory = getFileDirectory(rootApispecPath);
+    const rootApiSpecPath = item.uri.fsPath;
+    const rootApiSpecName = getFilePath(workspacePath, rootApiSpecPath);
+    const rootApiSpecDirectory = getFileDirectory(rootApiSpecPath);
 
     const resolver: Resolver = async (sourcePath: string): Promise<object> => {
         try {
             let normalizedPath = sourcePath;
 
-            if (sourcePath !== rootApispecPath) {
+            if (sourcePath !== rootApiSpecPath) {
                 if (!path.isAbsolute(sourcePath)) {
-                    normalizedPath = path.join(rootApispecDirectory, sourcePath);
+                    normalizedPath = path.join(rootApiSpecDirectory, sourcePath);
                 }
                 dependencies.push(normalizedPath);
             }
@@ -43,21 +43,21 @@ export const bundledFileDataWithDependencies = async (
         }
     };
 
-    const bundledFileData = await bundle(rootApispecPath, resolver, { hooks: { onError } });
+    const bundledFileData = await bundle(rootApiSpecPath, resolver, { hooks: { onError } });
     const data = bundledFileData && Object.keys(bundledFileData).length ? bundledFileData : undefined;
 
     if (!data && errorMessages.length) {
         onError(errorMessages.join('\n'));
     }
 
-    return { fileName: rootApispecName, filePath: rootApispecPath, data, dependencies, files };
+    return { fileName: rootApiSpecName, filePath: rootApiSpecPath, data, dependencies, files };
 };
 
-export const createBuildConfigFiles = (publishFileNames: string[], allFileNames: string[]): BuildConfigFile[] => {
-    if (!publishFileNames?.length) {
+export const createBuildConfigFiles = (publishingFileNames: string[], allFileNames: string[]): BuildConfigFile[] => {
+    if (!publishingFileNames?.length) {
         return [];
     }
-    return allFileNames.map((fileName) => ({ fileId: fileName, publish: publishFileNames.includes(fileName) }));
+    return allFileNames.map((fileName) => ({ fileId: fileName, publish: publishingFileNames.includes(fileName) }));
 };
 
 export const convertBundleDataToFiles = (bundleData: BundleData[]): File[] => {

@@ -23,10 +23,10 @@ import { SpecificationItem } from './common/models/specification-item';
 import { ConfigurationFileService } from './common/services/configuration-file.service';
 import { EnvironmentStorageService } from './common/services/environment-storage.service';
 import { ItemCheckboxService } from './common/services/Item-checkbox.service';
-import { PublishService } from './common/services/publish.service';
+import { PublishingService } from './common/services/publishing.service';
 import { WorkspaceService } from './common/services/workspace.service';
 import { EnvironmentViewProvider } from './common/webview/environment-view';
-import { PublishViewProvider } from './common/webview/publish-view';
+import { PublishingViewProvider } from './common/webview/publishing-view';
 import { SpecificationFileTreeProvider } from './common/specification-tree/specification-tree-provider';
 
 export function activate(context: ExtensionContext): void {
@@ -48,7 +48,7 @@ export function activate(context: ExtensionContext): void {
     const crudService = registerDisposable(context, new CrudService());
     const publishService = registerDisposable(
         context,
-        new PublishService(fileTreeProvider, environmentStorageService, configurationFileService)
+        new PublishingService(fileTreeProvider, environmentStorageService, configurationFileService)
     );
 
     registerWebviewProviders(
@@ -126,11 +126,11 @@ function registerWebviewProviders(
     environmentStorageService: EnvironmentStorageService,
     configurationFileService: ConfigurationFileService,
     workspaceFolderService: WorkspaceService,
-    publishService: PublishService
+    publishService: PublishingService
 ): void {
     const publishViewProvider = registerDisposable(
         context,
-        new PublishViewProvider(
+        new PublishingViewProvider(
             context,
             crudService,
             environmentStorageService,

@@ -25,7 +25,8 @@ import { TestTreeItem } from './models/tree.model';
 import { openExplorer, openFileFromExplorer } from './utils/explorer.utils';
 import { checkItemCheckboxes, clickCheckbox, getTestTreeItems } from './utils/tree.utils';
 import { closeSaveWorkspaceDialog, collapseAll, expandAll, findAsync } from './utils/webview.utils';
-import { delay } from './utils/common.utils';
+import { delay } from '../utils/common.utils';
+
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },
@@ -214,7 +215,7 @@ describe('Specification tree view tests', () => {
             await openWorkspace(WORKSPACE_APISPEC_VERSIONS_PATH);
         });
 
-        it('Check: Apispec 2.0 and 3.0', async () => {
+        it('Check: ApiSpec 2.0 and 3.0', async () => {
             await validateTreeItems(WORKSPACE_APISPEC_VERSIONS_CONTENT);
         });
     });

@@ -6,8 +6,7 @@ import {
     createBuildConfigFiles
 } from '../../utils/document.utils';
 import { convertPreviousVersion, packToZip, specificationItemToFile } from '../../utils/files.utils';
-import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
-import { delay } from '../../utils/publish.utils';
+import { getFilePath, isItemApiSpecFile } from '../../utils/path.utils';
 import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, PACKAGES } from '../constants/common.constants';
 import {
     PUBLISH_BUTTON_LINK_MESSAGE,
@@ -22,24 +21,25 @@ import { WorkfolderPath } from '../models/common.model';
 import {
     BuildConfig,
     PackageId,
-    PublishConfig,
-    PublishStatus,
-    PublishStatusDto,
-    PublishViewData,
+    PublishingConfig,
+    PublishingStatus,
+    PublishingStatusDto,
+    PublishingViewData,
     VersionId,
     VersionStatus
 } from '../models/publish.model';
 import { SpecificationItem } from '../models/specification-item';
 import { ConfigurationFileService } from './configuration-file.service';
 import { EnvironmentStorageService } from './environment-storage.service';
+import { delay } from '../../utils/common.utils';
 
-export class PublishService extends Disposable {
+export class PublishingService extends Disposable {
     private readonly _crudService: CrudService;
     private readonly _statusBarItem: StatusBarItem;
     private _disposables: Disposable[] = [];
     private readonly _onPublish: EventEmitter<boolean> = new EventEmitter();
     public readonly onPublish: Event<boolean> = this._onPublish.event;
-    private _isPublishProgress = false;
+    private _isPublishingProgress = false;
 
     constructor(
         private readonly fileTreeProvider: SpecificationFileTreeProvider,
@@ -53,15 +53,15 @@ export class PublishService extends Disposable {
         this._statusBarItem.text = STATUS_BAR_TEXT;
     }
 
-    public get isPublishProgress(): boolean {
-        return this._isPublishProgress;
+    public get isPublishingProgress(): boolean {
+        return this._isPublishingProgress;
     }
 
-    public async publish(workfolderPath: WorkfolderPath, data: PublishViewData): Promise<void> {
-        this.startPublishProgress();
+    public async publish(workfolderPath: WorkfolderPath, data: PublishingViewData): Promise<void> {
+        this.startPublishingProgress();
 
         try {
-            const filesToPublish = await this.fileTreeProvider.getFilesForPublish();
+            const filesToPublish = await this.fileTreeProvider.getFilesForPublishing();
             const { host, token } = await this.environmentStorageService.getEnvironment();
 
             await this.validateAndPublish(host, token, filesToPublish, data);
@@ -69,9 +69,9 @@ export class PublishService extends Disposable {
             this.updateConfigurationFile(workfolderPath, data.packageId, filesToPublish);
             this.showSuccessMessage(host, data.packageId, data.version);
         } catch (error) {
-            this.handlePublishError(error);
+            this.handlePublishingError(error);
         } finally {
-            this.endPublishProgress();
+            this.endPublishingProgress();
         }
     }
 
@@ -80,18 +80,18 @@ export class PublishService extends Disposable {
         this._disposables = [];
     }
 
-    private startPublishProgress(): void {
+    private startPublishingProgress(): void {
         this._statusBarItem.show();
-        this.updatePublishProgress(true);
+        this.updatePublishingProgress(true);
     }
 
-    private endPublishProgress(): void {
+    private endPublishingProgress(): void {
         this._statusBarItem.hide();
-        this.updatePublishProgress(false);
+        this.updatePublishingProgress(false);
     }
 
-    private updatePublishProgress(value: boolean): void {
-        this._isPublishProgress = value;
+    private updatePublishingProgress(value: boolean): void {
+        this._isPublishingProgress = value;
         this._onPublish.fire(value);
     }
 
@@ -99,26 +99,26 @@ export class PublishService extends Disposable {
         host: string,
         authorization: string,
         items: SpecificationItem[],
-        publishData: PublishViewData
-    ): Promise<PublishStatusDto> {
-        this.validateInputs(host, authorization, items, publishData);
+        publishingData: PublishingViewData
+    ): Promise<PublishingStatusDto> {
+        this.validateInputs(host, authorization, items, publishingData);
 
-        const { packageId, version, status, previousVersion, labels } = publishData;
+        const { packageId, version, status, previousVersion, labels } = publishingData;
 
-        const apiSpecItems = items.filter(isItemApispecFile);
-        const additionalItems = items.filter((item) => !isItemApispecFile(item));
+        const apiSpecItems = items.filter(isItemApiSpecFile);
+        const additionalItems = items.filter((item) => !isItemApiSpecFile(item));
 
         const publishingFiles = await this.bundleItems(apiSpecItems);
         publishingFiles.push(...additionalItems.map(specificationItemToFile));
 
         const zipData = await this.createZip(publishingFiles);
 
-        const publishFileNames = items.map((item) => getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? ''));
+        const publishingFileNames = items.map((item) => getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? ''));
         const additionalFileNames = publishingFiles.map((file) => file.name);
 
-        const publishConfig = await this.publishApispec(
+        const publishConfig = await this.publishApiSpec(
             host,
-            publishFileNames,
+            publishingFileNames,
             additionalFileNames,
             zipData,
             packageId,
@@ -136,7 +136,7 @@ export class PublishService extends Disposable {
         host: string,
         authorization: string,
         items: SpecificationItem[],
-        publishData: PublishViewData
+        publishData: PublishingViewData
     ): void {
         if (!host) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
@@ -177,7 +177,7 @@ export class PublishService extends Disposable {
         }
     }
 
-    private async publishApispec(
+    private async publishApiSpec(
         host: string,
         publishFileNames: string[],
         allFileNames: string[],
@@ -188,7 +188,7 @@ export class PublishService extends Disposable {
         previousVersion: VersionId,
         versionLabels: string[],
         authorization: string
-    ): Promise<PublishConfig> {
+    ): Promise<PublishingConfig> {
         const buildConfig = createBuildConfigFiles(publishFileNames, allFileNames);
         const normalizedPreviousVersion = convertPreviousVersion(previousVersion);
 
@@ -205,7 +205,7 @@ export class PublishService extends Disposable {
         formData.append('sources', blobData, PUBLISH_DATA_NAME);
         formData.append('config', JSON.stringify({ ...config, sources: undefined }));
 
-        return this._crudService.publishApispec(host, packageId, authorization, formData);
+        return this._crudService.publishApiSpec(host, packageId, authorization, formData);
     }
 
     private async getPublishStatus(
@@ -214,14 +214,14 @@ export class PublishService extends Disposable {
         publishId: string,
         authorization: string,
         maxAttempts = STATUS_REFETCH_MAX_ATTEMPTS
-    ): Promise<PublishStatusDto> {
+    ): Promise<PublishingStatusDto> {
         let attempts = 0;
         while (attempts < maxAttempts) {
             const publishStatus = await this._crudService.getStatus(host, authorization, packageId, publishId);
-            if (publishStatus.status === PublishStatus.COMPLETE) {
+            if (publishStatus.status === PublishingStatus.COMPLETE) {
                 return publishStatus;
             }
-            if (publishStatus.status === PublishStatus.ERROR) {
+            if (publishStatus.status === PublishingStatus.ERROR) {
                 throw new Error(publishStatus.message);
             }
             attempts++;
@@ -250,7 +250,7 @@ export class PublishService extends Disposable {
         });
     }
 
-    private handlePublishError(error: unknown): void {
+    private handlePublishingError(error: unknown): void {
         const errorMessage = (error as Error)?.message || 'An unknown error occurred';
         console.error(errorMessage, (error as Error)?.stack);
         window.showErrorMessage(errorMessage);

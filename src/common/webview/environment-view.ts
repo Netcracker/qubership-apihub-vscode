@@ -14,7 +14,7 @@ import {
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
     MAIN_JS_PATH
 } from '../constants/common.constants';
-import { ENVIRONMENT_JS_PATH, EnvironmentConnectionState } from '../constants/environment.constants';
+import { ENVIRONMENT_FAILURE, ENVIRONMENT_JS_PATH, ENVIRONMENT_LOADING, ENVIRONMENT_SUCCESS, EnvironmentConnectionState } from '../constants/environment.constants';
 import { CrudService, RequestNames } from '../cruds/crud.service';
 import { CrudError } from '../models/common.model';
 import {
@@ -26,14 +26,14 @@ import {
 import { EnvironmentWebviewTestConnectionDto, WebviewMessages, WebviewPayload } from '../models/webview.model';
 import { EnvironmentStorageService } from '../services/environment-storage.service';
 import { WebviewBase } from './webview-base';
-import { PublishService } from '../services/publish.service';
+import { PublishingService } from '../services/publishing.service';
 
 export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewFields> {
     constructor(
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
         private readonly environmentStorageService: EnvironmentStorageService,
-        private readonly publishService: PublishService
+        private readonly publishService: PublishingService
     ) {
         super();
     }
@@ -65,7 +65,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
             })
         );
         this.publishService.onPublish(
-            (isPublishProgress) => this.disableAllFields(isPublishProgress),
+            (isPublishingProgress) => this.disableAllFields(isPublishingProgress),
             this,
             this._disposables
         );
@@ -95,19 +95,19 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
 
     private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
         this.cleanInvalidFields();
-        this.setTestConnectionState('loading');
+        this.setTestConnectionState(ENVIRONMENT_LOADING);
 
         let { host, token } = data;
         host = normalizeUrl(host);
         if (!host) {
             this.markFieldAsInvalid(EnvironmentWebviewFields.URL);
-            this.setTestConnectionState('failure');
+            this.setTestConnectionState(ENVIRONMENT_FAILURE);
             return;
         }
 
         try {
             await this.crudService.getSystemInfo(host, token);
-            this.setTestConnectionState('success');
+            this.setTestConnectionState(ENVIRONMENT_SUCCESS);
         } catch (error) {
             this.handleTestConnectionError(error as CrudError);
         }
@@ -119,11 +119,11 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                 break;
             case 401:
                 this.markFieldAsInvalid(EnvironmentWebviewFields.TOKEN);
-                this.setTestConnectionState('failure');
+                this.setTestConnectionState(ENVIRONMENT_FAILURE);
                 break;
             default:
                 this.markFieldAsInvalid(EnvironmentWebviewFields.URL);
-                this.setTestConnectionState('failure');
+                this.setTestConnectionState(ENVIRONMENT_FAILURE);
                 break;
         }
     }

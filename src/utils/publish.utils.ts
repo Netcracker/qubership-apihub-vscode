@@ -9,7 +9,3 @@ export const convertOptionsToDto = (options: string[], selected: string): Webvie
         })) ?? []
     );
 };
-
-export const delay = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};

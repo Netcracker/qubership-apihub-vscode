@@ -57,16 +57,6 @@ export const convertPreviousVersion = (version: VersionId): string => {
     return splitVersion(version).version;
 };
 
-export function debounce<T extends (...args: any[]) => void>(
-    func: T,
-    delay: number = 1000
-): (...args: Parameters<T>) => void {
-    let timer: ReturnType<typeof setTimeout>;
-    return (...args: Parameters<T>) => {
-        clearTimeout(timer);
-        timer = setTimeout(() => func(...args), delay);
-    };
-}
 
 export const validateYAML = <T>(yamlData: object, schema: JSONSchemaType<T>): boolean => {
     const ajv = new Ajv();

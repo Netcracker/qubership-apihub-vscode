@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import { ActivityBar, SideBarView, ViewSection } from 'vscode-extension-tester';
-import { delay } from './common.utils';
+import { delay } from '../../utils/common.utils';
+
 
 export const openExplorer = async (): Promise<ViewSection> => {
     const activityBar = new ActivityBar();
