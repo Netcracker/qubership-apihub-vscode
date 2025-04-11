@@ -69,7 +69,6 @@ import {
     openSelect,
     Until
 } from './utils/webview.utils';
-import { delay } from './utils/common.utils';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
