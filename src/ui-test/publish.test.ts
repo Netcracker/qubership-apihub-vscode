@@ -495,17 +495,17 @@ describe('Publish Tests', () => {
                     await delay(1000);
                     fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_2, 'utf8');
                     await delay(1000);
-                    console.log(await VSBrowser.instance.driver.takeScreenshot());
+
                     await clearTextField(packageIdField);
                     await packageIdField?.sendKeys(PACKAGE_ID_RELEASE_NAME);
                     await webview?.switchBack();
-                    console.log(await VSBrowser.instance.driver.takeScreenshot());
+
                     await expandAll(sections);
                     const treeSection = await sideBar?.getContent().getSection(DOCUMENTS_SECTION);
                     const items: CustomTreeItem[] = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
                     const item = await findAsync(items, async (item) => (await item.getLabel()) === PETS_NAME);
                     await clickCheckbox(item);
-                    console.log(await VSBrowser.instance.driver.takeScreenshot());
+
                     await switchToPublish();
                     await findPublishFields();
 
