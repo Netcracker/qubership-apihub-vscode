@@ -11,7 +11,7 @@ import {
     ViewSection,
     VSBrowser,
     WebElement,
-    WebView,
+    WebviewView,
     Workbench
 } from 'vscode-extension-tester';
 import {
@@ -47,9 +47,10 @@ import {
     VERSION_3,
     VERSION_LABEL
 } from './constants/test.constants';
-import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH, WORKSPACE_EMPTY_PATH } from './constants/tree.constants';
+import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SINGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
+import { delay } from './utils/common.utils';
 import { deleteFile } from './utils/explorer.utils';
 import { clickCheckbox } from './utils/tree.utils';
 import {
@@ -68,7 +69,6 @@ import {
     openSelect,
     Until
 } from './utils/webview.utils';
-import { delay } from './utils/common.utils';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -94,7 +94,7 @@ describe('Publish Tests', () => {
     let viewControl: ViewControl | undefined;
     let sideBar: SideBarView | undefined;
     let sections: ViewSection[] | undefined;
-    let webview: WebView;
+    let webview: WebviewView;
     let packageIdField: WebElement | undefined;
     let versionField: WebElement | undefined;
     let statusField: WebElement | undefined;
@@ -142,7 +142,7 @@ describe('Publish Tests', () => {
                 await switchAndCleanEnvironmentFields();
                 await switchAndCleanPublishFields();
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
             });
 
             it('Check required empty Environment fields if PackageId is fill', async function () {
@@ -150,7 +150,7 @@ describe('Publish Tests', () => {
 
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await switchToEnvironments();
 
@@ -171,7 +171,7 @@ describe('Publish Tests', () => {
 
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 const isPackageIdFieldNoInvalid = await packageIdField
                     ?.getDriver()
@@ -235,15 +235,13 @@ describe('Publish Tests', () => {
 
             afterEach(async () => {
                 await cleanPublishFields();
-                // WA. Delete after https://github.com/vscode-elements/elements/issues/369
-                await findPublishFields();
-                await new Promise((res) => setTimeout(res, 500));
+                await delay(1000);
             });
 
             it('Check Status Options', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
                 await openSelect(statusField);
                 const options = await getSingleSelectOptions(statusField);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
@@ -255,7 +253,7 @@ describe('Publish Tests', () => {
             it('Check changes in the Draft status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, DRAFT);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
@@ -280,7 +278,7 @@ describe('Publish Tests', () => {
             it('Check changes in the Release status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, RELEASE);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
@@ -305,7 +303,7 @@ describe('Publish Tests', () => {
             it('Check changes in the Archived status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, ARCHIVED);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
@@ -330,7 +328,7 @@ describe('Publish Tests', () => {
             it('Check create some Labels be Enter and delete', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await labelsField?.sendKeys(LABEL_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
@@ -359,7 +357,7 @@ describe('Publish Tests', () => {
             it('Check create Labels using focusout', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await labelsField?.sendKeys(LABEL_NAME);
                 await labelsField?.sendKeys(Key.TAB);
@@ -380,11 +378,11 @@ describe('Publish Tests', () => {
             it('Check load label from version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await versionField?.sendKeys(VERSION_2);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 let labels = await getLabels();
                 const labelNames = await getTexts(labels);
@@ -399,7 +397,7 @@ describe('Publish Tests', () => {
             it('Check "Previous Version" has default value', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_VERSIONS_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await openSelect(previousReleaseVersion);
 
@@ -417,7 +415,7 @@ describe('Publish Tests', () => {
             it('Check load "Previous Version" from package', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await openSelect(previousReleaseVersion);
 
@@ -434,7 +432,7 @@ describe('Publish Tests', () => {
             it('Check "Previous Version" cannot select a non-existent version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
                 await previousReleaseVersion?.sendKeys('non-existentVersion');
@@ -462,7 +460,7 @@ describe('Publish Tests', () => {
                 it('Check Success Publish: Status bar, Notification, Config File', async function () {
                     await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await delay(2000);
 
                     await versionField?.sendKeys(VERSION_3);
                     await clickOption(statusField, DRAFT);
@@ -472,13 +470,13 @@ describe('Publish Tests', () => {
 
                     await publishButton?.click();
 
-                    await new Promise((res) => setTimeout(res, 500));
+                    await delay(500);
                     await webview.switchBack();
 
                     const statusBarText = await statusBar.getText();
                     expect(statusBarText).includes(STATUS_BAR_PUBLISH_MESSAGE);
 
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await delay(2000);
 
                     const notifications = await new Workbench().getNotifications();
                     const notificationsText = await notifications[0].getText();
@@ -494,7 +492,7 @@ describe('Publish Tests', () => {
 
                 it('Check re-creation Config File after Success Publish', async function () {
                     fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_2, 'utf8');
-                    await new Promise((res) => setTimeout(res, 1000));
+                    await delay(1000);
 
                     await clearTextField(packageIdField);
                     await packageIdField?.sendKeys(PACKAGE_ID_RELEASE_NAME);
@@ -517,14 +515,14 @@ describe('Publish Tests', () => {
 
                     await publishButton?.click();
 
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await delay(2000);
 
                     expect(fs.existsSync(CONFIG_FILE_1_PATH)).to.be.true;
                     const configFileContent = fs.readFileSync(CONFIG_FILE_1_PATH, 'utf-8');
 
                     expect(configFileContent).is.equals(CONFIG_FILE_3);
 
-                    await new Promise((res) => setTimeout(res, 500));
+                    await delay(500);
                 });
             });
         });
@@ -622,7 +620,7 @@ describe('Publish Tests', () => {
         const fieldsToClear = [
             { field: previousReleaseVersion, name: 'previousReleaseVersion' },
             { field: versionField, name: 'versionField' },
-            { field: packageIdField, name: 'packageIdField' },
+            { field: packageIdField, name: 'packageIdField' }
         ];
 
         for (const { field } of fieldsToClear) {
@@ -640,7 +638,7 @@ describe('Publish Tests', () => {
 
         try {
             await clickOption(statusField, DRAFT);
-        } catch  {}
+        } catch {}
     };
 
     const deleteConfigFile = (): void => {

@@ -1,4 +1,4 @@
-import { By, Key, ModalDialog, SideBarView, until, ViewSection, WebElement, WebView } from 'vscode-extension-tester';
+import { By, Key, ModalDialog, SideBarView, ViewSection, WebElement, WebviewView } from 'vscode-extension-tester';
 import { DISABLED_ATTRIBUTE, REQUIRED_ATTRIBUTE } from '../constants/attribute.constants';
 import { PLUGIN_SECTIONS } from '../constants/test.constants';
 import { LabelData } from '../models/label.model';
@@ -27,21 +27,12 @@ export const closeSaveWorkspaceDialog = async (): Promise<void> => {
     } catch {}
 };
 
-export const getWebView = async (sideBar: SideBarView | undefined, sectionName: PLUGIN_SECTIONS): Promise<WebView> => {
-    const sections = (await sideBar?.getContent().getSections()) ?? [];
-    for (const section of sections) {
-        const title = await section.getTitle();
-        if (title === sectionName) {
-            break;
-        } else {
-            try {
-                await section.collapse();
-            } catch {}
-        }
-    }
+export const getWebView = async (
+    sideBar: SideBarView | undefined,
+    sectionName: PLUGIN_SECTIONS
+): Promise<WebviewView> => {
     const section = await sideBar?.getContent().getSection(sectionName);
-    const webviewElem = await section?.getDriver().wait(until.elementLocated(By.css('iframe')), 1000);
-    return new WebView(webviewElem);
+    return new WebviewView(section);
 };
 
 export const expandAll = async (sections: ViewSection[] | undefined): Promise<void> => {

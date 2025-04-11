@@ -9,7 +9,7 @@ import {
     ViewSection,
     VSBrowser,
     WebElement,
-    WebView
+    WebviewView
 } from 'vscode-extension-tester';
 import { PublishFields } from '../common/models/publish.model';
 import { CONFIG_FILE_3, CONFIG_FILE_5, CONFIG_FILE_6 } from './constants/publish.constants';
@@ -101,7 +101,7 @@ describe('Config File', () => {
     });
 
     describe('Publish', function () {
-        let webview: WebView;
+        let webview: WebviewView;
 
         before(async function () {
             await setupPublishView();
@@ -193,7 +193,7 @@ describe('Config File', () => {
                 await delay(1000);
                 await openFileFromExplorer(CONFIG_FILE_NAME);
                 await delay(1000);
-                await getTreeSection();             
+                await getTreeSection();
                 await validateTreeContent(WORKSPACE_2_CONTENT);
                 await delay(1000);
                 await openFileFromExplorer(CARS_NAME);

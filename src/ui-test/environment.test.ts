@@ -1,13 +1,5 @@
 import { expect } from 'chai';
-import {
-    ActivityBar,
-    By,
-    SideBarView,
-    ViewControl,
-    VSBrowser,
-    WebElement,
-    WebView
-} from 'vscode-extension-tester';
+import { ActivityBar, By, SideBarView, ViewControl, VSBrowser, WebElement, WebviewView } from 'vscode-extension-tester';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
 import { INVALID_ATTRIBUTE, NAME_ATTRIBUTE } from './constants/attribute.constants';
 import {
@@ -28,7 +20,7 @@ const LABELS_DATA: LabelData[] = [
 ];
 
 describe('Environment Webview', () => {
-    let webview: WebView;
+    let webview: WebviewView;
     let urlField: WebElement | undefined;
     let tokenField: WebElement | undefined;
     let testConnectionButton: WebElement | undefined;
