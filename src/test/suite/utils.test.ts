@@ -24,7 +24,7 @@ const YML = 'yml';
 const JSON = 'json';
 const DOC = 'doc';
 const GQL = 'gql';
-const GRAPHQ = 'graphql';
+const GRAPHQL = 'graphql';
 
 const WORKFOLDER_PATH = 'folder-name/workfolder';
 const FILE_DIRECTORY_PATH = 'folder-name/workfolder/src/docs';
@@ -70,14 +70,14 @@ suite('Utils', () => {
         assert.equal(isApispecFile(JSON), true);
         assert.equal(isApispecFile(DOC), false);
         assert.equal(isApispecFile(GQL), false);
-        assert.equal(isApispecFile(GRAPHQ), false);
+        assert.equal(isApispecFile(GRAPHQL), false);
     });
 
     test('isItemApispecFile', async () => {
         const item1: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${YAML}`), '', 0);
         assert.equal(isItemApispecFile(item1), true);
 
-        const item2: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${GRAPHQ}`), '', 0);
+        const item2: SpecificationItem = new SpecificationItem(NAME_1, '', Uri.file(`${NAME_1}.${GRAPHQL}`), '', 0);
         assert.equal(isItemApispecFile(item2), false);
     });
 

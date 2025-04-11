@@ -1,5 +1,5 @@
 import { commands, Disposable, env, Event, EventEmitter, StatusBarAlignment, StatusBarItem, Uri, window } from 'vscode';
-import { SpecificationFileTreeProvider } from '../../specification-tree/specification-tree-provider';
+import { SpecificationFileTreeProvider } from '../specification-tree/specification-tree-provider';
 import {
     bundledFileDataWithDependencies,
     convertBundleDataToFiles,
@@ -7,6 +7,7 @@ import {
 } from '../../utils/document.utils';
 import { convertPreviousVersion, packToZip, specificationItemToFile } from '../../utils/files.utils';
 import { getFilePath, isItemApispecFile } from '../../utils/path.utils';
+import { delay } from '../../utils/publish.utils';
 import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, PACKAGES } from '../constants/common.constants';
 import {
     PUBLISH_BUTTON_LINK_MESSAGE,
@@ -17,11 +18,9 @@ import {
     STATUS_REFETCH_MAX_ATTEMPTS
 } from '../constants/publish.constants';
 import { CrudService } from '../cruds/crud.service';
-import { BundleData } from '../models/bundle.model';
 import { WorkfolderPath } from '../models/common.model';
 import {
     BuildConfig,
-    BuildConfigFile,
     PackageId,
     PublishConfig,
     PublishStatus,
@@ -59,42 +58,41 @@ export class PublishService extends Disposable {
     }
 
     public async publish(workfolderPath: WorkfolderPath, data: PublishViewData): Promise<void> {
-        this._isPublishProgress = true;
-        this._statusBarItem.show();
-        this._onPublish.fire(true);
+        this.startPublishProgress();
 
-        const values: SpecificationItem[] = await this.fileTreeProvider.getFilesForPublish();
-        const { host, token } = await this.environmentStorageService.getEnvironment();
-        this.validateAndPublish(host, token, values, data)
-            .then(() => {
-                const { packageId, version } = data;
-                this.configurationFileService.updateConfigurationFile(
-                    workfolderPath,
-                    packageId,
-                    values.map((value) => value.uri.fsPath)
-                );
-                window
-                    .showInformationMessage(PUBLISH_SUCCESSFUL_MESSAGE, PUBLISH_BUTTON_LINK_MESSAGE)
-                    .then((selection) => {
-                        if (selection === PUBLISH_BUTTON_LINK_MESSAGE) {
-                            env.openExternal(Uri.parse(`${host}/portal/${PACKAGES}/${packageId}/${version}/`));
-                        }
-                    });
-            })
-            .catch((err) => {
-                console.error(err.message, err.stack);
-                window.showErrorMessage(err.message);
-            })
-            .finally(() => {
-                this._isPublishProgress = false;
-                this._statusBarItem.hide();
-                this._onPublish.fire(false);
-            });
+        try {
+            const filesToPublish = await this.fileTreeProvider.getFilesForPublish();
+            const { host, token } = await this.environmentStorageService.getEnvironment();
+
+            await this.validateAndPublish(host, token, filesToPublish, data);
+
+            this.updateConfigurationFile(workfolderPath, data.packageId, filesToPublish);
+            this.showSuccessMessage(host, data.packageId, data.version);
+        } catch (error) {
+            this.handlePublishError(error);
+        } finally {
+            this.endPublishProgress();
+        }
     }
 
     public dispose(): void {
         this._disposables.forEach((disposable) => disposable.dispose());
         this._disposables = [];
+    }
+
+    private startPublishProgress(): void {
+        this._statusBarItem.show();
+        this.updatePublishProgress(true);
+    }
+
+    private endPublishProgress(): void {
+        this._statusBarItem.hide();
+        this.updatePublishProgress(false);
+    }
+
+    private updatePublishProgress(value: boolean): void {
+        this._isPublishProgress = value;
+        this._onPublish.fire(value);
     }
 
     private async validateAndPublish(
@@ -103,43 +101,22 @@ export class PublishService extends Disposable {
         items: SpecificationItem[],
         publishData: PublishViewData
     ): Promise<PublishStatusDto> {
-        if (!host) {
-            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
-            throw new Error('Error: Empty Url');
-        }
-        if (!authorization) {
-            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
-            throw new Error('Error: Empty Token');
-        }
-        if (!items?.length) {
-            throw new Error('Error: Files not selected for publishing');
-        }
+        this.validateInputs(host, authorization, items, publishData);
+
         const { packageId, version, status, previousVersion, labels } = publishData;
 
-        if (!packageId || !version || !status || !previousVersion) {
-            throw new Error('Fill all required fields');
-        }
+        const apiSpecItems = items.filter(isItemApispecFile);
+        const additionalItems = items.filter((item) => !isItemApispecFile(item));
 
-        const apiSpecItems: SpecificationItem[] = items.filter(isItemApispecFile);
-        const additionalItems: SpecificationItem[] = items.filter((item) => !isItemApispecFile(item));
-
-        const publishingFiles: File[] = await this.bundlingItems(apiSpecItems);
+        const publishingFiles = await this.bundleItems(apiSpecItems);
         publishingFiles.push(...additionalItems.map(specificationItemToFile));
 
-        let zipData: Blob;
-        try {
-            zipData = await packToZip(publishingFiles);
-        } catch (error) {
-            console.error(error);
-            throw new Error('Pack to zip error');
-        }
+        const zipData = await this.createZip(publishingFiles);
 
-        const publishFileNames: string[] = items.map((item) =>
-            getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? '')
-        );
-        const additionalFileNames: string[] = publishingFiles.map((file) => file.name);
+        const publishFileNames = items.map((item) => getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? ''));
+        const additionalFileNames = publishingFiles.map((file) => file.name);
 
-        const publishConfig: PublishConfig = await this.publishApispec(
+        const publishConfig = await this.publishApispec(
             host,
             publishFileNames,
             additionalFileNames,
@@ -155,9 +132,32 @@ export class PublishService extends Disposable {
         return this.getPublishStatus(host, packageId, publishConfig.publishId, authorization);
     }
 
-    private async bundlingItems(items: SpecificationItem[]): Promise<File[]> {
+    private validateInputs(
+        host: string,
+        authorization: string,
+        items: SpecificationItem[],
+        publishData: PublishViewData
+    ): void {
+        if (!host) {
+            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
+            throw new Error('Error: Empty Url');
+        }
+        if (!authorization) {
+            commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
+            throw new Error('Error: Empty Token');
+        }
+        if (!items?.length) {
+            throw new Error('Error: Files not selected for publishing');
+        }
+        const { packageId, version, status, previousVersion } = publishData;
+        if (!packageId || !version || !status || !previousVersion) {
+            throw new Error('Fill all required fields');
+        }
+    }
+
+    private async bundleItems(items: SpecificationItem[]): Promise<File[]> {
         const bundleErrors: string[] = [];
-        const dataWithDependencies: BundleData[] = await Promise.all(
+        const dataWithDependencies = await Promise.all(
             items.map((path) => bundledFileDataWithDependencies(path, (err) => bundleErrors.push(err)))
         );
 
@@ -168,7 +168,16 @@ export class PublishService extends Disposable {
         return convertBundleDataToFiles(dataWithDependencies);
     }
 
-    private publishApispec(
+    private async createZip(files: File[]): Promise<Blob> {
+        try {
+            return await packToZip(files);
+        } catch (error) {
+            console.error(error);
+            throw new Error('Pack to zip error');
+        }
+    }
+
+    private async publishApispec(
         host: string,
         publishFileNames: string[],
         allFileNames: string[],
@@ -180,27 +189,21 @@ export class PublishService extends Disposable {
         versionLabels: string[],
         authorization: string
     ): Promise<PublishConfig> {
-        const buildConfig: BuildConfigFile[] = createBuildConfigFiles(publishFileNames, allFileNames);
-        const normalizePreviousVersion = convertPreviousVersion(previousVersion);
+        const buildConfig = createBuildConfigFiles(publishFileNames, allFileNames);
+        const normalizedPreviousVersion = convertPreviousVersion(previousVersion);
 
         const config: BuildConfig = {
             packageId,
             status,
             version,
-            previousVersion: normalizePreviousVersion,
+            previousVersion: normalizedPreviousVersion,
             files: buildConfig,
             metadata: versionLabels?.length ? { versionLabels } : {}
         };
+
         const formData = new FormData();
-
-        blobData && formData.append('sources', blobData, PUBLISH_DATA_NAME);
-
-        const publishConfig = {
-            ...config,
-            sources: undefined
-        };
-
-        formData.append('config', JSON.stringify(publishConfig));
+        formData.append('sources', blobData, PUBLISH_DATA_NAME);
+        formData.append('config', JSON.stringify({ ...config, sources: undefined }));
 
         return this._crudService.publishApispec(host, packageId, authorization, formData);
     }
@@ -214,21 +217,42 @@ export class PublishService extends Disposable {
     ): Promise<PublishStatusDto> {
         let attempts = 0;
         while (attempts < maxAttempts) {
-            const publishStatus: PublishStatusDto = await this._crudService.getStatus(
-                host,
-                authorization,
-                packageId,
-                publishId
-            );
-            switch (publishStatus.status) {
-                case PublishStatus.COMPLETE:
-                    return publishStatus;
-                case PublishStatus.ERROR:
-                    throw new Error(publishStatus.message);
+            const publishStatus = await this._crudService.getStatus(host, authorization, packageId, publishId);
+            if (publishStatus.status === PublishStatus.COMPLETE) {
+                return publishStatus;
+            }
+            if (publishStatus.status === PublishStatus.ERROR) {
+                throw new Error(publishStatus.message);
             }
             attempts++;
-            await new Promise((resolve) => setTimeout(resolve, STATUS_REFETCH_INTERVAL));
+            await delay(STATUS_REFETCH_INTERVAL);
         }
         throw new Error('Waiting time exceeded');
+    }
+
+    private updateConfigurationFile(
+        workfolderPath: WorkfolderPath,
+        packageId: PackageId,
+        files: SpecificationItem[]
+    ): void {
+        this.configurationFileService.updateConfigurationFile(
+            workfolderPath,
+            packageId,
+            files.map((file) => file.uri.fsPath)
+        );
+    }
+
+    private showSuccessMessage(host: string, packageId: PackageId, version: VersionId): void {
+        window.showInformationMessage(PUBLISH_SUCCESSFUL_MESSAGE, PUBLISH_BUTTON_LINK_MESSAGE).then((selection) => {
+            if (selection === PUBLISH_BUTTON_LINK_MESSAGE) {
+                env.openExternal(Uri.parse(`${host}/portal/${PACKAGES}/${packageId}/${version}/`));
+            }
+        });
+    }
+
+    private handlePublishError(error: unknown): void {
+        const errorMessage = (error as Error)?.message || 'An unknown error occurred';
+        console.error(errorMessage, (error as Error)?.stack);
+        window.showErrorMessage(errorMessage);
     }
 }

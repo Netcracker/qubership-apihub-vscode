@@ -5,51 +5,45 @@ export class ItemCheckboxService {
     private readonly _workspaceCheckboxes = new Map<WorkfolderPath, ItemCheckboxType>();
 
     public has(workspace: WorkfolderPath | undefined, url: FilePath): boolean {
-        if (!workspace) {
-            return false;
-        }
-        return this.getWorkspace(workspace).has(url);
+        return this.performAction(workspace, (checkboxes) => checkboxes.has(url), false);
     }
 
     public add(workspace: WorkfolderPath | undefined, url: FilePath): void {
-        if (!workspace) {
-            return;
-        }
-        this.getWorkspace(workspace).add(url);
+        this.performAction(workspace, (checkboxes) => checkboxes.add(url), null);
     }
 
     public delete(workspace: WorkfolderPath | undefined, url: FilePath): void {
-        if (!workspace) {
-            return;
-        }
-        this.getWorkspace(workspace).delete(url);
+        this.performAction(workspace, (checkboxes) => checkboxes.delete(url), null);
     }
 
     public deleteAll(url: FilePath): void {
-        this._workspaceCheckboxes.forEach((value) => value.delete(url));
+        this._workspaceCheckboxes.forEach((checkboxes) => checkboxes.delete(url));
     }
 
     public clear(workspace: WorkfolderPath | undefined): void {
-        if (!workspace) {
-            return;
-        }
-        this.getWorkspace(workspace).clear();
+        this.performAction(workspace, (checkboxes) => checkboxes.clear(), null);
     }
 
     public getValues(workspace: WorkfolderPath | undefined): FilePath[] {
-        if (!workspace) {
-            return [];
-        }
-
-        return Array.from(this.getWorkspace(workspace) ?? []);
+        return this.performAction(workspace, (checkboxes) => Array.from(checkboxes), []);
     }
 
-    private getWorkspace(workspace: WorkfolderPath): ItemCheckboxType {
-        let workspaceCheckboxes = this._workspaceCheckboxes.get(workspace);
-        if (!workspaceCheckboxes) {
-            workspaceCheckboxes = new Set<FilePath>();
-            this._workspaceCheckboxes.set(workspace, workspaceCheckboxes);
+    private performAction<T>(
+        workspace: WorkfolderPath | undefined,
+        action: (checkboxes: ItemCheckboxType) => T,
+        defaultValue: T
+    ): T {
+        if (!workspace) {
+            return defaultValue;
         }
-        return workspaceCheckboxes;
+        const checkboxes = this.getOrCreateWorkspaceCheckboxes(workspace);
+        return action(checkboxes);
+    }
+
+    private getOrCreateWorkspaceCheckboxes(workspace: WorkfolderPath): ItemCheckboxType {
+        if (!this._workspaceCheckboxes.has(workspace)) {
+            this._workspaceCheckboxes.set(workspace, new Set<FilePath>());
+        }
+        return this._workspaceCheckboxes.get(workspace)!;
     }
 }

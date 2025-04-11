@@ -14,12 +14,13 @@ import {
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
     MAIN_JS_PATH
 } from '../constants/common.constants';
-import { ENVIRONMENT_JS_PATH } from '../constants/environment.constants';
+import { ENVIRONMENT_JS_PATH, EnvironmentConnectionState } from '../constants/environment.constants';
 import { CrudService, RequestNames } from '../cruds/crud.service';
 import { CrudError } from '../models/common.model';
 import {
     EnvironmentWebviewDto,
     EnvironmentWebviewFields,
+    EnvironmentWebviewIconsMapper,
     EnvironmentWebviewMessages
 } from '../models/environment.model';
 import { EnvironmentWebviewTestConnectionDto, WebviewMessages, WebviewPayload } from '../models/webview.model';
@@ -43,118 +44,114 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         _token: CancellationToken
     ): Thenable<void> | void {
         this._view = webviewView;
+        this.initializeWebview(webviewView);
+        this.subscribeToEvents();
+    }
 
+    private initializeWebview(webviewView: WebviewView): void {
         webviewView.webview.options = {
             enableScripts: true,
             localResourceRoots: [this.context.extensionUri]
         };
-
         webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+    }
 
-        webviewView.webview.onDidReceiveMessage((data: EnvironmentWebviewDto) => {
-            this.crudService.abort(RequestNames.GET_SYSTEM_INFO);
-            this.cleanInvalidFields();
-            switch (data.command) {
-                case WebviewMessages.UPDATE_FIELD: {
-                    this.updateField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
-                    break;
-                }
-                case WebviewMessages.REQUEST_FIELD: {
-                    this.requestField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
-                    break;
-                }
-                case EnvironmentWebviewMessages.TEST_CONNECTION: {
-                    this.testConnection(data.payload as EnvironmentWebviewTestConnectionDto);
-                    break;
-                }
-            }
-        });
+    private subscribeToEvents(): void {
+        this._view?.webview.onDidReceiveMessage(this.handleWebviewMessage.bind(this));
         this._disposables.push(
             commands.registerCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, () => {
-                webviewView.show();
-                this.updateWebviewRequired(EnvironmentWebviewFields.URL);
-                this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
+                this._view?.show();
+                this.markFieldsAsRequired([EnvironmentWebviewFields.URL, EnvironmentWebviewFields.TOKEN]);
             })
         );
         this.publishService.onPublish(
-            (isPublishProgress) => {
-                this.disableAllField(isPublishProgress);
-            },
+            (isPublishProgress) => this.disableAllFields(isPublishProgress),
             this,
             this._disposables
         );
     }
 
-    private disableAllField(disable: boolean = true): void {
-        this.updateWebviewDisable(EnvironmentWebviewFields.URL, disable);
-        this.updateWebviewDisable(EnvironmentWebviewFields.TOKEN, disable);
+    private handleWebviewMessage(data: EnvironmentWebviewDto): void {
+        this.crudService.abort(RequestNames.GET_SYSTEM_INFO);
+        this.cleanInvalidFields();
+
+        switch (data.command) {
+            case WebviewMessages.UPDATE_FIELD:
+                this.updateField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
+                break;
+            case WebviewMessages.REQUEST_FIELD:
+                this.requestField(data.payload as WebviewPayload<EnvironmentWebviewFields>);
+                break;
+            case EnvironmentWebviewMessages.TEST_CONNECTION:
+                this.testConnection(data.payload as EnvironmentWebviewTestConnectionDto);
+                break;
+        }
+    }
+
+    private disableAllFields(disable: boolean = true): void {
+        const fields = [EnvironmentWebviewFields.URL, EnvironmentWebviewFields.TOKEN];
+        fields.forEach((field) => this.updateWebviewDisable(field, disable));
     }
 
     private async testConnection(data: EnvironmentWebviewTestConnectionDto): Promise<void> {
         this.cleanInvalidFields();
-        this.setLoadingTestConnection();
+        this.setTestConnectionState('loading');
 
         let { host, token } = data;
         host = normalizeUrl(host);
         if (!host) {
-            this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
-            this.setFailureTestConnection();
+            this.markFieldAsInvalid(EnvironmentWebviewFields.URL);
+            this.setTestConnectionState('failure');
             return;
         }
 
-        await this.crudService
-            .getSystemInfo(host, token)
-            .then(() => this.setSuccessfulTestConnection())
-            .catch((error) => {
-                const crudError = error as CrudError;
-                switch (crudError.status) {
-                    case ABORTED_ERROR_CODE: {
-                        break;
-                    }
-                    case 401: {
-                        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN);
-                        this.setFailureTestConnection();
-                        break;
-                    }
-                    default: {
-                        this.updateWebviewInvalid(EnvironmentWebviewFields.URL);
-                        this.setFailureTestConnection();
-                        break;
-                    }
-                }
-            });
+        try {
+            await this.crudService.getSystemInfo(host, token);
+            this.setTestConnectionState('success');
+        } catch (error) {
+            this.handleTestConnectionError(error as CrudError);
+        }
+    }
+
+    private handleTestConnectionError(error: CrudError): void {
+        switch (error.status) {
+            case ABORTED_ERROR_CODE:
+                break;
+            case 401:
+                this.markFieldAsInvalid(EnvironmentWebviewFields.TOKEN);
+                this.setTestConnectionState('failure');
+                break;
+            default:
+                this.markFieldAsInvalid(EnvironmentWebviewFields.URL);
+                this.setTestConnectionState('failure');
+                break;
+        }
     }
 
     private async updateField(payload: WebviewPayload<EnvironmentWebviewFields>): Promise<void> {
         switch (payload.field) {
-            case EnvironmentWebviewFields.URL: {
+            case EnvironmentWebviewFields.URL:
                 const host = normalizeUrl(payload.value as string);
                 await this.environmentStorageService.setHost(host);
-
-                this.updateWebviewRequired(EnvironmentWebviewFields.URL);
-                this.updateWebviewInvalid(EnvironmentWebviewFields.URL, !host?.length);
+                this.markFieldAsRequired(EnvironmentWebviewFields.URL);
+                this.markFieldAsInvalid(EnvironmentWebviewFields.URL, !host?.length);
                 break;
-            }
-            case EnvironmentWebviewFields.TOKEN: {
+            case EnvironmentWebviewFields.TOKEN:
                 const token = (payload.value as string)?.trim();
                 await this.environmentStorageService.setToken(token ?? '');
-
-                this.updateWebviewRequired(EnvironmentWebviewFields.TOKEN);
+                this.markFieldAsRequired(EnvironmentWebviewFields.TOKEN);
                 break;
-            }
         }
     }
 
     private requestField(payload: WebviewPayload<EnvironmentWebviewFields>): void {
         switch (payload.field) {
-            case EnvironmentWebviewFields.URL: {
+            case EnvironmentWebviewFields.URL:
                 this.requestHost();
                 break;
-            }
-            case EnvironmentWebviewFields.TOKEN: {
+            case EnvironmentWebviewFields.TOKEN:
                 this.requestToken();
                 break;
-            }
         }
     }
 
@@ -168,31 +165,30 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         this.updateWebviewField(EnvironmentWebviewFields.TOKEN, token);
     }
 
-    private cleanTestConnection(): void {
-        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, '');
-        this.updateWebviewSpin(EnvironmentWebviewFields.TEST_CONNECTION_ICON, false);
-    }
-
     private cleanInvalidFields(): void {
-        this.cleanTestConnection();
-        this.updateWebviewInvalid(EnvironmentWebviewFields.TOKEN, false);
-        this.updateWebviewInvalid(EnvironmentWebviewFields.URL, false);
+        this.setTestConnectionState('');
+        this.markFieldAsInvalid(EnvironmentWebviewFields.TOKEN, false);
+        this.markFieldAsInvalid(EnvironmentWebviewFields.URL, false);
     }
 
-    private setSuccessfulTestConnection(): void {
-        this.cleanTestConnection();
-        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'check');
+    private setTestConnectionState(state: EnvironmentConnectionState): void {
+        this.updateWebviewIcon(
+            EnvironmentWebviewFields.TEST_CONNECTION_ICON,
+            EnvironmentWebviewIconsMapper.get(state) ?? ''
+        );
+        this.updateWebviewSpin(EnvironmentWebviewFields.TEST_CONNECTION_ICON, state === 'loading');
     }
 
-    private setLoadingTestConnection(): void {
-        this.cleanTestConnection();
-        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'loading');
-        this.updateWebviewSpin(EnvironmentWebviewFields.TEST_CONNECTION_ICON);
+    private markFieldsAsRequired(fields: EnvironmentWebviewFields[]): void {
+        fields.forEach((field) => this.updateWebviewRequired(field));
     }
 
-    private setFailureTestConnection(): void {
-        this.cleanTestConnection();
-        this.updateWebviewIcon(EnvironmentWebviewFields.TEST_CONNECTION_ICON, 'close');
+    private markFieldAsRequired(field: EnvironmentWebviewFields): void {
+        this.updateWebviewRequired(field);
+    }
+
+    private markFieldAsInvalid(field: EnvironmentWebviewFields, invalid: boolean = true): void {
+        this.updateWebviewInvalid(field, invalid);
     }
 
     private getHtmlForWebview(webview: Webview): string {
@@ -209,10 +205,9 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         <html lang="en">
             <head>
                 <meta charset="UTF-8">
-                <meta charset="UTF-8">
                 <meta http-equiv="Content-Security-Policy" content="default-src 'none'; font-src ${webview.cspSource}; style-src ${webview.cspSource}; script-src 'nonce-${nonce}';">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>APIHUB Environment. view</title>
+                <title>APIHUB Environment View</title>
                 <link href="${codiconsUri}" rel="stylesheet" id="vscode-codicon-stylesheet"/>
                 <link href="${styleUri}" rel="stylesheet"/>
             </head>
@@ -239,10 +234,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                         <vscode-icon class='environment-connection-icon' id="${EnvironmentWebviewFields.TEST_CONNECTION_ICON}"></vscode-icon>
                     </p>
                 </vscode-form-group>
-                <script nonce="${nonce}"
-                    src="${elementsUri}"
-                    type="module"
-                ></script>
+                <script nonce="${nonce}" src="${elementsUri}" type="module"></script>
                 <script nonce="${nonce}" src="${mainJsUrl}"></script>
                 <script nonce="${nonce}" src="${scriptUri}"></script>
             </body>

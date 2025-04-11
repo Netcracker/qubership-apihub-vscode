@@ -23,17 +23,17 @@ export const getFileDirectory = (filePath: string): string => {
 
 export const capitalize = (str: string): string => {
     if (!str) {
-        return str;
+        return '';
     }
     return str[0].toUpperCase() + str.slice(1);
 };
 
 export const getExtension = (fileName: string): string => {
-    return fileName.split('.').pop() ?? '';
+    return fileName.split('.').pop() || '';
 };
 
 export const isApispecFile = (extension: string): boolean => {
-    return SPECS_MAIN_EXTENSIONS.includes(extension ?? '');
+    return SPECS_MAIN_EXTENSIONS.includes(extension);
 };
 
 export const isItemApispecFile = (item: SpecificationItem): boolean => {
@@ -41,17 +41,17 @@ export const isItemApispecFile = (item: SpecificationItem): boolean => {
 };
 
 export const sortStrings = (arr: string[]): string[] => {
-    return arr.sort((a, b) => a.localeCompare(b));
+    return [...arr].sort((a, b) => a.localeCompare(b));
 };
 
 export const normalizeUrl = (url: string): string => {
-    let normalizedUrl = '';
     try {
-        normalizedUrl = new URL(url).origin;
-    } catch {}
-    return normalizedUrl;
+        return new URL(url).origin;
+    } catch {
+        return '';
+    }
 };
 
 export const getWorkspaceFolders = (): WorkfolderPath[] => {
-    return workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) ?? [];
+    return workspace.workspaceFolders?.map((folder) => folder.uri.fsPath) || [];
 };

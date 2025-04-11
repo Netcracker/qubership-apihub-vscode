@@ -25,6 +25,7 @@ import { TestTreeItem } from './models/tree.model';
 import { openExplorer, openFileFromExplorer } from './utils/explorer.utils';
 import { checkItemCheckboxes, clickCheckbox, getTestTreeItems } from './utils/tree.utils';
 import { closeSaveWorkspaceDialog, collapseAll, expandAll, findAsync } from './utils/webview.utils';
+import { delay } from './utils/common.utils';
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },
@@ -77,12 +78,31 @@ describe('Specification tree view tests', () => {
     let sideBar: SideBarView | undefined;
 
     const getTreeSection = async (): Promise<void> => {
-        viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
-        sideBar = await viewControl?.openView();
-        if (!sideBar) {
-            throw new Error(`Sidebar not found`);
+        try {
+            viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
+            sideBar = await viewControl?.openView();
+            if (!sideBar) {
+                throw new Error(`Sidebar not found`);
+            }
+            treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+            await treeSection.expand();
+            if (!treeSection) {
+                throw new Error(`Tree section not found`);
+            }
+        } catch (error) {
+            console.error('Error in getTreeSection:', error);
+            throw error;
         }
-        treeSection = await sideBar.getContent().getSection(DOCUMENTS_SECTION);
+    };
+
+    const validateTreeItems = async (expectedContent: TestTreeItem[]): Promise<void> => {
+        const data = await checkItemCheckboxes(treeSection);
+        expect(data).to.deep.equal(expectedContent);
+    };
+
+    const openWorkspace = async (workspacePath: string): Promise<void> => {
+        await VSBrowser.instance.openResources(workspacePath);
+        await getTreeSection();
     };
 
     const checkSavedCheckboxContext = async (
@@ -90,38 +110,38 @@ describe('Specification tree view tests', () => {
         content: TestTreeItem[],
         workspaceName: string
     ): Promise<void> => {
-        await openFileFromExplorer(fileName);
-        await getTreeSection();
+        try {
+            await openFileFromExplorer(fileName);
+            await getTreeSection();
 
-        const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
-        const item = await findAsync(items, async (item) => (await item.getLabel()) === fileName);
-        if (!item) {
-            throw new Error(`${fileName} not found`);
+            const items: CustomTreeItem[] = ((await treeSection.getVisibleItems()) as CustomTreeItem[]) ?? [];
+            const item = await findAsync(items, async (item) => (await item.getLabel()) === fileName);
+            if (!item) {
+                throw new Error(`${fileName} not found`);
+            }
+            await clickCheckbox(item);
+            let testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
+            expect(testTreeItems).to.deep.equal(content);
+
+            const section = await openExplorer();
+            const title = await section.getTitle();
+            expect(title).is.eq(workspaceName);
+
+            await getTreeSection();
+            testTreeItems = await getTestTreeItems(items);
+            expect(testTreeItems).to.deep.equal(content);
+        } catch (error) {
+            console.error('Error in checkSavedCheckboxContext:', error);
+            throw error;
         }
-        await clickCheckbox(item);
-        let testTreeItems: TestTreeItem[] = await getTestTreeItems(items);
-        expect(testTreeItems).to.deep.equal(content);
-
-        // Switch to Explorer
-        const section = await openExplorer();
-        const title = await section.getTitle();
-        expect(title).is.eq(workspaceName);
-
-        // Back to plugin and check checkboxes
-        await getTreeSection();
-        testTreeItems = await getTestTreeItems(items);
-        expect(testTreeItems).to.deep.equal(content);
     };
 
     before(async () => {
-        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
-        await getTreeSection();
-        await expandAll(await sideBar?.getContent().getSections());
+        await openWorkspace(WORKSPACE_EMPTY_PATH);
     });
 
     after(async () => {
-        await expandAll(await sideBar?.getContent().getSections());
-        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
+        await openWorkspace(WORKSPACE_EMPTY_PATH);
     });
 
     it('Welcome content', async () => {
@@ -132,21 +152,18 @@ describe('Specification tree view tests', () => {
 
     describe('One workspace content', () => {
         before(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_1_PATH);
-            await getTreeSection();
+            await openWorkspace(WORKSPACE_1_PATH);
         });
 
         it('Look at the items', async () => {
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
+            await validateTreeItems(WORKSPACE_1_CONTENT);
         });
 
         it('Expand/collapse DOCUMENTS TO PUBLISH', async () => {
             const sections = await sideBar?.getContent().getSections();
             await collapseAll(sections ?? []);
             await expandAll(sections ?? []);
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
+            await validateTreeItems(WORKSPACE_1_CONTENT);
         });
 
         it('Checking the status of checkboxes when leaving the plugin', async () => {
@@ -161,25 +178,19 @@ describe('Specification tree view tests', () => {
         });
 
         after(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
-            await new Promise((res) => setTimeout(res, 1000));
-
+            await openWorkspace(WORKSPACE_EMPTY_PATH);
             await closeSaveWorkspaceDialog();
-
-            await new Promise((res) => setTimeout(res, 2000));
+            await delay(2000);
         });
 
         it('Look at the default workspace items', async () => {
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
+            await validateTreeItems(WORKSPACE_1_CONTENT);
         });
 
         it('Look at the workspace_1 items', async () => {
             await openFileFromExplorer(PETS_NAME);
             await getTreeSection();
-
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
+            await validateTreeItems(WORKSPACE_1_CONTENT);
         });
 
         it('Checking the status of workspace_1 checkboxes when leaving the plugin', async () => {
@@ -189,9 +200,7 @@ describe('Specification tree view tests', () => {
         it('Look at the workspace_2 items', async () => {
             await openFileFromExplorer(CARS_NAME);
             await getTreeSection();
-
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_2_CONTENT);
+            await validateTreeItems(WORKSPACE_2_CONTENT);
         });
 
         it('Checking the status of workspace_2 checkboxes when leaving the plugin', async () => {
@@ -202,13 +211,11 @@ describe('Specification tree view tests', () => {
 
     describe('Different API versions of specifications', () => {
         before(async () => {
-            await VSBrowser.instance.openResources(WORKSPACE_APISPEC_VERSIONS_PATH);
-            await getTreeSection();
+            await openWorkspace(WORKSPACE_APISPEC_VERSIONS_PATH);
         });
 
         it('Check: Apispec 2.0 and 3.0', async () => {
-            const data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_APISPEC_VERSIONS_CONTENT);
+            await validateTreeItems(WORKSPACE_APISPEC_VERSIONS_CONTENT);
         });
     });
 });

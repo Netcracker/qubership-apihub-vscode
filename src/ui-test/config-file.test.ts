@@ -32,6 +32,7 @@ import {
 } from './constants/tree.constants';
 import { TestTreeItem } from './models/tree.model';
 import { TEXT_FIELD_LOCATOR } from './models/webview.model';
+import { delay } from './utils/common.utils';
 import { deleteFile, openFileFromExplorer } from './utils/explorer.utils';
 import { checkItemCheckboxes, selectCheckbox } from './utils/tree.utils';
 import {
@@ -92,30 +93,22 @@ describe('Config File', () => {
     });
 
     afterEach(async function () {
-        deleteConfigFile();
+        deleteConfigFiles();
     });
 
     after(async function () {
-        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
-        await new Promise((res) => setTimeout(res, 1000));
-
-        await closeSaveWorkspaceDialog();
-
-        await new Promise((res) => setTimeout(res, 2000));
+        await resetWorkspace();
     });
 
     describe('Publish', function () {
         let webview: WebView;
+
         before(async function () {
-            viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
-            sideBar = await viewControl?.openView();
-            sections = await sideBar?.getContent().getSections();
-            webview = await getWebView(sideBar, PLUGIN_SECTIONS.PUBLISH);
+            await setupPublishView();
         });
 
         after(async function () {
-            await webview?.switchBack();
-            await expandAll(sections);
+            await cleanupPublishView();
         });
 
         it('Check: Get Package Id from Config file', async function () {
@@ -126,8 +119,8 @@ describe('Config File', () => {
             await clearTextField(packageIdField);
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-            fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_3, 'utf8');
-            await new Promise((res) => setTimeout(res, 2000));
+            writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
+            await delay(2000);
 
             await findPublishFields();
             const textValue = await getTextValue(packageIdField);
@@ -139,11 +132,95 @@ describe('Config File', () => {
             const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
             packageIdField = await findWebElementById(textFields, PublishFields.PACKAGE_ID);
         };
+
+        const cleanupPublishView = async (): Promise<void> => {
+            await webview?.switchBack();
+            await expandAll(sections);
+        };
+
+        const setupPublishView = async (): Promise<void> => {
+            viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
+            sideBar = await viewControl?.openView();
+            sections = await sideBar?.getContent().getSections();
+            webview = await getWebView(sideBar, PLUGIN_SECTIONS.PUBLISH);
+        };
     });
 
     describe('Tree', function () {
         let treeSection: CustomTreeSection | undefined;
         let items: CustomTreeItem[];
+
+        before(async function () {
+            await setupTreeView();
+        });
+
+        afterEach(async function () {
+            await resetTreeView();
+        });
+
+        after(async function () {
+            await cleanupTreeView();
+        });
+
+        it('Check: Get checkboxes from Config File', async function () {
+            await validateTreeContent(WORKSPACE_1_CONTENT);
+
+            writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
+            await delay(500);
+            await validateTreeContent(WORKSPACE_2_CONTENT);
+        });
+
+        it('Check: Get none api spec files from Config File', async function () {
+            await validateTreeContent(WORKSPACE_1_CONTENT);
+
+            writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_5);
+            await delay(1000);
+            await validateTreeContent(WORKSPACE_3_CONTENT);
+        });
+
+        describe('Two workspaces content', function () {
+            before(async function () {
+                await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
+                await delay(3000);
+            });
+
+            it('Check: Config Files in two workspaces', async function () {
+                await getTreeSection();
+                await delay(1000);
+                writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
+                await delay(1000);
+                writeConfigFile(CONFIG_FILE_2_PATH, CONFIG_FILE_6);
+                await delay(1000);
+                await openFileFromExplorer(CONFIG_FILE_NAME);
+                await delay(1000);
+                await getTreeSection();             
+                await validateTreeContent(WORKSPACE_2_CONTENT);
+                await delay(1000);
+                await openFileFromExplorer(CARS_NAME);
+                await delay(1000);
+                await validateTreeContent(WORKSPACE_4_CONTENT);
+            });
+        });
+
+        const setupTreeView = async (): Promise<void> => {
+            await getTreeSection();
+            items = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
+            await toggleCheckboxes(items);
+            await delay(1000);
+        };
+
+        const resetTreeView = async (): Promise<void> => {
+            await getTreeSection();
+            items = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
+            await toggleCheckboxes(items);
+            await delay(1000);
+        };
+
+        const validateTreeContent = async (expectedContent: TestTreeItem[]): Promise<void> => {
+            await getTreeSection();
+            const data = await checkItemCheckboxes(treeSection);
+            expect(data).to.deep.equal(expectedContent);
+        };
 
         const getTreeSection = async (): Promise<void> => {
             viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
@@ -151,82 +228,29 @@ describe('Config File', () => {
             sections = await sideBar?.getContent().getSections();
             treeSection = (await sideBar?.getContent().getSection(DOCUMENTS_SECTION)) as CustomTreeSection;
         };
-
-        before(async function () {
+        const cleanupTreeView = async (): Promise<void> => {
             await getTreeSection();
-            items = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            await Promise.all(items.map(async (item) => await selectCheckbox(item)));
-            await new Promise((res) => setTimeout(res, 1000));
-        });
-
-        afterEach(async function () {
-            await getTreeSection();
-            items = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
-            await Promise.all(items.map(async (item) => await selectCheckbox(item)));
-            await new Promise((res) => setTimeout(res, 1000));
-        });
-
-        after(async function () {
-            await getTreeSection();
-            await expandAll(sections);    
-        });
-
-        it('Check: Get checkboxes from Config File', async function () {
-            await getTreeSection();
-
-            let data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
-
-            fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_3, 'utf8');
-            await new Promise((res) => setTimeout(res, 500));
-            data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_2_CONTENT);
-        });
-
-        it('Check: Get none api spec files from Config File', async function () {
-            await getTreeSection();
-            await new Promise((res) => setTimeout(res, 1000));
-
-            let data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_1_CONTENT);
-
-            fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_5, 'utf8');
-            await new Promise((res) => setTimeout(res, 1000));
-            data = await checkItemCheckboxes(treeSection);
-            expect(data).to.deep.equal(WORKSPACE_3_CONTENT);
-        });
-
-        describe('Two workspaces content', function () {
-            before(async function () {
-                await VSBrowser.instance.openResources(WORKSPACE_1_PATH, WORKSPACE_2_PATH);
-                await new Promise((res) => setTimeout(res, 1000));
-            });
-
-            it('Check: Config Files in two workspaces', async function () {
-                await getTreeSection();
-                await new Promise((res) => setTimeout(res, 1000));
-
-                fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_3, 'utf8');
-                await new Promise((res) => setTimeout(res, 1000));
-                fs.writeFileSync(CONFIG_FILE_2_PATH, CONFIG_FILE_6, 'utf8');
-
-                await new Promise((res) => setTimeout(res, 1000));
-                await openFileFromExplorer(CONFIG_FILE_NAME);
-
-                await getTreeSection();
-                await new Promise((res) => setTimeout(res, 1000));
-                let data = await checkItemCheckboxes(treeSection);
-                expect(data).to.deep.equal(WORKSPACE_2_CONTENT);
-                await openFileFromExplorer(CARS_NAME);
-                await getTreeSection();
-                data = await checkItemCheckboxes(treeSection);
-                expect(data).to.deep.equal(WORKSPACE_4_CONTENT);
-            });
-        });
+            await expandAll(sections);
+        };
     });
 
-    const deleteConfigFile = (): void => {
+    const toggleCheckboxes = async (items: CustomTreeItem[]): Promise<void> => {
+        await Promise.all(items.map(async (item) => await selectCheckbox(item)));
+    };
+
+    const writeConfigFile = (path: string, content: string): void => {
+        fs.writeFileSync(path, content, 'utf8');
+    };
+
+    const deleteConfigFiles = (): void => {
         deleteFile(CONFIG_FILE_1_PATH);
         deleteFile(CONFIG_FILE_2_PATH);
+    };
+
+    const resetWorkspace = async (): Promise<void> => {
+        await VSBrowser.instance.openResources(WORKSPACE_EMPTY_PATH);
+        await delay(1000);
+        await closeSaveWorkspaceDialog();
+        await delay(2000);
     };
 });

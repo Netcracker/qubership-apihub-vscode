@@ -1,4 +1,4 @@
-import { Event, EventEmitter, ExtensionContext, SecretStorage, window } from 'vscode';
+import { Event, EventEmitter, ExtensionContext, SecretStorage } from 'vscode';
 import { debounce } from '../../utils/files.utils';
 import { EXTENSION_NAME } from '../constants/common.constants';
 
@@ -12,11 +12,8 @@ export interface EnvironmentData {
 export class EnvironmentStorageService {
     private readonly _secretStorage: SecretStorage;
     private readonly _onDidChangeConfiguration: EventEmitter<EnvironmentData> = new EventEmitter();
-    private readonly fireDebounced = debounce(() => this.fire());
-    private readonly saveDebounced = debounce(() => {
-        this.saveEnvironmentToStorage();
-        this.fireDebounced();
-    });
+    private readonly fireDebounced = debounce(() => this.fireConfigurationChange());
+    private readonly saveDebounced = debounce(() => this.saveEnvironment());
     public readonly onDidChangeConfiguration: Event<EnvironmentData> = this._onDidChangeConfiguration.event;
 
     private _host: string = '';
@@ -24,7 +21,7 @@ export class EnvironmentStorageService {
 
     constructor(private readonly context: ExtensionContext) {
         this._secretStorage = this.context.secrets;
-        this.getEnvironmentFromStorage();
+        this.loadEnvironmentFromStorage();
     }
 
     public async getEnvironment(): Promise<EnvironmentData> {
@@ -41,29 +38,43 @@ export class EnvironmentStorageService {
         this.saveDebounced();
     }
 
-    private fire(): void {
+    private fireConfigurationChange(): void {
         this._onDidChangeConfiguration.fire(this.getLocalEnvironmentData());
     }
 
-    private async saveEnvironmentToStorage(): Promise<void> {
-        const environmentData: EnvironmentData = this.getLocalEnvironmentData();
-        let value = '';
-        try {
-            value = JSON.stringify(environmentData);
-        } catch {}
-        await this._secretStorage.store(SECRET_STORAGE_KEY, value);
+    private async saveEnvironment(): Promise<void> {
+        const environmentData = this.getLocalEnvironmentData();
+        const serializedData = this.serializeEnvironmentData(environmentData);
+        await this._secretStorage.store(SECRET_STORAGE_KEY, serializedData);
+        this.fireDebounced();
     }
 
-    private async getEnvironmentFromStorage(): Promise<void> {
-        const value: string = (await this._secretStorage.get(SECRET_STORAGE_KEY)) ?? '';
-        try {
-            const { host, token } = JSON.parse(value) as EnvironmentData;
-            this._host = host ?? '';
-            this._token = token ?? '';
-        } catch {}
+    private async loadEnvironmentFromStorage(): Promise<void> {
+        const storedValue = await this._secretStorage.get(SECRET_STORAGE_KEY);
+        const environmentData = this.deserializeEnvironmentData(storedValue);
+        this._host = environmentData.host;
+        this._token = environmentData.token;
     }
 
     private getLocalEnvironmentData(): EnvironmentData {
         return { host: this._host, token: this._token };
+    }
+
+    private serializeEnvironmentData(data: EnvironmentData): string {
+        try {
+            return JSON.stringify(data);
+        } catch {
+            console.error('Failed to serialize environment data');
+            return '';
+        }
+    }
+
+    private deserializeEnvironmentData(value: string | undefined): EnvironmentData {
+        try {
+            return value ? JSON.parse(value) : { host: '', token: '' };
+        } catch {
+            console.error('Failed to deserialize environment data');
+            return { host: '', token: '' };
+        }
     }
 }

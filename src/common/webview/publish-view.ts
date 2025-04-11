@@ -71,18 +71,7 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         _token: CancellationToken
     ): Thenable<void> | void {
         this._view = webviewView;
-
-        webviewView.webview.options = {
-            enableScripts: true,
-            localResourceRoots: [this.context.extensionUri]
-        };
-
-        webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
-
-        this._view.onDidChangeVisibility(() => {
-            this.activate(this._view?.visible ?? false);
-        });
-
+        this.initializeWebview(webviewView);
         this.activate(true);
     }
 
@@ -90,6 +79,18 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
         super.dispose();
         this.workfolderService.unsubscribe(PUBLISH_WEBVIEW);
         this.configurationFileService.unsubscribe(PUBLISH_WEBVIEW);
+    }
+
+    private initializeWebview(webviewView: WebviewView): void {
+        webviewView.webview.options = {
+            enableScripts: true,
+            localResourceRoots: [this.context.extensionUri]
+        };
+        webviewView.webview.html = this.getHtmlForWebview(webviewView.webview);
+
+        webviewView.onDidChangeVisibility(() => {
+            this.activate(this._view?.visible ?? false);
+        });
     }
 
     private activate(active: boolean): void {
@@ -102,56 +103,29 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private subscribeChanges(): void {
-        if (!this._view) {
-            return;
-        }
-        this._view.webview.onDidReceiveMessage(
-            (message: PublishWebviewDto) => {
-                switch (message.command) {
-                    case PublishWebviewMessages.PUBLISH: {
-                        this.publish();
-                        break;
-                    }
-                    case WebviewMessages.UPDATE_FIELD: {
-                        this.updateField(message.payload as WebviewPayload<PublishFields>);
-                        break;
-                    }
-                    case WebviewMessages.REQUEST_OPTIONS: {
-                        this.requestField(message.payload as WebviewPayload<PublishFields>);
-                        break;
-                    }
-                    case WebviewMessages.DELETE: {
-                        this.deleteWebviewLabels((message.payload as WebviewPayload<PublishFields>).value as string);
-                        break;
-                    }
-                }
-            },
-            this,
-            this._disposables
-        );
+        if (!this._view) {return;}
 
-        this.workfolderService.subscribe(PUBLISH_WEBVIEW, (workfolderPath: string) =>
-            this.restoreLocalFields(workfolderPath)
-        );
+        this._view.webview.onDidReceiveMessage(this.handleWebviewMessage.bind(this), this, this._disposables);
 
-        this.configurationFileService.subscribe(PUBLISH_WEBVIEW, (workfolderPath: string) => {
-            const configFile: ConfigurationFileLike | undefined =
-                this.configurationFileService.getConfigurationFile(workfolderPath);
+        this.workfolderService.subscribe(PUBLISH_WEBVIEW, (workfolderPath) => this.restoreLocalFields(workfolderPath));
+
+        this.configurationFileService.subscribe(PUBLISH_WEBVIEW, (workfolderPath) => {
+            const configFile = this.configurationFileService.getConfigurationFile(workfolderPath);
             this.restoreConfigPackageId(workfolderPath, configFile);
         });
+
         this.environmentStorageService.onDidChangeConfiguration(
             () => {
                 this.disableDependentFields();
-                const activeWorkfolderPath = this.workfolderService.activeWorkfolderPath;
-                this.loadPackageId(activeWorkfolderPath);
+                this.loadPackageId(this.workfolderService.activeWorkfolderPath);
             },
             this,
             this._disposables
         );
-        this.disableAllField(this.publishService.isPublishProgress);
+
         this.publishService.onPublish(
             (isPublishProgress) => {
-                this.disableAllField(isPublishProgress);
+                this.disableAllFields(isPublishProgress);
                 if (!isPublishProgress) {
                     this.wrapInProgress(async () => await this.loadPreviousVersions());
                 }
@@ -159,6 +133,25 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
             this,
             this._disposables
         );
+
+        this.disableAllFields(this.publishService.isPublishProgress);
+    }
+
+    private handleWebviewMessage(message: PublishWebviewDto): void {
+        switch (message.command) {
+            case PublishWebviewMessages.PUBLISH:
+                this.publish();
+                break;
+            case WebviewMessages.UPDATE_FIELD:
+                this.updateField(message.payload as WebviewPayload<PublishFields>);
+                break;
+            case WebviewMessages.REQUEST_OPTIONS:
+                this.requestField(message.payload as WebviewPayload<PublishFields>);
+                break;
+            case WebviewMessages.DELETE:
+                this.deleteWebviewLabels((message.payload as WebviewPayload<PublishFields>).value as string);
+                break;
+        }
     }
 
     private restoreLocalFields(workfolderPath: WorkfolderPath): void {
@@ -217,14 +210,17 @@ export class PublishViewProvider extends WebviewBase<PublishFields> {
     }
 
     private disableDependentFields(disable: boolean = true): void {
-        this.updateWebviewDisable(PublishFields.VERSION, disable);
-        this.updateWebviewDisable(PublishFields.STATUS, disable);
-        this.updateWebviewDisable(PublishFields.LABELS, disable);
-        this.updateWebviewDisable(PublishFields.PREVIOUS_VERSION, disable);
-        this.updateWebviewDisable(PublishFields.PUBLISH_BUTTON, disable);
+        const fields = [
+            PublishFields.VERSION,
+            PublishFields.STATUS,
+            PublishFields.LABELS,
+            PublishFields.PREVIOUS_VERSION,
+            PublishFields.PUBLISH_BUTTON
+        ];
+        fields.forEach((field) => this.updateWebviewDisable(field, disable));
     }
 
-    private disableAllField(disable: boolean = true): void {
+    private disableAllFields(disable: boolean = true): void {
         this.updateWebviewDisable(PublishFields.PACKAGE_ID, disable);
         this.disableDependentFields(disable);
     }
