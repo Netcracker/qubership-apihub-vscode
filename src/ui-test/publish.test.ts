@@ -15,12 +15,12 @@ import {
     Workbench
 } from 'vscode-extension-tester';
 import {
-    PUBLISH_INPUT_DRAFT_PATTERN,
-    PUBLISH_NO_PREVIOUS_VERSION,
+    PUBLISHING_INPUT_DRAFT_PATTERN,
+    PUBLISHING_NO_PREVIOUS_VERSION,
     STATUS_BAR_PUBLISH_MESSAGE
-} from '../common/constants/publish.constants';
+} from '../common/constants/publishing.constants';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
-import { PublishingFields } from '../common/models/publish.model';
+import { PublishingFields } from '../common/models/publishing.model';
 import { delay } from '../utils/common.utils';
 import {
     DISABLED_ATTRIBUTE,
@@ -34,7 +34,7 @@ import {
     CONFIG_FILE_2,
     CONFIG_FILE_3,
     PUBLISH_NOTIFICATION_MESSAGE
-} from './constants/publish.constants';
+} from './constants/publishing.constants';
 import {
     DOCUMENTS_SECTION,
     EXTENSION_NAME,
@@ -100,7 +100,7 @@ describe('Publishing Tests', () => {
     let statusField: WebElement | undefined;
     let labelsField: WebElement | undefined;
     let previousReleaseVersion: WebElement | undefined;
-    let publishButton: WebElement | undefined;
+    let publishingButton: WebElement | undefined;
 
     before(async () => {
         await setupTestEnvironment();
@@ -257,7 +257,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, DRAFT);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISH_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -307,7 +307,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, ARCHIVED);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISH_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -404,12 +404,12 @@ describe('Publishing Tests', () => {
                 const options = await getSingleSelectOptions(previousReleaseVersion);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
 
-                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
+                expect(optionTexts).deep.equals([PUBLISHING_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
 
                 await options[0]?.click();
 
                 const value = await previousReleaseVersion?.getAttribute('value');
-                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+                expect(value).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
             });
 
             it('Check load "Previous Version" from package', async function () {
@@ -422,7 +422,7 @@ describe('Publishing Tests', () => {
                 const options = await getSingleSelectOptions(previousReleaseVersion);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
 
-                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
+                expect(optionTexts).deep.equals([PUBLISHING_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
 
                 await options[2]?.click();
                 const value = await previousReleaseVersion?.getAttribute('value');
@@ -434,12 +434,12 @@ describe('Publishing Tests', () => {
 
                 await delay(2000);
 
-                await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
+                await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
                 await previousReleaseVersion?.sendKeys('non-existentVersion');
                 await previousReleaseVersion?.sendKeys(Key.TAB + Key.TAB);
 
                 const value = await previousReleaseVersion?.getAttribute('value');
-                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+                expect(value).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
             });
 
             describe('Publishing', function () {
@@ -469,7 +469,7 @@ describe('Publishing Tests', () => {
                     await labelsField?.sendKeys('Publish-test' + Key.ENTER);
                     await clickOption(previousReleaseVersion, VERSION_2);
 
-                    await publishButton?.click();
+                    await publishingButton?.click();
 
                     await delay(500);
                     await webview?.switchBack();
@@ -513,9 +513,9 @@ describe('Publishing Tests', () => {
                     await clickOption(statusField, RELEASE);
 
                     await labelsField?.sendKeys('Publish-release-test' + Key.ENTER);
-                    await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
+                    await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
-                    await publishButton?.click();
+                    await publishingButton?.click();
                     console.log(await VSBrowser.instance.driver.takeScreenshot());
                     await delay(2000);
 
@@ -580,7 +580,7 @@ describe('Publishing Tests', () => {
         statusField = await findWebElementById(selectFields, PublishingFields.STATUS);
         labelsField = await findWebElementById(textFields, PublishingFields.LABELS);
         previousReleaseVersion = await findWebElementById(selectFields, PublishingFields.PREVIOUS_VERSION);
-        publishButton = await findWebElementById(buttons, PublishingFields.PUBLISH_BUTTON);
+        publishingButton = await findWebElementById(buttons, PublishingFields.PUBLISHING_BUTTON);
     };
 
     const deleteLabel = async (label: WebElement): Promise<void> => {
@@ -590,7 +590,7 @@ describe('Publishing Tests', () => {
     const getLabels = async (): Promise<WebElement[]> => {
         let labelPlaceholder;
         try {
-            labelPlaceholder = await webview?.findWebElement(By.id('publish-labels-placeholder'));
+            labelPlaceholder = await webview?.findWebElement(By.id('publishing-labels-placeholder'));
         } catch {
             return [];
         }
@@ -725,7 +725,7 @@ describe('Publishing Tests', () => {
     const validatePreviousVersionDefaultValue = async (): Promise<void> => {
         try {
             const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
-            expect(previousReleaseVersionValue).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
         } catch (error) {
             console.error('Error in Check "Previous Version" test:', error);
             throw error;

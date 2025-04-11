@@ -1,4 +1,4 @@
-import { PublishingViewPackageIdData } from "../../src/common/models/publish.model";
+import { PublishingViewPackageIdData } from "../../src/common/models/publishing.model";
 import { VERSION_1, VERSION_2 } from "./versions";
 
 

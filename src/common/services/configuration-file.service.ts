@@ -13,7 +13,7 @@ import {
 } from '../constants/configuration-file.constants';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ConfigurationData, ConfigurationFile, ConfigurationFileLike } from '../models/configuration.model';
-import { PackageId } from '../models/publish.model';
+import { PackageId } from '../models/publishing.model';
 import { sortStrings } from '../../utils/common.utils';
 
 const CONFIG_FILE_NAME = '.apihub-config.yaml';

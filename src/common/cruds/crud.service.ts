@@ -9,7 +9,7 @@ import {
     PublishingViewPackageIdData,
     VersionId,
     VersionStatus
-} from '../models/publish.model';
+} from '../models/publishing.model';
 import { CrudError, CrudResponse, DefaultError, ServerStatusDto } from '../models/common.model';
 
 const enum CrudMethod {

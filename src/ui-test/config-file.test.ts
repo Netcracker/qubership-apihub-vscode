@@ -11,8 +11,8 @@ import {
     WebElement,
     WebviewView
 } from 'vscode-extension-tester';
-import { PublishingFields } from '../common/models/publish.model';
-import { CONFIG_FILE_3, CONFIG_FILE_5, CONFIG_FILE_6 } from './constants/publish.constants';
+import { PublishingFields } from '../common/models/publishing.model';
+import { CONFIG_FILE_3, CONFIG_FILE_5, CONFIG_FILE_6 } from './constants/publishing.constants';
 import {
     DOCUMENTS_SECTION,
     EXTENSION_NAME,

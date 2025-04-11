@@ -1,4 +1,4 @@
-import { PUBLISH_INPUT_RELEASE_PATTERN, PUBLISH_NO_PREVIOUS_VERSION } from '../constants/publish.constants';
+import { PUBLISHING_INPUT_RELEASE_PATTERN, PUBLISHING_NO_PREVIOUS_VERSION } from '../constants/publishing.constants';
 import { ConfigurationId } from './configuration.model';
 import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
@@ -56,7 +56,7 @@ export enum PublishingFields {
     STATUS = 'status',
     PREVIOUS_VERSION = 'previousVersion',
     LABELS = 'labels',
-    PUBLISH_BUTTON = 'publish-button'
+    PUBLISHING_BUTTON = 'publishing-button'
 }
 
 export interface PublishingVersionCreatedBy {
@@ -95,9 +95,9 @@ export class PublishingViewData {
         this.version = '';
         this.labels = new Set();
         this.status = VersionStatus.DRAFT;
-        this.previousVersion = PUBLISH_NO_PREVIOUS_VERSION;
+        this.previousVersion = PUBLISHING_NO_PREVIOUS_VERSION;
         this.configId = '';
-        this.releaseVersionPattern = PUBLISH_INPUT_RELEASE_PATTERN;
+        this.releaseVersionPattern = PUBLISHING_INPUT_RELEASE_PATTERN;
     }
 }
 

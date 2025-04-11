@@ -33,7 +33,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
         private readonly context: ExtensionContext,
         private readonly crudService: CrudService,
         private readonly environmentStorageService: EnvironmentStorageService,
-        private readonly publishService: PublishingService
+        private readonly publishingService: PublishingService
     ) {
         super();
     }
@@ -64,7 +64,7 @@ export class EnvironmentViewProvider extends WebviewBase<EnvironmentWebviewField
                 this.markFieldsAsRequired([EnvironmentWebviewFields.URL, EnvironmentWebviewFields.TOKEN]);
             })
         );
-        this.publishService.onPublish(
+        this.publishingService.onPublish(
             (isPublishingProgress) => this.disableAllFields(isPublishingProgress),
             this,
             this._disposables

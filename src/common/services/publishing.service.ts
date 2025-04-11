@@ -9,13 +9,13 @@ import { convertPreviousVersion, packToZip, specificationItemToFile } from '../.
 import { getFilePath, isItemApiSpecFile } from '../../utils/path.utils';
 import { EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME, PACKAGES } from '../constants/common.constants';
 import {
-    PUBLISH_BUTTON_LINK_MESSAGE,
-    PUBLISH_DATA_NAME,
-    PUBLISH_SUCCESSFUL_MESSAGE,
+    PUBLISHING_BUTTON_LINK_MESSAGE,
+    PUBLISHING_DATA_NAME,
+    PUBLISHING_SUCCESSFUL_MESSAGE,
     STATUS_BAR_TEXT,
     STATUS_REFETCH_INTERVAL,
     STATUS_REFETCH_MAX_ATTEMPTS
-} from '../constants/publish.constants';
+} from '../constants/publishing.constants';
 import { CrudService } from '../cruds/crud.service';
 import { WorkfolderPath } from '../models/common.model';
 import {
@@ -27,7 +27,7 @@ import {
     PublishingViewData,
     VersionId,
     VersionStatus
-} from '../models/publish.model';
+} from '../models/publishing.model';
 import { SpecificationItem } from '../models/specification-item';
 import { ConfigurationFileService } from './configuration-file.service';
 import { EnvironmentStorageService } from './environment-storage.service';
@@ -116,7 +116,7 @@ export class PublishingService extends Disposable {
         const publishingFileNames = items.map((item) => getFilePath(item.workspacePath, item.resourceUri?.fsPath ?? ''));
         const additionalFileNames = publishingFiles.map((file) => file.name);
 
-        const publishConfig = await this.publishApiSpec(
+        const publishingConfig = await this.publishApiSpec(
             host,
             publishingFileNames,
             additionalFileNames,
@@ -129,14 +129,14 @@ export class PublishingService extends Disposable {
             authorization
         );
 
-        return this.getPublishStatus(host, packageId, publishConfig.publishId, authorization);
+        return this.getPublishStatus(host, packageId, publishingConfig.publishId, authorization);
     }
 
     private validateInputs(
         host: string,
         authorization: string,
         items: SpecificationItem[],
-        publishData: PublishingViewData
+        publishingData: PublishingViewData
     ): void {
         if (!host) {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
@@ -149,7 +149,7 @@ export class PublishingService extends Disposable {
         if (!items?.length) {
             throw new Error('Error: Files not selected for publishing');
         }
-        const { packageId, version, status, previousVersion } = publishData;
+        const { packageId, version, status, previousVersion } = publishingData;
         if (!packageId || !version || !status || !previousVersion) {
             throw new Error('Fill all required fields');
         }
@@ -179,7 +179,7 @@ export class PublishingService extends Disposable {
 
     private async publishApiSpec(
         host: string,
-        publishFileNames: string[],
+        publishingFileNames: string[],
         allFileNames: string[],
         blobData: Blob,
         packageId: PackageId,
@@ -189,7 +189,7 @@ export class PublishingService extends Disposable {
         versionLabels: string[],
         authorization: string
     ): Promise<PublishingConfig> {
-        const buildConfig = createBuildConfigFiles(publishFileNames, allFileNames);
+        const buildConfig = createBuildConfigFiles(publishingFileNames, allFileNames);
         const normalizedPreviousVersion = convertPreviousVersion(previousVersion);
 
         const config: BuildConfig = {
@@ -202,7 +202,7 @@ export class PublishingService extends Disposable {
         };
 
         const formData = new FormData();
-        formData.append('sources', blobData, PUBLISH_DATA_NAME);
+        formData.append('sources', blobData, PUBLISHING_DATA_NAME);
         formData.append('config', JSON.stringify({ ...config, sources: undefined }));
 
         return this._crudService.publishApiSpec(host, packageId, authorization, formData);
@@ -217,12 +217,12 @@ export class PublishingService extends Disposable {
     ): Promise<PublishingStatusDto> {
         let attempts = 0;
         while (attempts < maxAttempts) {
-            const publishStatus = await this._crudService.getStatus(host, authorization, packageId, publishId);
-            if (publishStatus.status === PublishingStatus.COMPLETE) {
-                return publishStatus;
+            const publishingStatus = await this._crudService.getStatus(host, authorization, packageId, publishId);
+            if (publishingStatus.status === PublishingStatus.COMPLETE) {
+                return publishingStatus;
             }
-            if (publishStatus.status === PublishingStatus.ERROR) {
-                throw new Error(publishStatus.message);
+            if (publishingStatus.status === PublishingStatus.ERROR) {
+                throw new Error(publishingStatus.message);
             }
             attempts++;
             await delay(STATUS_REFETCH_INTERVAL);
@@ -243,8 +243,8 @@ export class PublishingService extends Disposable {
     }
 
     private showSuccessMessage(host: string, packageId: PackageId, version: VersionId): void {
-        window.showInformationMessage(PUBLISH_SUCCESSFUL_MESSAGE, PUBLISH_BUTTON_LINK_MESSAGE).then((selection) => {
-            if (selection === PUBLISH_BUTTON_LINK_MESSAGE) {
+        window.showInformationMessage(PUBLISHING_SUCCESSFUL_MESSAGE, PUBLISHING_BUTTON_LINK_MESSAGE).then((selection) => {
+            if (selection === PUBLISHING_BUTTON_LINK_MESSAGE) {
                 env.openExternal(Uri.parse(`${host}/portal/${PACKAGES}/${packageId}/${version}/`));
             }
         });

@@ -7,7 +7,7 @@
         STATUS: 'status',
         PREVIOUS_VERSION: 'previousVersion',
         LABELS: 'labels',
-        PUBLISH_BUTTON: 'publish-button'
+        PUBLISHING_BUTTON: 'publishing-button'
     };
 
     typeFieldMapper.set(PublishingFields.PACKAGE_ID, FieldTypes.INPUT);
@@ -15,7 +15,7 @@
     typeFieldMapper.set(PublishingFields.STATUS, FieldTypes.SINGLE_SELECT);
     typeFieldMapper.set(PublishingFields.PREVIOUS_VERSION, FieldTypes.SINGLE_SELECT_COMBOBOX);
     typeFieldMapper.set(PublishingFields.LABELS, FieldTypes.LABELS);
-    typeFieldMapper.set(PublishingFields.PUBLISH_BUTTON, FieldTypes.BUTTON);
+    typeFieldMapper.set(PublishingFields.PUBLISHING_BUTTON, FieldTypes.BUTTON);
 
     defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.PACKAGE_ID))(PublishingFields.PACKAGE_ID);
     defaultListenersMapper.get(typeFieldMapper.get(PublishingFields.VERSION))(PublishingFields.VERSION);
@@ -36,9 +36,9 @@
         });
     }
 
-    const publishButton = document.querySelector(`#${PublishingFields.PUBLISH_BUTTON}`);
-    if (publishButton) {
-        publishButton.addEventListener('click', publish);
+    const publishingButton = document.querySelector(`#${PublishingFields.PUBLISHING_BUTTON}`);
+    if (publishingButton) {
+        publishingButton.addEventListener('click', publish);
     }
 
     function updateLables() {

@@ -38,7 +38,7 @@
           "name": "Documents to Publish"
         },
         {
-          "id": "apihubExtension.publishView",
+          "id": "apihubExtension.publishingView",
           "name": "Publish to APIHUB",
           "type": "webview"
         }

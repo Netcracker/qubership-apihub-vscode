@@ -46,7 +46,7 @@ export function activate(context: ExtensionContext): void {
     registerCommands(context);
 
     const crudService = registerDisposable(context, new CrudService());
-    const publishService = registerDisposable(
+    const publishingService = registerDisposable(
         context,
         new PublishingService(fileTreeProvider, environmentStorageService, configurationFileService)
     );
@@ -57,7 +57,7 @@ export function activate(context: ExtensionContext): void {
         environmentStorageService,
         configurationFileService,
         workspaceFolderService,
-        publishService
+        publishingService
     );
 }
 
@@ -126,9 +126,9 @@ function registerWebviewProviders(
     environmentStorageService: EnvironmentStorageService,
     configurationFileService: ConfigurationFileService,
     workspaceFolderService: WorkspaceService,
-    publishService: PublishingService
+    publishingService: PublishingService
 ): void {
-    const publishViewProvider = registerDisposable(
+    const publishingViewProvider = registerDisposable(
         context,
         new PublishingViewProvider(
             context,
@@ -136,14 +136,14 @@ function registerWebviewProviders(
             environmentStorageService,
             configurationFileService,
             workspaceFolderService,
-            publishService
+            publishingService
         )
     );
-    registerDisposable(context, window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishViewProvider));
+    registerDisposable(context, window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishingViewProvider));
 
     const environmentViewProvider = registerDisposable(
         context,
-        new EnvironmentViewProvider(context, crudService, environmentStorageService, publishService)
+        new EnvironmentViewProvider(context, crudService, environmentStorageService, publishingService)
     );
 
     registerDisposable(

@@ -3,7 +3,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import YAML from 'yaml';
 import { BundleData } from '../common/models/bundle.model';
-import { BuildConfigFile } from '../common/models/publish.model';
+import { BuildConfigFile } from '../common/models/publishing.model';
 import { SpecificationItem } from '../common/models/specification-item';
 import { getFileDirectory, getFilePath } from './path.utils';
 

@@ -10,7 +10,7 @@ import {
     isApiSpecFile,
     isItemApiSpecFile
 } from '../../utils/path.utils';
-import { convertOptionsToDto } from '../../utils/publish.utils';
+import { convertOptionsToDto } from '../../utils/publishing.utils';
 import { sortStrings } from '../../utils/common.utils';
 
 const OPTION_1 = 'option1';

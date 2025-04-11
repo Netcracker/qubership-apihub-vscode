@@ -6,7 +6,7 @@ import {
     PublishingStatusDto,
     PublishingVersionDto,
     PublishingViewPackageIdData
-} from '../../src/common/models/publish.model';
+} from '../../src/common/models/publishing.model';
 import { PACKAGE_ID_NAME, PACKAGES_DATA } from '../data/packages';
 import { VERSIONS } from '../data/versions';
 import multer from 'multer';
