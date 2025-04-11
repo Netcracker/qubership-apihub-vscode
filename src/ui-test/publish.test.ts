@@ -69,6 +69,7 @@ import {
     openSelect,
     Until
 } from './utils/webview.utils';
+import { delay } from './utils/common.utils';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -657,6 +658,17 @@ describe('Publish Tests', () => {
         await webview?.switchToFrame();
     };
 
+    const validateLabelsRequired = async (): Promise<void> => {
+        try {
+            const vsLabels = await webview?.findWebElements(By.css('vscode-label')) ?? [];
+            const labels: LabelData[] = await getFieldLabels(vsLabels);
+            expect(labels).to.deep.equal(LABELS_DATA);
+        } catch (error) {
+            console.error('Error in Check labels required test:', error);
+            throw error;
+        }
+    };
+
     const setupTestEnvironment = async (): Promise<void> => {
         try {
             await prepareSections();
@@ -693,17 +705,6 @@ describe('Publish Tests', () => {
             await clearTextField(packageIdField);
         } catch (error) {
             console.error('Error in Publish Fields before hook:', error);
-            throw error;
-        }
-    };
-
-    const validateLabelsRequired = async (): Promise<void> => {
-        try {
-            const vsLabels = await webview?.findWebElements(By.css('vscode-label')) ?? [];
-            const labels: LabelData[] = await getFieldLabels(vsLabels);
-            expect(labels).to.deep.equal(LABELS_DATA);
-        } catch (error) {
-            console.error('Error in Check labels required test:', error);
             throw error;
         }
     };

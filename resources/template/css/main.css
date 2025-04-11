@@ -6,7 +6,7 @@ vscode-single-select {
 .publish-button {
     width: calc(100% - 28px);
 }
-.pulbish-labels-placeholder {
+.publish-labels-placeholder {
     display: flex;
 	gap: 4px;
 	flex-wrap: wrap;
