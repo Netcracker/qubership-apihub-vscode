@@ -101,7 +101,7 @@ describe('Config File', () => {
     });
 
     describe('Publish', function () {
-        let webview: WebviewView;
+        let webview: WebviewView | undefined;
 
         before(async function () {
             await setupPublishView();
@@ -112,7 +112,7 @@ describe('Config File', () => {
         });
 
         it('Check: Get Package Id from Config file', async function () {
-            await webview.switchToFrame();
+            await webview?.switchToFrame();
 
             await findPublishFields();
 
@@ -124,12 +124,12 @@ describe('Config File', () => {
 
             await findPublishFields();
             const textValue = await getTextValue(packageIdField);
-            await webview.switchBack();
+            await webview?.switchBack();
             expect(textValue).is.equals(PACKAGE_ID_RELEASE_NAME);
         });
 
         const findPublishFields = async (): Promise<void> => {
-            const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
+            const textFields = await webview?.findWebElements(TEXT_FIELD_LOCATOR) ?? [];
             packageIdField = await findWebElementById(textFields, PublishFields.PACKAGE_ID);
         };
 

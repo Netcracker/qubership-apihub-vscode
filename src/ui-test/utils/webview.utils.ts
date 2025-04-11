@@ -30,8 +30,11 @@ export const closeSaveWorkspaceDialog = async (): Promise<void> => {
 export const getWebView = async (
     sideBar: SideBarView | undefined,
     sectionName: PLUGIN_SECTIONS
-): Promise<WebviewView> => {
+): Promise<WebviewView | undefined> => {
     const section = await sideBar?.getContent().getSection(sectionName);
+    if (!section) {
+        throw new Error(`Section "${sectionName}" not found.`);
+    }
     return new WebviewView(section);
 };
 
