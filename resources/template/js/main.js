@@ -94,23 +94,6 @@ defaultListenersMapper.set(FieldTypes.SINGLE_SELECT, (fieldName) => {
 defaultListenersMapper.set(FieldTypes.SINGLE_SELECT_COMBOBOX, (fieldName) => {
     const field = getField(fieldName);
     field.addEventListener('change', () => sendFieldValue(fieldName));
-    field.addEventListener('focusout', () => {
-        // WA. Bug: https://github.com/vscode-elements/elements/issues/368
-        const value = getInput(fieldName).value;
-        if (!value?.length) {
-            // @ts-ignore
-            field.selectedIndex = -1;
-            sendFieldValue(fieldName, '');
-            updateRequired(fieldName, 'true');
-            return;
-        }
-        const index = field.selectedIndex;
-        const option = getOptions(fieldName)?.[index];
-        if (index === -1 || !option || option.value !== value) {
-            sendFieldValue(fieldName, '');
-            updateRequired(fieldName, 'true');
-        }
-    });
 });
 
 window.addEventListener('message', (event) => {
@@ -252,23 +235,9 @@ const updateRequired = (fieldName, value) => {
     }
     if (value === 'true') {
         field.setAttribute('required', '');
-
-        if (field.type === 'select-one') {
-            recreateSelect(fieldName, field);
-        }
     } else {
         field.removeAttribute('required');
     }
-};
-
-// WA. Bug: https://github.com/vscode-elements/elements/issues/369
-const recreateSelect = (fieldName, field) => {
-    const clone = field.cloneNode(true);
-    const parent = field.parentElement;
-    field.remove();
-    parent.appendChild(clone);
-    clone.open = false;
-    defaultListenersMapper.get(FieldTypes.SINGLE_SELECT_COMBOBOX)(fieldName, clone);
 };
 
 const updateDisable = (fieldName, disabled) => {

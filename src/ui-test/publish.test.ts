@@ -436,14 +436,12 @@ describe('Publish Tests', () => {
 
                 await new Promise((res) => setTimeout(res, 2000));
 
+                await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
                 await previousReleaseVersion?.sendKeys('non-existentVersion');
                 await previousReleaseVersion?.sendKeys(Key.TAB + Key.TAB);
 
-                // WA. Delete after https://github.com/vscode-elements/elements/issues/369
-                await findPublishFields();
-
                 const value = await previousReleaseVersion?.getAttribute('value');
-                expect(value).is.empty;
+                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
             });
 
             describe('Publish', function () {
