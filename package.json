@@ -65,7 +65,11 @@
     "test:watch": "tsc -watch -p ./",
     "test:unit": "node ./out/test/runTest.js",
     "test:ui": "extest setup-and-run './out/ui-test/*.test.js' --code_settings settings.json --extensions_dir .test-extensions",
-    "test:ui-and-be": "concurrently --kill-others --success first  \"npm run dev:backend\" \"npm run test:ui\""
+    "test:ui-and-be": "concurrently --kill-others --success first  \"npm run dev:backend\" \"npm run test:ui\"",
+    "feature-start": "feature-start --featureName",
+    "feature-finish": "feature-finish",
+    "release-start": "release-start",
+    "release-finish": "release-finish"
   },
   "devDependencies": {
     "@eslint/js": "^9.21.0",
@@ -96,7 +100,8 @@
     "vscode-extension-tester": "8.14.0",
     "vscode-test": "^1.6.1",
     "webpack": "^5.98.0",
-    "webpack-cli": "^6.0.1"
+    "webpack-cli": "^6.0.1",
+    "@netcracker/qubership-apihub-npm-gitflow": "2.2.2"
   },
   "dependencies": {
     "@vscode-elements/elements": "1.15.0",
