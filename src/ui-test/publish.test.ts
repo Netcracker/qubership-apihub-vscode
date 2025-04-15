@@ -11,16 +11,17 @@ import {
     ViewSection,
     VSBrowser,
     WebElement,
-    WebView,
+    WebviewView,
     Workbench
 } from 'vscode-extension-tester';
 import {
-    PUBLISH_INPUT_DRAFT_PATTERN,
-    PUBLISH_NO_PREVIOUS_VERSION,
+    PUBLISHING_INPUT_DRAFT_PATTERN,
+    PUBLISHING_NO_PREVIOUS_VERSION,
     STATUS_BAR_PUBLISH_MESSAGE
-} from '../common/constants/publish.constants';
+} from '../common/constants/publishing.constants';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
-import { PublishFields } from '../common/models/publish.model';
+import { PublishingFields } from '../common/models/publishing.model';
+import { delay } from '../utils/common.utils';
 import {
     DISABLED_ATTRIBUTE,
     INVALID_ATTRIBUTE,
@@ -33,7 +34,7 @@ import {
     CONFIG_FILE_2,
     CONFIG_FILE_3,
     PUBLISH_NOTIFICATION_MESSAGE
-} from './constants/publish.constants';
+} from './constants/publishing.constants';
 import {
     DOCUMENTS_SECTION,
     EXTENSION_NAME,
@@ -47,7 +48,7 @@ import {
     VERSION_3,
     VERSION_LABEL
 } from './constants/test.constants';
-import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH, WORKSPACE_EMPTY_PATH } from './constants/tree.constants';
+import { CONFIG_FILE_1_PATH, PETS_NAME, WORKSPACE_1_PATH } from './constants/tree.constants';
 import { LabelData } from './models/label.model';
 import { BUTTON_LOCATOR, SINGLE_SELECT_LOCATOR, TEXT_FIELD_LOCATOR } from './models/webview.model';
 import { deleteFile } from './utils/explorer.utils';
@@ -68,7 +69,6 @@ import {
     openSelect,
     Until
 } from './utils/webview.utils';
-import { delay } from './utils/common.utils';
 
 const LABELS_DATA: LabelData[] = [
     { label: 'Package Id:', required: true },
@@ -90,17 +90,17 @@ const LABEL_NAME = 'label';
 const LABEL_LONG_NAME = 'Loooooooooooooooooooooooooooong';
 const LABEL_SHORT_NAME = 'S';
 
-describe('Publish Tests', () => {
+describe('Publishing Tests', () => {
     let viewControl: ViewControl | undefined;
     let sideBar: SideBarView | undefined;
     let sections: ViewSection[] | undefined;
-    let webview: WebView;
+    let webview: WebviewView | undefined;
     let packageIdField: WebElement | undefined;
     let versionField: WebElement | undefined;
     let statusField: WebElement | undefined;
     let labelsField: WebElement | undefined;
     let previousReleaseVersion: WebElement | undefined;
-    let publishButton: WebElement | undefined;
+    let publishingButton: WebElement | undefined;
 
     before(async () => {
         await setupTestEnvironment();
@@ -110,13 +110,13 @@ describe('Publish Tests', () => {
         await cleanupTestEnvironment();
     });
 
-    describe('Publish Fields', function () {
+    describe('Publishing Fields', function () {
         before(async () => {
-            await setupPublishFields();
+            await setupPublishingFields();
         });
 
         after(async () => {
-            await webview.switchBack();
+            await webview?.switchBack();
         });
 
         it('Check labels required', async () => {
@@ -132,7 +132,7 @@ describe('Publish Tests', () => {
         });
     });
 
-    describe('Publish and Environment integration', function () {
+    describe('Publishing and Environment integration', function () {
         let urlField: WebElement | undefined;
         let tokenField: WebElement | undefined;
         let testConnectionButton: WebElement | undefined;
@@ -140,17 +140,17 @@ describe('Publish Tests', () => {
         describe('PackageId tests', function () {
             afterEach(async () => {
                 await switchAndCleanEnvironmentFields();
-                await switchAndCleanPublishFields();
+                await switchAndCleanPublishingFields();
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
             });
 
             it('Check required empty Environment fields if PackageId is fill', async function () {
-                await switchToPublish();
+                await switchToPublishing();
 
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await switchToEnvironments();
 
@@ -167,11 +167,11 @@ describe('Publish Tests', () => {
                 await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
                 await tokenField?.sendKeys(TEST_PAT_TOKEN);
 
-                await switchToPublish();
+                await switchToPublishing();
 
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 const isPackageIdFieldNoInvalid = await packageIdField
                     ?.getDriver()
@@ -187,7 +187,7 @@ describe('Publish Tests', () => {
                 await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
                 await tokenField?.sendKeys(TEST_PAT_TOKEN);
 
-                await switchToPublish();
+                await switchToPublishing();
 
                 await packageIdField?.sendKeys('noneExistPackageId');
 
@@ -200,7 +200,7 @@ describe('Publish Tests', () => {
             });
 
             it('Check load PackageId after click test connection', async function () {
-                await switchToPublish();
+                await switchToPublishing();
 
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
                 await checkDependentFieldsAreDisabled(true);
@@ -212,7 +212,7 @@ describe('Publish Tests', () => {
 
                 await testConnectionButton?.click();
 
-                await switchToPublish();
+                await switchToPublishing();
 
                 const isPackageIdFieldInvalid = await packageIdField
                     ?.getDriver()
@@ -223,27 +223,25 @@ describe('Publish Tests', () => {
             });
         });
 
-        describe('Publish e2e preparation', function () {
+        describe('Publishing e2e preparation', function () {
             before(async function () {
                 await switchToEnvironments();
 
                 await urlField?.sendKeys(LOCAL_SERVER_FULL_URL);
                 await tokenField?.sendKeys(TEST_PAT_TOKEN);
 
-                await switchToPublish();
+                await switchToPublishing();
             });
 
             afterEach(async () => {
-                await cleanPublishFields();
-                // WA. Delete after https://github.com/vscode-elements/elements/issues/369
-                await findPublishFields();
-                await new Promise((res) => setTimeout(res, 500));
+                await cleanPublishingFields();
+                await delay(1000);
             });
 
             it('Check Status Options', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
                 await openSelect(statusField);
                 const options = await getSingleSelectOptions(statusField);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
@@ -255,11 +253,11 @@ describe('Publish Tests', () => {
             it('Check changes in the Draft status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, DRAFT);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISH_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -280,7 +278,7 @@ describe('Publish Tests', () => {
             it('Check changes in the Release status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, RELEASE);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
@@ -305,11 +303,11 @@ describe('Publish Tests', () => {
             it('Check changes in the Archived status pattern and validation', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await clickOption(statusField, ARCHIVED);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISH_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -330,7 +328,7 @@ describe('Publish Tests', () => {
             it('Check create some Labels be Enter and delete', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await labelsField?.sendKeys(LABEL_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
@@ -359,7 +357,7 @@ describe('Publish Tests', () => {
             it('Check create Labels using focusout', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await labelsField?.sendKeys(LABEL_NAME);
                 await labelsField?.sendKeys(Key.TAB);
@@ -380,11 +378,11 @@ describe('Publish Tests', () => {
             it('Check load label from version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await versionField?.sendKeys(VERSION_2);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 let labels = await getLabels();
                 const labelNames = await getTexts(labels);
@@ -399,32 +397,32 @@ describe('Publish Tests', () => {
             it('Check "Previous Version" has default value', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_VERSIONS_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await openSelect(previousReleaseVersion);
 
                 const options = await getSingleSelectOptions(previousReleaseVersion);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
 
-                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
+                expect(optionTexts).deep.equals([PUBLISHING_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
 
                 await options[0]?.click();
 
                 const value = await previousReleaseVersion?.getAttribute('value');
-                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+                expect(value).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
             });
 
             it('Check load "Previous Version" from package', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
                 await openSelect(previousReleaseVersion);
 
                 const options = await getSingleSelectOptions(previousReleaseVersion);
                 const optionTexts = await Promise.all(options.map(async (option) => await option.getText()));
 
-                expect(optionTexts).deep.equals([PUBLISH_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
+                expect(optionTexts).deep.equals([PUBLISHING_NO_PREVIOUS_VERSION, VERSION_2, VERSION_1]);
 
                 await options[2]?.click();
                 const value = await previousReleaseVersion?.getAttribute('value');
@@ -434,35 +432,36 @@ describe('Publish Tests', () => {
             it('Check "Previous Version" cannot select a non-existent version', async function () {
                 await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                await new Promise((res) => setTimeout(res, 2000));
+                await delay(2000);
 
-                await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
+                await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
                 await previousReleaseVersion?.sendKeys('non-existentVersion');
                 await previousReleaseVersion?.sendKeys(Key.TAB + Key.TAB);
 
                 const value = await previousReleaseVersion?.getAttribute('value');
-                expect(value).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+                expect(value).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
             });
 
-            describe('Publish', function () {
+            describe('Publishing', function () {
                 let statusBar: StatusBar;
 
                 before(async function () {
-                    await webview.switchBack();
+                    await webview?.switchBack();
                     await VSBrowser.instance.openResources(WORKSPACE_1_PATH);
                     await prepareSections();
                     statusBar = new StatusBar();
-                    await switchToPublish();
+                    await switchToPublishing();
                 });
 
                 afterEach(async function () {
                     deleteConfigFile();
+                    await delay(500);
                 });
 
-                it('Check Success Publish: Status bar, Notification, Config File', async function () {
+                it('Check Success Publishing: Status bar, Notification, Config File', async function () {
                     await packageIdField?.sendKeys(PACKAGE_ID_NAME);
 
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await delay(2000);
 
                     await versionField?.sendKeys(VERSION_3);
                     await clickOption(statusField, DRAFT);
@@ -470,15 +469,15 @@ describe('Publish Tests', () => {
                     await labelsField?.sendKeys('Publish-test' + Key.ENTER);
                     await clickOption(previousReleaseVersion, VERSION_2);
 
-                    await publishButton?.click();
+                    await publishingButton?.click();
 
-                    await new Promise((res) => setTimeout(res, 500));
-                    await webview.switchBack();
+                    await delay(500);
+                    await webview?.switchBack();
 
                     const statusBarText = await statusBar.getText();
                     expect(statusBarText).includes(STATUS_BAR_PUBLISH_MESSAGE);
 
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await delay(2000);
 
                     const notifications = await new Workbench().getNotifications();
                     const notificationsText = await notifications[0].getText();
@@ -489,16 +488,17 @@ describe('Publish Tests', () => {
 
                     expect(configFileContent).is.equals(CONFIG_FILE_1);
 
-                    await webview.switchToFrame();
+                    await webview?.switchToFrame();
                 });
 
-                it('Check re-creation Config File after Success Publish', async function () {
+                it('Check re-creation Config File after Success Publishing', async function () {
+                    await delay(1000);
                     fs.writeFileSync(CONFIG_FILE_1_PATH, CONFIG_FILE_2, 'utf8');
-                    await new Promise((res) => setTimeout(res, 1000));
+                    await delay(1000);
 
                     await clearTextField(packageIdField);
                     await packageIdField?.sendKeys(PACKAGE_ID_RELEASE_NAME);
-                    await webview.switchBack();
+                    await webview?.switchBack();
 
                     await expandAll(sections);
                     const treeSection = await sideBar?.getContent().getSection(DOCUMENTS_SECTION);
@@ -506,42 +506,42 @@ describe('Publish Tests', () => {
                     const item = await findAsync(items, async (item) => (await item.getLabel()) === PETS_NAME);
                     await clickCheckbox(item);
 
-                    await switchToPublish();
-                    await findPublishFields();
+                    await switchToPublishing();
+                    await findPublishingFields();
 
                     await versionField?.sendKeys(VERSION_3);
                     await clickOption(statusField, RELEASE);
 
                     await labelsField?.sendKeys('Publish-release-test' + Key.ENTER);
-                    await clickOption(previousReleaseVersion, PUBLISH_NO_PREVIOUS_VERSION);
+                    await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
-                    await publishButton?.click();
-
-                    await new Promise((res) => setTimeout(res, 2000));
+                    await publishingButton?.click();
+                    console.log(await VSBrowser.instance.driver.takeScreenshot());
+                    await delay(2000);
 
                     expect(fs.existsSync(CONFIG_FILE_1_PATH)).to.be.true;
                     const configFileContent = fs.readFileSync(CONFIG_FILE_1_PATH, 'utf-8');
 
                     expect(configFileContent).is.equals(CONFIG_FILE_3);
 
-                    await new Promise((res) => setTimeout(res, 500));
+                    await delay(500);
                 });
             });
         });
 
         const findEnvironmentFields = async (): Promise<void> => {
-            const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
+            const textFields = (await webview?.findWebElements(TEXT_FIELD_LOCATOR)) ?? [];
             urlField = await findWebElementById(textFields, EnvironmentWebviewFields.URL);
             tokenField = await findWebElementById(textFields, EnvironmentWebviewFields.TOKEN);
-            testConnectionButton = await webview.findWebElement(By.css('a'));
+            testConnectionButton = await webview?.findWebElement(By.css('a'));
         };
 
-        const switchAndCleanPublishFields = async (): Promise<void> => {
-            await switchToPublish();
+        const switchAndCleanPublishingFields = async (): Promise<void> => {
+            await switchToPublishing();
 
-            await cleanPublishFields();
+            await cleanPublishingFields();
 
-            await webview.switchBack();
+            await webview?.switchBack();
         };
 
         const switchAndCleanEnvironmentFields = async (): Promise<void> => {
@@ -550,13 +550,14 @@ describe('Publish Tests', () => {
             await clearTextField(urlField);
             await clearTextField(tokenField);
 
-            await webview.switchBack();
+            await webview?.switchBack();
         };
 
         const switchTo = async (section: PLUGIN_SECTIONS): Promise<void> => {
-            await webview.switchBack();
+            await webview?.switchBack();
             await expandAll(sections ?? []);
             await switchToFrame(section);
+            await delay(1000);
         };
 
         const switchToEnvironments = async (): Promise<void> => {
@@ -564,22 +565,22 @@ describe('Publish Tests', () => {
             await findEnvironmentFields();
         };
 
-        const switchToPublish = async (): Promise<void> => {
+        const switchToPublishing = async (): Promise<void> => {
             await switchTo(PLUGIN_SECTIONS.PUBLISH);
-            await findPublishFields();
+            await findPublishingFields();
         };
     });
 
-    const findPublishFields = async (): Promise<void> => {
-        const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
-        const selectFields = await webview.findWebElements(SINGLE_SELECT_LOCATOR);
-        const buttons = await webview.findWebElements(BUTTON_LOCATOR);
-        packageIdField = await findWebElementById(textFields, PublishFields.PACKAGE_ID);
-        versionField = await findWebElementById(textFields, PublishFields.VERSION);
-        statusField = await findWebElementById(selectFields, PublishFields.STATUS);
-        labelsField = await findWebElementById(textFields, PublishFields.LABELS);
-        previousReleaseVersion = await findWebElementById(selectFields, PublishFields.PREVIOUS_VERSION);
-        publishButton = await findWebElementById(buttons, PublishFields.PUBLISH_BUTTON);
+    const findPublishingFields = async (): Promise<void> => {
+        const textFields = (await webview?.findWebElements(TEXT_FIELD_LOCATOR)) ?? [];
+        const selectFields = (await webview?.findWebElements(SINGLE_SELECT_LOCATOR)) ?? [];
+        const buttons = (await webview?.findWebElements(BUTTON_LOCATOR)) ?? [];
+        packageIdField = await findWebElementById(textFields, PublishingFields.PACKAGE_ID);
+        versionField = await findWebElementById(textFields, PublishingFields.VERSION);
+        statusField = await findWebElementById(selectFields, PublishingFields.STATUS);
+        labelsField = await findWebElementById(textFields, PublishingFields.LABELS);
+        previousReleaseVersion = await findWebElementById(selectFields, PublishingFields.PREVIOUS_VERSION);
+        publishingButton = await findWebElementById(buttons, PublishingFields.PUBLISHING_BUTTON);
     };
 
     const deleteLabel = async (label: WebElement): Promise<void> => {
@@ -589,11 +590,11 @@ describe('Publish Tests', () => {
     const getLabels = async (): Promise<WebElement[]> => {
         let labelPlaceholder;
         try {
-            labelPlaceholder = await webview.findWebElement(By.id('publish-labels-placeholder'));
+            labelPlaceholder = await webview?.findWebElement(By.id('publishing-labels-placeholder'));
         } catch {
             return [];
         }
-        return (await labelPlaceholder.findElements(BUTTON_LOCATOR)) ?? [];
+        return (await labelPlaceholder?.findElements(BUTTON_LOCATOR)) ?? [];
     };
 
     const checkDependentFieldsAreDisabled = async (isDisabled: boolean): Promise<void> => {
@@ -618,11 +619,11 @@ describe('Publish Tests', () => {
         sections = await sideBar?.getContent().getSections();
     };
 
-    const cleanPublishFields = async (): Promise<void> => {
+    const cleanPublishingFields = async (): Promise<void> => {
         const fieldsToClear = [
             { field: previousReleaseVersion, name: 'previousReleaseVersion' },
             { field: versionField, name: 'versionField' },
-            { field: packageIdField, name: 'packageIdField' },
+            { field: packageIdField, name: 'packageIdField' }
         ];
 
         for (const { field } of fieldsToClear) {
@@ -640,7 +641,7 @@ describe('Publish Tests', () => {
 
         try {
             await clickOption(statusField, DRAFT);
-        } catch  {}
+        } catch {}
     };
 
     const deleteConfigFile = (): void => {
@@ -653,14 +654,25 @@ describe('Publish Tests', () => {
 
     const switchToFrame = async (section: PLUGIN_SECTIONS): Promise<void> => {
         webview = await getWebView(sideBar, section);
-        await webview.switchToFrame();
+        await webview?.switchToFrame();
+    };
+
+    const validateLabelsRequired = async (): Promise<void> => {
+        try {
+            const vsLabels = (await webview?.findWebElements(By.css('vscode-label'))) ?? [];
+            const labels: LabelData[] = await getFieldLabels(vsLabels);
+            expect(labels).to.deep.equal(LABELS_DATA);
+        } catch (error) {
+            console.error('Error in Check labels required test:', error);
+            throw error;
+        }
     };
 
     const setupTestEnvironment = async (): Promise<void> => {
         try {
             await prepareSections();
             await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-            await findPublishFields();
+            await findPublishingFields();
         } catch (error) {
             console.error('Error during setup in before hook:', error);
             throw error;
@@ -674,8 +686,8 @@ describe('Publish Tests', () => {
         try {
             await webview?.switchBack();
             await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-            await findPublishFields();
-            await cleanPublishFields();
+            await findPublishingFields();
+            await cleanPublishingFields();
         } catch (error) {
             console.error('Error during cleanup in after hook:', error);
         } finally {
@@ -685,24 +697,13 @@ describe('Publish Tests', () => {
         }
     };
 
-    const setupPublishFields = async (): Promise<void> => {
+    const setupPublishingFields = async (): Promise<void> => {
         try {
             await switchToFrame(PLUGIN_SECTIONS.PUBLISH);
-            await findPublishFields();
+            await findPublishingFields();
             await clearTextField(packageIdField);
         } catch (error) {
-            console.error('Error in Publish Fields before hook:', error);
-            throw error;
-        }
-    };
-
-    const validateLabelsRequired = async (): Promise<void> => {
-        try {
-            const vsLabels = await webview.findWebElements(By.css('vscode-label'));
-            const labels: LabelData[] = await getFieldLabels(vsLabels);
-            expect(labels).to.deep.equal(LABELS_DATA);
-        } catch (error) {
-            console.error('Error in Check labels required test:', error);
+            console.error('Error in Publishing Fields before hook:', error);
             throw error;
         }
     };
@@ -724,7 +725,7 @@ describe('Publish Tests', () => {
     const validatePreviousVersionDefaultValue = async (): Promise<void> => {
         try {
             const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
-            expect(previousReleaseVersionValue).is.equals(PUBLISH_NO_PREVIOUS_VERSION);
+            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
         } catch (error) {
             console.error('Error in Check "Previous Version" test:', error);
             throw error;

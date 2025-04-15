@@ -1,4 +1,4 @@
-import { BuildConfig, VersionStatus } from '../../src/common/models/publish.model';
+import { BuildConfig, VersionStatus } from '../../src/common/models/publishing.model';
 import { PACKAGE_ID_NAME, PACKAGE_ID_RELEASE_NAME } from './packages';
 import { VERSION_2, VERSION_3 } from './versions';
 

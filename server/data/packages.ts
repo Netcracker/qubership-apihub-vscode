@@ -1,4 +1,4 @@
-import { PublishViewPackageIdData } from "../../src/common/models/publish.model";
+import { PublishingViewPackageIdData } from "../../src/common/models/publishing.model";
 import { VERSION_1, VERSION_2 } from "./versions";
 
 
@@ -7,7 +7,7 @@ export const PACKAGE_ID_RELEASE_NAME = 'packageId-release';
 export const PACKAGE_ID_VERSIONS_NAME = 'packageId-version';
 export const RELEASE_VERSION_PATTERN = '^[0-9]{4}[.]{1}[1-4]{1}$';
 
-export const PACKAGES_DATA: PublishViewPackageIdData[] = [
+export const PACKAGES_DATA: PublishingViewPackageIdData[] = [
     {
         alias: "id",
         defaultReleaseVersion: '',

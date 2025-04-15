@@ -1,7 +1,7 @@
-import { PUBLISH_BUTTON_LINK_MESSAGE, PUBLISH_SUCCESSFUL_MESSAGE } from '../../common/constants/publish.constants';
+import { PUBLISHING_BUTTON_LINK_MESSAGE, PUBLISHING_SUCCESSFUL_MESSAGE } from '../../common/constants/publishing.constants';
 import { EXTENSION_NAME } from './test.constants';
 
-export const PUBLISH_NOTIFICATION_MESSAGE = `Source: ${EXTENSION_NAME}\n${PUBLISH_BUTTON_LINK_MESSAGE}\n${PUBLISH_SUCCESSFUL_MESSAGE}`;
+export const PUBLISH_NOTIFICATION_MESSAGE = `Source: ${EXTENSION_NAME}\n${PUBLISHING_BUTTON_LINK_MESSAGE}\n${PUBLISHING_SUCCESSFUL_MESSAGE}`;
 export const CONFIG_FILE_1 =
     'packageId: packageId\nfiles:\n  - src/docs/gql/testGql.gql\n  - src/docs/pets.yaml\n  - src/docs/store.yaml\n  - src/docs/testGql.gql\n  - src/docs/testGraphql.graphql\n  - src/docs/user.yaml\nversion: 1\n';
 export const CONFIG_FILE_2 =

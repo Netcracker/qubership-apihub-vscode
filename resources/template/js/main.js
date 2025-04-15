@@ -31,7 +31,7 @@ const updateFieldMapper = new Map();
 const defaultListenersMapper = new Map();
 
 const LABELS_ID = 'labelForLabels';
-const LABELS_PLACEHOLDER = 'publish-labels-placeholder';
+const LABELS_PLACEHOLDER = 'publishing-labels-placeholder';
 
 updateFieldMapper.set(FieldTypes.INPUT, (fieldName, value) => {
     getInput(fieldName).value = value;
@@ -72,7 +72,7 @@ updateFieldMapper.set(FieldTypes.LABELS, (fieldName, value) => {
         chip.setAttribute('icon-after', 'close');
         chip.setAttribute('secondary', '');
         chip.innerHTML = label;
-        chip.className = 'publish-chip';
+        chip.className = 'publishing-chip';
         chip.addEventListener('click', (event) =>
             // @ts-ignore
             deleteFieldValue(fieldName, event?.target?.innerText)

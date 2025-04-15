@@ -32,16 +32,12 @@ export const getExtension = (fileName: string): string => {
     return fileName.split('.').pop() || '';
 };
 
-export const isApispecFile = (extension: string): boolean => {
+export const isApiSpecFile = (extension: string): boolean => {
     return SPECS_MAIN_EXTENSIONS.includes(extension);
 };
 
-export const isItemApispecFile = (item: SpecificationItem): boolean => {
-    return isApispecFile(getExtension(item.uri.fsPath));
-};
-
-export const sortStrings = (arr: string[]): string[] => {
-    return [...arr].sort((a, b) => a.localeCompare(b));
+export const isItemApiSpecFile = (item: SpecificationItem): boolean => {
+    return isApiSpecFile(getExtension(item.uri.fsPath));
 };
 
 export const normalizeUrl = (url: string): string => {

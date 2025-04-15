@@ -9,10 +9,10 @@ import {
     ViewSection,
     VSBrowser,
     WebElement,
-    WebView
+    WebviewView
 } from 'vscode-extension-tester';
-import { PublishFields } from '../common/models/publish.model';
-import { CONFIG_FILE_3, CONFIG_FILE_5, CONFIG_FILE_6 } from './constants/publish.constants';
+import { PublishingFields } from '../common/models/publishing.model';
+import { CONFIG_FILE_3, CONFIG_FILE_5, CONFIG_FILE_6 } from './constants/publishing.constants';
 import {
     DOCUMENTS_SECTION,
     EXTENSION_NAME,
@@ -32,7 +32,6 @@ import {
 } from './constants/tree.constants';
 import { TestTreeItem } from './models/tree.model';
 import { TEXT_FIELD_LOCATOR } from './models/webview.model';
-import { delay } from './utils/common.utils';
 import { deleteFile, openFileFromExplorer } from './utils/explorer.utils';
 import { checkItemCheckboxes, selectCheckbox } from './utils/tree.utils';
 import {
@@ -43,6 +42,7 @@ import {
     getTextValue,
     getWebView
 } from './utils/webview.utils';
+import { delay } from '../utils/common.utils';
 
 const WORKSPACE_1_CONTENT: TestTreeItem[] = [
     { checkbox: true, description: '/src/docs/', label: PETS_NAME },
@@ -101,20 +101,20 @@ describe('Config File', () => {
     });
 
     describe('Publish', function () {
-        let webview: WebView;
+        let webview: WebviewView | undefined;
 
         before(async function () {
-            await setupPublishView();
+            await setupPublishingView();
         });
 
         after(async function () {
-            await cleanupPublishView();
+            await cleanupPublishingView();
         });
 
         it('Check: Get Package Id from Config file', async function () {
-            await webview.switchToFrame();
+            await webview?.switchToFrame();
 
-            await findPublishFields();
+            await findPublishingFields();
 
             await clearTextField(packageIdField);
             await packageIdField?.sendKeys(PACKAGE_ID_NAME);
@@ -122,23 +122,23 @@ describe('Config File', () => {
             writeConfigFile(CONFIG_FILE_1_PATH, CONFIG_FILE_3);
             await delay(2000);
 
-            await findPublishFields();
+            await findPublishingFields();
             const textValue = await getTextValue(packageIdField);
-            await webview.switchBack();
+            await webview?.switchBack();
             expect(textValue).is.equals(PACKAGE_ID_RELEASE_NAME);
         });
 
-        const findPublishFields = async (): Promise<void> => {
-            const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
-            packageIdField = await findWebElementById(textFields, PublishFields.PACKAGE_ID);
+        const findPublishingFields = async (): Promise<void> => {
+            const textFields = await webview?.findWebElements(TEXT_FIELD_LOCATOR) ?? [];
+            packageIdField = await findWebElementById(textFields, PublishingFields.PACKAGE_ID);
         };
 
-        const cleanupPublishView = async (): Promise<void> => {
+        const cleanupPublishingView = async (): Promise<void> => {
             await webview?.switchBack();
             await expandAll(sections);
         };
 
-        const setupPublishView = async (): Promise<void> => {
+        const setupPublishingView = async (): Promise<void> => {
             viewControl = await new ActivityBar().getViewControl(EXTENSION_NAME);
             sideBar = await viewControl?.openView();
             sections = await sideBar?.getContent().getSections();
@@ -193,7 +193,7 @@ describe('Config File', () => {
                 await delay(1000);
                 await openFileFromExplorer(CONFIG_FILE_NAME);
                 await delay(1000);
-                await getTreeSection();             
+                await getTreeSection();
                 await validateTreeContent(WORKSPACE_2_CONTENT);
                 await delay(1000);
                 await openFileFromExplorer(CARS_NAME);

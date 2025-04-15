@@ -1,4 +1,4 @@
-import { EnvironmentConnectionState } from '../constants/environment.constants';
+import { ENVIRONMENT_FAILURE, ENVIRONMENT_LOADING, ENVIRONMENT_SUCCESS, EnvironmentConnectionState } from '../constants/environment.constants';
 import {
     EnvironmentWebviewTestConnectionDto,
     WebviewMessage,
@@ -24,8 +24,8 @@ export interface EnvironmentWebviewDto
     > {}
 
 export const EnvironmentWebviewIconsMapper = new Map<EnvironmentConnectionState, string>([
-    ['loading', 'loading'],
-    ['success', 'check'],
-    ['failure', 'close'],
+    [ENVIRONMENT_LOADING, 'loading'],
+    [ENVIRONMENT_SUCCESS, 'check'],
+    [ENVIRONMENT_FAILURE, 'close'],
     ['', '']
 ]);

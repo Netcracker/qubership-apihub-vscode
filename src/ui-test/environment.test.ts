@@ -1,13 +1,5 @@
 import { expect } from 'chai';
-import {
-    ActivityBar,
-    By,
-    SideBarView,
-    ViewControl,
-    VSBrowser,
-    WebElement,
-    WebView
-} from 'vscode-extension-tester';
+import { ActivityBar, By, SideBarView, ViewControl, VSBrowser, WebElement, WebviewView } from 'vscode-extension-tester';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
 import { INVALID_ATTRIBUTE, NAME_ATTRIBUTE } from './constants/attribute.constants';
 import {
@@ -28,7 +20,7 @@ const LABELS_DATA: LabelData[] = [
 ];
 
 describe('Environment Webview', () => {
-    let webview: WebView;
+    let webview: WebviewView | undefined;
     let urlField: WebElement | undefined;
     let tokenField: WebElement | undefined;
     let testConnectionButton: WebElement | undefined;
@@ -38,7 +30,7 @@ describe('Environment Webview', () => {
     });
 
     after(async () => {
-        await webview.switchBack();
+        await webview?.switchBack();
     });
 
     afterEach(async () => {
@@ -50,12 +42,12 @@ describe('Environment Webview', () => {
         const viewControl: ViewControl | undefined = await new ActivityBar().getViewControl(EXTENSION_NAME);
         const sideBar: SideBarView | undefined = await viewControl?.openView();
         webview = await getWebView(sideBar, PLUGIN_SECTIONS.ENVIRONMENT);
-        await webview.switchToFrame();
+        await webview?.switchToFrame();
 
-        const textFields = await webview.findWebElements(TEXT_FIELD_LOCATOR);
+        const textFields = await webview?.findWebElements(TEXT_FIELD_LOCATOR) ?? [];
         urlField = await findWebElementById(textFields, EnvironmentWebviewFields.URL);
         tokenField = await findWebElementById(textFields, EnvironmentWebviewFields.TOKEN);
-        testConnectionButton = await webview.findWebElement(By.css('a'));
+        testConnectionButton = await webview?.findWebElement(By.css('a'));
     };
 
     const clearFields = async (): Promise<void> => {
@@ -69,7 +61,7 @@ describe('Environment Webview', () => {
     };
 
     const validateTestConnectionIcon = async (expectedIcon: string): Promise<void> => {
-        const icons = await webview.findWebElements(By.css('vscode-icon'));
+        const icons = await webview?.findWebElements(By.css('vscode-icon')) ?? [];
         const testConnectionIcon = await findWebElementById(icons, EnvironmentWebviewFields.TEST_CONNECTION_ICON);
 
         const testConnectionIconType = await testConnectionIcon
@@ -80,7 +72,7 @@ describe('Environment Webview', () => {
     };
 
     it('Check labels required', async () => {
-        const vsLabels = await webview.findWebElements(By.css('vscode-label'));
+        const vsLabels = await webview?.findWebElements(By.css('vscode-label')) ?? [];
         const labels: LabelData[] = await getFieldLabels(vsLabels);
         expect(labels).to.deep.equal(LABELS_DATA);
     });
@@ -96,7 +88,7 @@ describe('Environment Webview', () => {
         let type = await tokenField?.getAttribute('type');
         expect(type).is.equal('password');
 
-        const icons = await webview.findWebElements(By.css('vscode-icon'));
+        const icons = await webview?.findWebElements(By.css('vscode-icon')) ?? [];
         const eyeButton = await findWebElementById(icons, 'eye-icon');
         await eyeButton?.click();
 

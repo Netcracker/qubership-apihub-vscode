@@ -1,11 +1,11 @@
-import { PUBLISH_INPUT_RELEASE_PATTERN, PUBLISH_NO_PREVIOUS_VERSION } from '../constants/publish.constants';
+import { PUBLISHING_INPUT_RELEASE_PATTERN, PUBLISHING_NO_PREVIOUS_VERSION } from '../constants/publishing.constants';
 import { ConfigurationId } from './configuration.model';
 import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
 export type PackageId = string;
 export type VersionId = string | `${string}@${number}`;
 export type FileId = string;
-export type PublishWebviewValueType = string | string[];
+export type PublishingWebviewValueType = string | string[];
 
 export enum VersionStatus {
     RELEASE = 'release',
@@ -31,57 +31,57 @@ export interface BuildConfig {
 }
 
 export type Key = Readonly<string>;
-export type PublishConfig = { publishId: Key; config: BuildConfig };
+export type PublishingConfig = { publishId: Key; config: BuildConfig };
 
-export type PublishStatusDto = {
+export type PublishingStatusDto = {
     publishId: string;
-    status: PublishStatus;
+    status: PublishingStatus;
     message: string;
 };
 
-export enum PublishStatus {
+export enum PublishingStatus {
     NONE = 'none',
     RUNNING = 'running',
     COMPLETE = 'complete',
     ERROR = 'error'
 }
 
-export enum PublishWebviewMessages {
+export enum PublishingWebviewMessages {
     PUBLISH = 'publish'
 }
 
-export enum PublishFields {
+export enum PublishingFields {
     PACKAGE_ID = 'packageId',
     VERSION = 'version',
     STATUS = 'status',
     PREVIOUS_VERSION = 'previousVersion',
     LABELS = 'labels',
-    PUBLISH_BUTTON = 'publish-button'
+    PUBLISHING_BUTTON = 'publishing-button'
 }
 
-export interface PublishVersionCreatedBy {
+export interface PublishingVersionCreatedBy {
     avatarUrl: string;
     email: string;
     id: string;
     name: string;
     type: string;
 }
-export interface PublishVersion {
+export interface PublishingVersion {
     version: string;
     status: string;
     createdAt: string;
-    createdBy: PublishVersionCreatedBy;
+    createdBy: PublishingVersionCreatedBy;
     versionLabels: string[];
     previousVersion: string;
 }
-export interface PublishVersionDto {
-    versions: PublishVersion[];
+export interface PublishingVersionDto {
+    versions: PublishingVersion[];
 }
 
-export interface PublishWebviewDto
-    extends WebviewMessage<WebviewMessages | PublishWebviewMessages, WebviewPayload<PublishFields> | void> {}
+export interface PublishingWebviewDto
+    extends WebviewMessage<WebviewMessages | PublishingWebviewMessages, WebviewPayload<PublishingFields> | void> {}
 
-export class PublishViewData {
+export class PublishingViewData {
     public packageId: PackageId;
     public version: VersionId;
     public labels: Set<string>;
@@ -95,13 +95,13 @@ export class PublishViewData {
         this.version = '';
         this.labels = new Set();
         this.status = VersionStatus.DRAFT;
-        this.previousVersion = PUBLISH_NO_PREVIOUS_VERSION;
+        this.previousVersion = PUBLISHING_NO_PREVIOUS_VERSION;
         this.configId = '';
-        this.releaseVersionPattern = PUBLISH_INPUT_RELEASE_PATTERN;
+        this.releaseVersionPattern = PUBLISHING_INPUT_RELEASE_PATTERN;
     }
 }
 
-export interface PublishViewPackageIdData {
+export interface PublishingViewPackageIdData {
     packageId: PackageId;
     alias: string;
     parentId: string;

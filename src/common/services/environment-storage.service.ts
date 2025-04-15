@@ -1,6 +1,6 @@
 import { Event, EventEmitter, ExtensionContext, SecretStorage } from 'vscode';
-import { debounce } from '../../utils/files.utils';
 import { EXTENSION_NAME } from '../constants/common.constants';
+import { debounce } from '../../utils/common.utils';
 
 const SECRET_STORAGE_KEY = `${EXTENSION_NAME}.secret.environment`;
 
@@ -12,8 +12,8 @@ export interface EnvironmentData {
 export class EnvironmentStorageService {
     private readonly _secretStorage: SecretStorage;
     private readonly _onDidChangeConfiguration: EventEmitter<EnvironmentData> = new EventEmitter();
-    private readonly fireDebounced = debounce(() => this.fireConfigurationChange());
-    private readonly saveDebounced = debounce(() => this.saveEnvironment());
+    private readonly fireConfigurationChangeDebounced = debounce(() => this.fireConfigurationChange());
+    private readonly saveEnvironmentDebounced = debounce(() => this.saveEnvironment());
     public readonly onDidChangeConfiguration: Event<EnvironmentData> = this._onDidChangeConfiguration.event;
 
     private _host: string = '';
@@ -30,12 +30,12 @@ export class EnvironmentStorageService {
 
     public async setHost(value: string): Promise<void> {
         this._host = value;
-        this.saveDebounced();
+        this.saveEnvironmentDebounced();
     }
 
     public async setToken(value: string): Promise<void> {
         this._token = value;
-        this.saveDebounced();
+        this.saveEnvironmentDebounced();
     }
 
     private fireConfigurationChange(): void {
@@ -46,7 +46,7 @@ export class EnvironmentStorageService {
         const environmentData = this.getLocalEnvironmentData();
         const serializedData = this.serializeEnvironmentData(environmentData);
         await this._secretStorage.store(SECRET_STORAGE_KEY, serializedData);
-        this.fireDebounced();
+        this.fireConfigurationChangeDebounced();
     }
 
     private async loadEnvironmentFromStorage(): Promise<void> {

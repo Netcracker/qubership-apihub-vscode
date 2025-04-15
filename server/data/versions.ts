@@ -1,11 +1,11 @@
-import { PublishVersion } from '../../src/common/models/publish.model';
+import { PublishingVersion } from '../../src/common/models/publishing.model';
 
 export const VERSION_LABEL = 'DRAFT';
 export const VERSION_1 = "2025.1";
 export const VERSION_2 = "2025.2";
 export const VERSION_3 = "2025.3";
 
-export const VERSIONS: PublishVersion[] = [
+export const VERSIONS: PublishingVersion[] = [
     {
         version: `${VERSION_2}@1`,
         status: 'draft',

@@ -1,16 +1,16 @@
 import { BodyInit } from 'undici-types';
 import { Disposable } from 'vscode';
 import { API_V1, API_V2, API_V3, PACKAGES, PAT_HEADER } from '../constants/common.constants';
+import { CrudError, CrudResponse, DefaultError, ServerStatusDto } from '../models/common.model';
 import {
     PackageId,
-    PublishConfig,
-    PublishStatusDto,
-    PublishVersionDto,
-    PublishViewPackageIdData,
+    PublishingConfig,
+    PublishingStatusDto,
+    PublishingVersionDto,
+    PublishingViewPackageIdData,
     VersionId,
     VersionStatus
-} from '../models/publish.model';
-import { CrudError, CrudResponse, DefaultError, ServerStatusDto } from '../models/common.model';
+} from '../models/publishing.model';
 
 const enum CrudMethod {
     GET = 'GET',
@@ -28,11 +28,6 @@ export const enum RequestNames {
 
 export class CrudService extends Disposable {
     private readonly abortControllers: Map<RequestNames, AbortController> = new Map();
-    private readonly VERSION_SEARCH_PARAMS = new URLSearchParams({
-        status: VersionStatus.RELEASE,
-        limit: '100',
-        page: '0'
-    }).toString();
 
     constructor() {
         super(() => this.dispose());
@@ -51,8 +46,17 @@ export class CrudService extends Disposable {
         return this.get(RequestNames.GET_SYSTEM_INFO, this.buildUrl(baseUrl, API_V1, 'system/info'), authorization);
     }
 
-    public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishVersionDto> {
-        const url = this.buildUrl(baseUrl, API_V3, `${PACKAGES}/${packageId}/versions`, this.VERSION_SEARCH_PARAMS);
+    public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishingVersionDto> {
+        const url = this.buildUrl(
+            baseUrl,
+            API_V3,
+            `${PACKAGES}/${packageId}/versions`,
+            new URLSearchParams({
+                status: VersionStatus.RELEASE,
+                limit: '100',
+                page: '0'
+            })
+        );
         return this.get(RequestNames.GET_VERSIONS, url, authorization);
     }
 
@@ -60,8 +64,12 @@ export class CrudService extends Disposable {
         baseUrl: string,
         authorization: string,
         packageId: PackageId
-    ): Promise<PublishViewPackageIdData> {
-        return this.get(RequestNames.GET_PACKAGE_ID, this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}`), authorization);
+    ): Promise<PublishingViewPackageIdData> {
+        return this.get(
+            RequestNames.GET_PACKAGE_ID,
+            this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}`),
+            authorization
+        );
     }
 
     public getLabels(
@@ -69,8 +77,13 @@ export class CrudService extends Disposable {
         authorization: string,
         packageId: PackageId,
         version: VersionId
-    ): Promise<PublishVersionDto> {
-        const url = this.buildUrl(baseUrl, API_V3, `${PACKAGES}/${packageId}/versions`, `textFilter=${version}`);
+    ): Promise<PublishingVersionDto> {
+        const url = this.buildUrl(
+            baseUrl,
+            API_V3,
+            `${PACKAGES}/${packageId}/versions`,
+            new URLSearchParams({ textFilter: version })
+        );
         return this.get(RequestNames.GET_LABELS, url, authorization);
     }
 
@@ -79,7 +92,7 @@ export class CrudService extends Disposable {
         authorization: string,
         packageId: PackageId,
         publishId: string
-    ): Promise<PublishStatusDto> {
+    ): Promise<PublishingStatusDto> {
         return this.get(
             RequestNames.GET_STATUS,
             this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}/publish/${publishId}/status`),
@@ -87,12 +100,12 @@ export class CrudService extends Disposable {
         );
     }
 
-    public publishApispec(
+    public publishApiSpec(
         baseUrl: string,
         packageId: PackageId,
         authorization: string,
         formData: Blob | FormData
-    ): Promise<PublishConfig> {
+    ): Promise<PublishingConfig> {
         return this.post(
             RequestNames.PUBLISH,
             this.buildUrl(baseUrl, API_V2, `${PACKAGES}/${packageId}/publish`),
@@ -159,10 +172,10 @@ export class CrudService extends Disposable {
         }
     }
 
-    private buildUrl(baseUrl: string, apiVersion: string, path: string, searchParams?: string): string {
+    private buildUrl(baseUrl: string, apiVersion: string, path: string, searchParams?: URLSearchParams): string {
         const url = new URL(`${baseUrl}${apiVersion}/${path}`);
         if (searchParams) {
-            url.search = searchParams;
+            url.search = searchParams.toString();
         }
         return url.toString();
     }

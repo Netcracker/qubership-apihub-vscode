@@ -1,12 +1,12 @@
-export enum PublishErrorTypes {
+export enum PublishingErrorTypes {
     ERROR = 'error',
     INFO = 'info'
 }
 
-export class PublishError extends Error {
+export class PublishingError extends Error {
     constructor(
         readonly message: string,
-        readonly type: PublishErrorTypes,
+        readonly type: PublishingErrorTypes,
         readonly buttonName?: string,
         readonly link?: string
     ) {

@@ -1,4 +1,4 @@
-import { BuildConfig } from "../../src/common/models/publish.model";
+import { BuildConfig } from "../../src/common/models/publishing.model";
 
 export function deepEqualIgnoreOrder(a: BuildConfig | undefined, b: BuildConfig | undefined): boolean {
     if(!a || !b){
