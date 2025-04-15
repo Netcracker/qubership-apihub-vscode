@@ -74,7 +74,7 @@
     "test:ui": "extest setup-and-run './out/ui-test/*.test.js' --code_settings settings.json --extensions_dir .test-extensions",
     "test:ui-and-be": "concurrently --kill-others --success first  \"npm run dev:backend\" \"npm run test:ui\""
   },
-  "devDependencies": {
+  "devDependencies": { 
     "@eslint/js": "^9.21.0",
     "@types/chai": "^4.3.16",
     "@types/express": "^5.0.1",
