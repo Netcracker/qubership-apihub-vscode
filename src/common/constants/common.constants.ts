@@ -12,6 +12,7 @@ export const EXTENSION_ENVIRONMENT_VIEW_NAME = `${EXTENSION_NAME}.environmentVie
 export const EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME = `${EXTENSION_NAME}.validation`;
 
 export const SHOW_README_ACTION_NAME = `${EXTENSION_NAME}.show.readme`;
+export const REMOVE_OAS_EXTENSIONS_ACTION_NAME = `${EXTENSION_NAME}.removeOASExtensions`;
 
 export const NODE_MODULES_PATH = 'node_modules';
 export const RESOURCES_PATH = 'resources';

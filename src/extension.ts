@@ -16,6 +16,7 @@ import {
     EXTENSION_EXPLORER_NAME,
     EXTENSION_EXPLORER_OPEN_FILE_ACTION_NAME,
     EXTENSION_PUBLISH_VIEW_NAME,
+    REMOVE_OAS_EXTENSIONS_ACTION_NAME,
     SHOW_README_ACTION_NAME
 } from './common/constants/common.constants';
 import { CrudService } from './common/cruds/crud.service';
@@ -28,6 +29,7 @@ import { WorkspaceService } from './common/services/workspace.service';
 import { EnvironmentViewProvider } from './common/webview/environment-view';
 import { PublishingViewProvider } from './common/webview/publishing-view';
 import { SpecificationFileTreeProvider } from './common/specification-tree/specification-tree-provider';
+import { removeOASExtensionsCommand } from './common/commands/remove-oas-extensions.command';
 
 export function activate(context: ExtensionContext): void {
     const workspaceFolderService = registerDisposable(context, new WorkspaceService());
@@ -117,6 +119,11 @@ function registerCommands(context: ExtensionContext): void {
             const readmeUri = Uri.file(path.join(context.extensionPath, 'README.md')).with({ fragment });
             commands.executeCommand('markdown.showPreview', readmeUri);
         })
+    );
+    
+    // Register the command to remove OAS extensions
+    context.subscriptions.push(
+        commands.registerCommand(REMOVE_OAS_EXTENSIONS_ACTION_NAME, removeOASExtensionsCommand)
     );
 }
 
