@@ -3,6 +3,7 @@
   "displayName": "Qubership APIHUB",
   "description": "Publish API specifications to APIHUB Portal",
   "version": "1.0.1-dev.0",
+  "publisher": "Netcracker",
   "engines": {
     "vscode": "^1.96.0"
   },
