@@ -18,7 +18,7 @@ import {
     MAIN_JS_PATH
 } from '../constants/common.constants';
 import {
-    PUBLISHING_INPUT_DRAFT_PATTERN,
+    PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_JS_PATH,
     PUBLISHING_LOADING_OPTION,
     PUBLISHING_NO_PREVIOUS_VERSION,
@@ -44,7 +44,7 @@ import { EnvironmentStorageService } from '../services/environment-storage.servi
 import { PublishingService } from '../services/publishing.service';
 import { WorkspaceService } from '../services/workspace.service';
 import { WebviewBase } from './webview-base';
-import { debounce } from '../../utils/common.utils';
+import { debounce, isMatchingPattern } from '../../utils/common.utils';
 
 export class PublishingViewProvider extends WebviewBase<PublishingFields> {
     private readonly _publishingViewData: Map<WorkfolderPath, PublishingViewData> = new Map();
@@ -384,12 +384,10 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             this.updateWebviewRequired(PublishingFields.VERSION);
             return;
         }
-        const pattern = this.getPattern(data, status);
-        const regexp = new RegExp(pattern);
-        if (!regexp.test(version)) {
+        const inputPattern = this.getPattern(data, status);
+        if (!isMatchingPattern(inputPattern, version)) {
             return;
         }
-
         if (!previousVersion) {
             this.updateWebviewRequired(PublishingFields.PREVIOUS_VERSION);
             return;
@@ -402,11 +400,11 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
         switch (status) {
             case VersionStatus.ARCHIVED:
             case VersionStatus.DRAFT: {
-                return PUBLISHING_INPUT_DRAFT_PATTERN;
+                return PUBLISHING_INPUT_DEFAULT_PATTERN;
             }
             case VersionStatus.RELEASE: {
                 const { releaseVersionPattern } = publishingData;
-                return releaseVersionPattern;
+                return releaseVersionPattern || PUBLISHING_INPUT_DEFAULT_PATTERN;
             }
         }
     }
@@ -461,7 +459,7 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
                     </p>
                     <p>
                         <vscode-label for="${PublishingFields.VERSION}" required>Version:</vscode-label>
-                        <vscode-textfield id="${PublishingFields.VERSION}" placeholder="${PUBLISHING_INPUT_DRAFT_PATTERN}" pattern="${PUBLISHING_INPUT_DRAFT_PATTERN}"/>
+                        <vscode-textfield id="${PublishingFields.VERSION}"/>
                     </p>
                     <p>
                         <vscode-label for="${PublishingFields.STATUS}" required>Status:</vscode-label>

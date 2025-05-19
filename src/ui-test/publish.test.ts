@@ -15,7 +15,7 @@ import {
     Workbench
 } from 'vscode-extension-tester';
 import {
-    PUBLISHING_INPUT_DRAFT_PATTERN,
+    PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_NO_PREVIOUS_VERSION,
     STATUS_BAR_PUBLISH_MESSAGE
 } from '../common/constants/publishing.constants';
@@ -257,7 +257,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, DRAFT);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -307,7 +307,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, ARCHIVED);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
