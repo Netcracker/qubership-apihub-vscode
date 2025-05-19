@@ -10,6 +10,7 @@ on:
       - bugfix/*
     tags:
       - '**'
+  delete:
 
 jobs:
   call-frontend-ci-workflow:
