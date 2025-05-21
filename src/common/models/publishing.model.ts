@@ -1,4 +1,4 @@
-import { PUBLISHING_INPUT_RELEASE_PATTERN, PUBLISHING_NO_PREVIOUS_VERSION } from '../constants/publishing.constants';
+import { PUBLISHING_INPUT_DEFAULT_PATTERN, PUBLISHING_NO_PREVIOUS_VERSION } from '../constants/publishing.constants';
 import { ConfigurationId } from './configuration.model';
 import { WebviewMessage, WebviewMessages, WebviewPayload } from './webview.model';
 
@@ -97,7 +97,7 @@ export class PublishingViewData {
         this.status = VersionStatus.DRAFT;
         this.previousVersion = PUBLISHING_NO_PREVIOUS_VERSION;
         this.configId = '';
-        this.releaseVersionPattern = PUBLISHING_INPUT_RELEASE_PATTERN;
+        this.releaseVersionPattern = PUBLISHING_INPUT_DEFAULT_PATTERN;
     }
 }
 

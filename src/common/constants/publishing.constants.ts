@@ -3,8 +3,7 @@ export const RELEASE = 'release';
 export const ARCHIVED = 'archived';
 export const PUBLISHING_STATUSES = [DRAFT, RELEASE, ARCHIVED];
 export const PUBLISHING_JS_PATH = 'publishing.js';
-export const PUBLISHING_INPUT_DRAFT_PATTERN = '[A-Za-z0-9_.~\\-]{1,}';
-export const PUBLISHING_INPUT_RELEASE_PATTERN = '^[0-9]{4}[.]{1}[1-4]{1}$';
+export const PUBLISHING_INPUT_DEFAULT_PATTERN = '^[A-Za-z0-9_.~\\- ]{1,}$';
 export const PUBLISHING_NO_PREVIOUS_VERSION = 'No previous release version';
 export const PUBLISHING_LOADING_OPTION = 'Loading...';
 

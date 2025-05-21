@@ -16,3 +16,8 @@ export const sortStrings = (arr: string[]): string[] => {
 export const delay = (milliseconds: number): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, milliseconds));
 };
+
+export const isMatchingPattern = (pattern: string, version: string): boolean => {
+    const regexp = new RegExp(pattern);
+    return regexp.test(version);
+};
