@@ -33,17 +33,18 @@ const defaultListenersMapper = new Map();
 const LABELS_ID = 'labelForLabels';
 const LABELS_PLACEHOLDER = 'publishing-labels-placeholder';
 
+const updateSingleSelect = (fieldName, value) => {
+    const field = getField(fieldName);
+    field.selectedIndex = field.options.findIndex((option) => option.value === value);
+};
+
 updateFieldMapper.set(FieldTypes.INPUT, (fieldName, value) => {
     getInput(fieldName).value = value;
 });
 
-updateFieldMapper.set(FieldTypes.SINGLE_SELECT, (fieldName, value) => {
-    getField(fieldName).selectedIndex = field.options.findIndex((option) => option.value === value);
-});
+updateFieldMapper.set(FieldTypes.SINGLE_SELECT, updateSingleSelect);
 
-updateFieldMapper.set(FieldTypes.SINGLE_SELECT_COMBOBOX, (fieldName, value) => {
-    getField(fieldName).selectedIndex = field.options.findIndex((option) => option.value === value);
-});
+updateFieldMapper.set(FieldTypes.SINGLE_SELECT_COMBOBOX, updateSingleSelect);
 
 updateFieldMapper.set(FieldTypes.BUTTON, (fieldName, value) => {
     getField(fieldName).disabled = value === 'true';
