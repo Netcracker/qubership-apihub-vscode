@@ -362,8 +362,12 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_NAME);
                 await labelsField?.sendKeys(Key.TAB);
 
+                await delay(1000);
+
                 const labelFieldValue = await labelsField?.getText();
                 expect(labelFieldValue).to.be.empty;
+
+                await delay(1000);
 
                 let labels = await getLabels();
                 const labelNames = await getTexts(labels);
@@ -516,8 +520,7 @@ describe('Publishing Tests', () => {
                     await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
                     await publishingButton?.click();
-                    console.log(await VSBrowser.instance.driver.takeScreenshot());
-                    await delay(2000);
+                    await delay(3000);
 
                     expect(fs.existsSync(CONFIG_FILE_1_PATH)).to.be.true;
                     const configFileContent = fs.readFileSync(CONFIG_FILE_1_PATH, 'utf-8');
