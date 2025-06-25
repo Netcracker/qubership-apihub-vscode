@@ -171,8 +171,9 @@ const updateOptions = (fieldName, options) => {
     // @ts-ignore
     field.innerHTML = null;
     options?.forEach((option) => {
-        var optionElement = document.createElement('vscode-option');
+        const optionElement = document.createElement('vscode-option');
         optionElement.value = option.name;
+        optionElement.selected = option.selected;
         optionElement.innerHTML = option.name;
         if (option.disabled) {
             optionElement.setAttribute(DISABLED_ATTRIBUTE, '');
