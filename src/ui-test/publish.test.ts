@@ -334,20 +334,28 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_SHORT_NAME, Key.ENTER);
 
+                await delay(1000);
+
                 let labels = await getLabels();
                 let labelNames: string[] = await getTexts(labels);
                 expect(labelNames).to.be.an('array').with.lengthOf(3);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_LONG_NAME, LABEL_SHORT_NAME]);
+
+                await delay(1000);
 
                 await deleteLabel(labels[1]);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_SHORT_NAME]);
 
+                await delay(1000);
+
                 await deleteLabel(labels[1]);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME]);
+
+                await delay(1000);
 
                 await deleteLabel(labels[0]);
                 labels = await getLabels();
