@@ -15,7 +15,7 @@ import {
     Workbench
 } from 'vscode-extension-tester';
 import {
-    PUBLISHING_INPUT_DRAFT_PATTERN,
+    PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_NO_PREVIOUS_VERSION,
     STATUS_BAR_PUBLISH_MESSAGE
 } from '../common/constants/publishing.constants';
@@ -257,7 +257,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, DRAFT);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -307,7 +307,7 @@ describe('Publishing Tests', () => {
 
                 await clickOption(statusField, ARCHIVED);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
-                expect(PUBLISHING_INPUT_DRAFT_PATTERN).to.equals(statusPattern);
+                expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
                 await versionField?.sendKeys(RELEASE_VERSION);
                 let isVersionFieldPatternMismatch = await getPatternMismatch(versionField);
@@ -362,8 +362,12 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_NAME);
                 await labelsField?.sendKeys(Key.TAB);
 
+                await delay(1000);
+
                 const labelFieldValue = await labelsField?.getText();
                 expect(labelFieldValue).to.be.empty;
+
+                await delay(1000);
 
                 let labels = await getLabels();
                 const labelNames = await getTexts(labels);
@@ -516,8 +520,7 @@ describe('Publishing Tests', () => {
                     await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
                     await publishingButton?.click();
-                    console.log(await VSBrowser.instance.driver.takeScreenshot());
-                    await delay(2000);
+                    await delay(3000);
 
                     expect(fs.existsSync(CONFIG_FILE_1_PATH)).to.be.true;
                     const configFileContent = fs.readFileSync(CONFIG_FILE_1_PATH, 'utf-8');

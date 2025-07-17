@@ -24,8 +24,8 @@ Select the files you need to publish. If you need to publish files other than Op
 Along with file selection, specify the following information:
 1. APIHUB environment:
     * **APIHUB URL** - URL to APIHUB server where you will publish documents. The value is stored in the extension settings and will be reused across different folders and workspaces, so you will not need to enter it again.
-    * **Authentication Token** - your personal access token issued in APIHUB.
-3. Publish to APIHUB:
+    * **Authentication Token** - your personal access token issued in APIHUB. For details, please see the [APIHUB Portal user guide](https://github.com/Netcracker/qubership-apihub-ui/blob/main/docs/Portal%20User%20Guide.md#personal-access-tokens).
+2. Publish to APIHUB:
     * **Package Id** - package where you need to publish your files. All selected files from the currently open root folder will be published in this package.
     * **Version** - version of the package.
     * **Status** - status of the package version.
