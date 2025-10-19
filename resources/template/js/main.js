@@ -20,7 +20,8 @@ const FieldTypes = {
     SINGLE_SELECT: 'single-select',
     SINGLE_SELECT_COMBOBOX: 'single-select-combobox',
     BUTTON: 'button',
-    LABELS: 'labels'
+    LABELS: 'labels',
+    CHECKBOX: 'checkbox'
 };
 
 const DISABLED_ATTRIBUTE = 'disabled';
@@ -80,6 +81,13 @@ updateFieldMapper.set(FieldTypes.LABELS, (fieldName, value) => {
         );
         placeholder.appendChild(chip);
     });
+});
+
+updateFieldMapper.set(FieldTypes.CHECKBOX, (fieldName, value) => {
+    const field = getField(fieldName);
+    if (field) {
+        field.checked = value === 'true' || value === true;
+    }
 });
 
 defaultListenersMapper.set(FieldTypes.INPUT, (fieldName) => {

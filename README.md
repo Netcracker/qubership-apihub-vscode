@@ -9,17 +9,17 @@ Qubership APIHUB extension allows you to publish API specifications or other API
 <img src="/docs/img/qubership-apihub-extension.png" width="388" height="690">
 
 ## Usage
-After installing the extension, open a folder and navigate to Qubership APIHUB extension, which is shown in the Activity Bar. If your root folder contains at least one OpenAPI or GraphQL specification, you will see it in the "Documents to Publish" section. Specifications from subfolders will also be shown.
+After installing the extension, open a folder and navigate to Qubership APIHUB extension, which is shown in the Activity Bar. If your root folder contains at least one OpenAPI or GraphQL specification, you will see it in the "Documents" section. Specifications from subfolders will also be shown.
 
-***Notes:*** 
+***Notes:***
 1. OpenAPI specification is file that meets one of the following conditions:
    -  ```.yaml```/```.yml``` file that has "openapi" entry
    -  ```.json``` file that has "openapi" entry
 2. GraphQL specification is file that meets one of the following conditions:
-   - ```.graphql```/```.gql``` file  
+   - ```.graphql```/```.gql``` file
 
 
-Select the files you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications - such as PDF, Markdown or DOC files - you can extend list of files for publications via the [configuration file](#configuration-file). 	
+Select the files you need to publish. If you need to publish files other than OpenAPI or GraphQL specifications - such as PDF, Markdown or DOC files - you can extend list of files for publications via the [configuration file](#configuration-file).
 
 Along with file selection, specify the following information:
 1. APIHUB environment:
@@ -39,20 +39,20 @@ If your OpenAPI specification contains [remote references](https://swagger.io/do
 If you are working with multi-root workspace, you need to publish files from each root folder separately. Each root folder will be associated with a different package id and have its own [configuration file](#configuration-file).
 
 ## Configuration file
-Configuration file is file where APIHUB extension stores publication-related information. It is ```yaml``` file named ```.apihub-config.yaml```, located in the root folder.  
+Configuration file is file where APIHUB extension stores publication-related information. It is ```yaml``` file named ```.apihub-config.yaml```, located in the root folder.
 Configuration file contains the following information:
 
 | Field     | Type             | Description    |
 | --------- | ---------------- | -------------- |
 | version   | string           | Version of configuration file. Currently, only version "1.0" is available. |
 | packageId | string           | Package where files will be published.|
-| files     | [string]         | List of files that will be published. You can add path to any file from your folder. Such file will be added to the "Documents to Publish" section of the extension.|  
+| files     | [string]         | List of files that will be published. You can add path to any file from your folder. Such file will be added to the "Documents" section of the extension.|
 
 Example of configuration file:
 ```yaml
 version: 1.0
 packageId: WS.GRP.PCKG1
-files: 
+files:
     - src/docs/pet.yaml
     - src/docs/shop.graphql
     - src/docs/readMe.md

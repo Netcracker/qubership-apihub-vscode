@@ -8,7 +8,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = () => {
     return {
-        target: 'webworker',
+        target: 'node',
 
         entry: './src/extension.ts',
         output: {
@@ -21,7 +21,12 @@ module.exports = () => {
         externals: {
             vscode: 'commonjs vscode',
             fs: 'commonjs fs',
-            path: 'commonjs path'
+            path: 'commonjs path',
+            child_process: 'commonjs child_process',
+            crypto: 'commonjs crypto',
+            stream: 'commonjs stream',
+            util: 'commonjs util',
+            events: 'commonjs events'
         },
         resolve: {
             mainFields: ['browser', 'module', 'main'],

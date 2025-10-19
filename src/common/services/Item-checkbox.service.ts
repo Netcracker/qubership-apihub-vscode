@@ -1,8 +1,11 @@
+import { EventEmitter } from 'vscode';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { ItemCheckboxType } from '../models/item-checkbox.model';
 
 export class ItemCheckboxService {
     private readonly _workspaceCheckboxes = new Map<WorkfolderPath, ItemCheckboxType>();
+    private readonly _onDidChangeCheckboxes = new EventEmitter<{ workspace: WorkfolderPath; filePath: FilePath; checked: boolean }>();
+    public readonly onDidChangeCheckboxes = this._onDidChangeCheckboxes.event;
 
     public has(workspace: WorkfolderPath | undefined, url: FilePath): boolean {
         return this.performAction(workspace, (checkboxes) => checkboxes.has(url), false);
@@ -10,10 +13,16 @@ export class ItemCheckboxService {
 
     public add(workspace: WorkfolderPath | undefined, url: FilePath): void {
         this.performAction(workspace, (checkboxes) => checkboxes.add(url), null);
+        if (workspace) {
+            this._onDidChangeCheckboxes.fire({ workspace, filePath: url, checked: true });
+        }
     }
 
     public delete(workspace: WorkfolderPath | undefined, url: FilePath): void {
         this.performAction(workspace, (checkboxes) => checkboxes.delete(url), null);
+        if (workspace) {
+            this._onDidChangeCheckboxes.fire({ workspace, filePath: url, checked: false });
+        }
     }
 
     public deleteAll(url: FilePath): void {

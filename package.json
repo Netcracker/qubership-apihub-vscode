@@ -36,7 +36,12 @@
         },
         {
           "id": "apihubExtension.explorer",
-          "name": "Documents to Publish"
+          "name": "Documents"
+        },
+        {
+          "id": "apihubExtension.backwardCompatibilityView",
+          "name": "Backward Compatibility Check",
+          "type": "webview"
         },
         {
           "id": "apihubExtension.publishingView",
@@ -102,12 +107,17 @@
     "webpack-cli": "^6.0.1"
   },
   "dependencies": {
+    "@netcracker/qubership-apihub-api-diff": "2.3.0",
     "@vscode-elements/elements": "1.15.0",
     "@vscode/codicons": "^0.0.36",
     "ajv": "^8.17.1",
     "api-ref-bundler": "^0.4.3",
     "jszip": "^3.10.1",
     "openapi-types": "^12.1.3",
+    "@stoplight/json": "3.21.7",
+    "@stoplight/types": "13.20.0",
+    "@stoplight/yaml": "4.2.3",
+    "simple-git": "^3.27.0",
     "uuid": "^11.0.5",
     "yaml": "^2.7.0"
   }

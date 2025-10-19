@@ -18,13 +18,16 @@ import {
     EXTENSION_PUBLISH_VIEW_NAME,
     SHOW_README_ACTION_NAME
 } from './common/constants/common.constants';
+import { EXTENSION_BWC_VIEW_NAME } from './common/constants/backward-compatibility.constants';
 import { CrudService } from './common/cruds/crud.service';
 import { SpecificationItem } from './common/models/specification-item';
+import { BackwardCompatibilityService } from './common/services/backward-compatibility.service';
 import { ConfigurationFileService } from './common/services/configuration-file.service';
 import { EnvironmentStorageService } from './common/services/environment-storage.service';
 import { ItemCheckboxService } from './common/services/Item-checkbox.service';
 import { PublishingService } from './common/services/publishing.service';
 import { WorkspaceService } from './common/services/workspace.service';
+import { BackwardCompatibilityViewProvider } from './common/webview/backward-compatibility-view';
 import { EnvironmentViewProvider } from './common/webview/environment-view';
 import { PublishingViewProvider } from './common/webview/publishing-view';
 import { SpecificationFileTreeProvider } from './common/specification-tree/specification-tree-provider';
@@ -51,13 +54,17 @@ export function activate(context: ExtensionContext): void {
         new PublishingService(fileTreeProvider, environmentStorageService, configurationFileService)
     );
 
+    const bwcService = registerDisposable(context, new BackwardCompatibilityService());
+
     registerWebviewProviders(
         context,
         crudService,
         environmentStorageService,
         configurationFileService,
         workspaceFolderService,
-        publishingService
+        publishingService,
+        itemCheckboxService,
+        bwcService
     );
 }
 
@@ -126,8 +133,25 @@ function registerWebviewProviders(
     environmentStorageService: EnvironmentStorageService,
     configurationFileService: ConfigurationFileService,
     workspaceFolderService: WorkspaceService,
-    publishingService: PublishingService
+    publishingService: PublishingService,
+    itemCheckboxService: ItemCheckboxService,
+    bwcService: BackwardCompatibilityService
 ): void {
+    const environmentViewProvider = registerDisposable(
+        context,
+        new EnvironmentViewProvider(context, crudService, environmentStorageService, publishingService)
+    );
+    registerDisposable(
+        context,
+        window.registerWebviewViewProvider(EXTENSION_ENVIRONMENT_VIEW_NAME, environmentViewProvider)
+    );
+
+    const bwcViewProvider = registerDisposable(
+        context,
+        new BackwardCompatibilityViewProvider(context, workspaceFolderService, itemCheckboxService, bwcService)
+    );
+    registerDisposable(context, window.registerWebviewViewProvider(EXTENSION_BWC_VIEW_NAME, bwcViewProvider));
+
     const publishingViewProvider = registerDisposable(
         context,
         new PublishingViewProvider(
@@ -140,14 +164,4 @@ function registerWebviewProviders(
         )
     );
     registerDisposable(context, window.registerWebviewViewProvider(EXTENSION_PUBLISH_VIEW_NAME, publishingViewProvider));
-
-    const environmentViewProvider = registerDisposable(
-        context,
-        new EnvironmentViewProvider(context, crudService, environmentStorageService, publishingService)
-    );
-
-    registerDisposable(
-        context,
-        window.registerWebviewViewProvider(EXTENSION_ENVIRONMENT_VIEW_NAME, environmentViewProvider)
-    );
 }
