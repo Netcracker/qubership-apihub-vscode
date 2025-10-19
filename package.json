@@ -30,17 +30,17 @@
     "views": {
       "apihub": [
         {
-          "id": "apihubExtension.environmentView",
-          "name": "APIHUB Environment",
-          "type": "webview"
-        },
-        {
           "id": "apihubExtension.explorer",
           "name": "Documents"
         },
         {
           "id": "apihubExtension.backwardCompatibilityView",
           "name": "Backward Compatibility Check",
+          "type": "webview"
+        },
+        {
+          "id": "apihubExtension.environmentView",
+          "name": "APIHUB Environment",
           "type": "webview"
         },
         {
