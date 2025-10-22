@@ -3,24 +3,34 @@ import simpleGit, { SimpleGit } from 'simple-git';
 import { apiDiff, breaking, nonBreaking, risky, annotation, unclassified, deprecated, Diff } from '@netcracker/qubership-apihub-api-diff';
 import { parseWithPointers as parseJsonWithPointers, getLocationForJsonPath as getLocationForJsonPathJson } from '@stoplight/json';
 import { parseWithPointers as parseYamlWithPointers, getLocationForJsonPath as getLocationForJsonPathYaml } from '@stoplight/yaml';
+import { buildSchema } from 'graphql';
+import { buildFromSchema } from '@netcracker/qubership-apihub-graphapi';
 import { FilePath, WorkfolderPath } from '../models/common.model';
 import { BWC_DIAGNOSTIC_SOURCE } from '../constants/backward-compatibility.constants';
 import path from 'path';
 
+
+//TODO: reduce number of caches (no need to have separate baseline cache and content cache and graphql schema cache)
+//TODO: resolve git ref to actual commit hash and use it in the cache keys (branch could be updated)
 export class BackwardCompatibilityService implements Disposable {
     private readonly _diagnosticCollection: DiagnosticCollection;
     private readonly _git: SimpleGit;
     private readonly _disposables: Disposable[] = [];
+    // Cache for calculated diffs: key = `${filePath}:${baselineRef}:${currentContentHash}`
     private readonly _diffsCache: Map<string, {
         diffs: Diff[];
         fileType: 'json' | 'yaml' | 'graphql' | 'unknown';
         content: string;
         parsedContent?: any;
     }> = new Map();
-    // Cache for baseline files: key = `${filePath}:${baselineRef}`
+    // Track current active cache keys for each file: key = filePath, value = diffsCacheKey
+    private readonly _activeDiffsCacheKeys: Map<string, string> = new Map();
+    // Cache for baseline files: key = `${filePath}:${baselineRef}`, parsed = JSON/YAML object or GraphQL schema
     private readonly _baselineCache: Map<string, { content: string; parsed: any }> = new Map();
-    // Cache for current document parsed content: key = `${filePath}:${content}`
+    // Cache for current document parsed content: key = `${filePath}:${contentHash}`, value = parsed JSON/YAML with pointers
     private readonly _currentContentCache: Map<string, any> = new Map();
+    // Cache for current GraphQL buildFromSchema results: key = contentHash, value = GraphQL schema
+    private readonly _graphqlSchemaCache: Map<string, any> = new Map();
 
     constructor() {
         this._diagnosticCollection = languages.createDiagnosticCollection(BWC_DIAGNOSTIC_SOURCE);
@@ -39,6 +49,27 @@ export class BackwardCompatibilityService implements Disposable {
             return true;
         } catch (error) {
             return false;
+        }
+    }
+
+    private async getContentHash(filePath: string): Promise<string> {
+        try {
+            // Hash the saved file directly from disk (checks are triggered on save)
+            const result = await this._git.raw('hash-object', filePath);
+            return result.trim();
+        } catch (error) {
+            // Fallback to a simple hash if git command fails
+            console.error('Failed to compute git hash, using fallback:', error);
+            // Read file content and compute simple hash as fallback
+            let hash = 0;
+            const content = await workspace.fs.readFile(Uri.file(filePath));
+            const contentStr = Buffer.from(content).toString('utf8');
+            for (let i = 0; i < contentStr.length; i++) {
+                const char = contentStr.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return `fallback-${hash.toString(16)}`;
         }
     }
 
@@ -95,13 +126,55 @@ export class BackwardCompatibilityService implements Disposable {
                 // Detect file type
                 const fileType = this.detectFileType(filePath, currentContent);
 
+                // Compute content hash early to check cache
+                // Hash saved file from disk (checks are triggered on save)
+                const currentContentHash = await this.getContentHash(filePath);
+                const diffsCacheKey = `${filePath}:${baselineReference}:${currentContentHash}`;
+
+                // Check if we have cached diffs for this exact combination
+                if (this._diffsCache.has(diffsCacheKey)) {
+                    const cached = this._diffsCache.get(diffsCacheKey)!;
+                    console.log(`Using cached diffs for ${path.basename(filePath)}`);
+                    this._activeDiffsCacheKeys.set(filePath, diffsCacheKey);
+
+                    // Transform cached diffs to diagnostics with current filtering
+                    const diagnostics = await this.transformDiffsToDiagnostics(
+                        cached.diffs,
+                        cached.content,
+                        cached.fileType,
+                        filePath,
+                        excludeComponentsScope,
+                        cached.parsedContent
+                    );
+                    this._diagnosticCollection.set(currentUri, diagnostics);
+                    processedFiles++;
+                    totalDiagnostics += diagnostics.length;
+                    continue;
+                }
+
                 let beforeSpec: unknown;
                 let afterSpec: unknown;
 
                 if (fileType === 'graphql') {
-                    // For GraphQL, pass as string - api-diff should handle it
-                    beforeSpec = baselineContent;
-                    afterSpec = currentContent;
+                    // For GraphQL baseline, use existing baselineCacheKey (no need to hash)
+                    if (baselineParsed !== undefined) {
+                        beforeSpec = baselineParsed;
+                    } else {
+                        const baselineSchema = buildSchema(baselineContent, { noLocation: true });
+                        beforeSpec = buildFromSchema(baselineSchema);
+                        baselineParsed = beforeSpec;
+                    }
+
+                    // For current GraphQL, use content hash for caching
+                    const currentHash = await this.getContentHash(filePath);
+                    if (this._graphqlSchemaCache.has(currentHash)) {
+                        afterSpec = this._graphqlSchemaCache.get(currentHash);
+                        console.log(`Using cached GraphQL schema for current ${path.basename(filePath)}`);
+                    } else {
+                        const currentSchema = buildSchema(currentContent, { noLocation: true });
+                        afterSpec = buildFromSchema(currentSchema);
+                        this._graphqlSchemaCache.set(currentHash, afterSpec);
+                    }
                 } else if (fileType === 'json') {
                     // Parse baseline (use cached if available)
                     if (baselineParsed !== undefined) {
@@ -143,9 +216,9 @@ export class BackwardCompatibilityService implements Disposable {
 
                 console.log(`Found ${diffs.length} diffs for ${path.basename(filePath)}`);
 
-                // Parse current content for location lookup (with caching)
+                // Parse current content for location lookup (with caching based on content hash)
                 let parsedContent: any = undefined;
-                const currentContentCacheKey = `${filePath}:${currentContent}`;
+                const currentContentCacheKey = `${filePath}:${currentContentHash}`;
 
                 if (this._currentContentCache.has(currentContentCacheKey)) {
                     // Use cached parsed content
@@ -164,8 +237,9 @@ export class BackwardCompatibilityService implements Disposable {
                     }
                 }
 
-                // Cache the diffs with parsed content
-                this._diffsCache.set(filePath, { diffs, fileType, content: currentContent, parsedContent });
+                // Cache the diffs with parsed content using hash-based key
+                this._diffsCache.set(diffsCacheKey, { diffs, fileType, content: currentContent, parsedContent });
+                this._activeDiffsCacheKeys.set(filePath, diffsCacheKey);
 
                 // Transform diffs to diagnostics with filtering
                 const diagnostics = await this.transformDiffsToDiagnostics(diffs, currentContent, fileType, filePath, excludeComponentsScope, parsedContent);
@@ -193,27 +267,35 @@ export class BackwardCompatibilityService implements Disposable {
 
     public clearDiagnostics(): void {
         this._diagnosticCollection.clear();
-        this._diffsCache.clear();
-        // Keep baseline and content caches - they're still useful
+        this._activeDiffsCacheKeys.clear();
+        // Keep all caches - they can be reused
     }
 
     public clearDiagnosticsForFile(filePath: FilePath): void {
         const uri = Uri.file(filePath);
         this._diagnosticCollection.delete(uri);
-        this._diffsCache.delete(filePath);
-        // Keep baseline and content caches for this file - they're still useful
+        this._activeDiffsCacheKeys.delete(filePath);
+        // Keep all caches - they can be reused
     }
 
     public clearAllCaches(): void {
         this._diagnosticCollection.clear();
         this._diffsCache.clear();
+        this._activeDiffsCacheKeys.clear();
         this._baselineCache.clear();
         this._currentContentCache.clear();
+        this._graphqlSchemaCache.clear();
     }
 
     public async reapplyFilteringForCachedDiffs(excludeComponentsScope: boolean): Promise<void> {
-        // Reapply filtering to all cached diffs (uses cached parsed content for performance)
-        for (const [filePath, cached] of this._diffsCache.entries()) {
+        // Reapply filtering to currently active diffs (uses cached parsed content for performance)
+        for (const [filePath, diffsCacheKey] of this._activeDiffsCacheKeys.entries()) {
+            const cached = this._diffsCache.get(diffsCacheKey);
+            if (!cached) {
+                console.warn(`Cache entry not found for ${filePath}, skipping`);
+                continue;
+            }
+
             const diagnostics = await this.transformDiffsToDiagnostics(
                 cached.diffs,
                 cached.content,
