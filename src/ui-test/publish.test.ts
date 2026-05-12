@@ -281,6 +281,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, RELEASE);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(RELEASE_VERSION_PATTERN).to.equals(statusPattern);
 
@@ -306,6 +307,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, ARCHIVED);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
