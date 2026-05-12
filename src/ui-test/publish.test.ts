@@ -336,6 +336,8 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_SHORT_NAME, Key.ENTER);
 
+                await delay(1000);
+
                 let labels = await getLabels();
                 let labelNames: string[] = await getTexts(labels);
                 expect(labelNames).to.be.an('array').with.lengthOf(3);
