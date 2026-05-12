@@ -382,6 +382,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(LABEL_NAME);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -401,6 +402,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(VERSION_LABEL);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
