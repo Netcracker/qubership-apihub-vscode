@@ -344,16 +344,19 @@ describe('Publishing Tests', () => {
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_LONG_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME]);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -512,6 +515,9 @@ describe('Publishing Tests', () => {
                     const treeSection = await sideBar?.getContent().getSection(DOCUMENTS_SECTION);
                     const items: CustomTreeItem[] = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
                     const item = await findAsync(items, async (item) => (await item.getLabel()) === PETS_NAME);
+                    await VSBrowser.instance.driver.executeScript(
+                        `document.querySelectorAll('.monaco-hover').forEach(el => el.remove())`
+                    );
                     await clickCheckbox(item);
 
                     await switchToPublishing();
