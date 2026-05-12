@@ -7,5 +7,6 @@
   "extensions.ignoreRecommendations": true,
   "workbench.startupEditor": "none",
   "workbench.welcomePage.walkthroughs.openOnInstall": false,
-  "workbench.tips.enabled": false
+  "workbench.tips.enabled": false,
+  "workbench.enableExperiments": false
 }
