@@ -1,12 +1,15 @@
-import { VSBrowser } from 'vscode-extension-tester';
+import { VSBrowser, ViewControl } from 'vscode-extension-tester';
 
-before(async function () {
-    this.timeout(15000);
-    const driver = VSBrowser.instance.driver;
-    await driver.sleep(2000);
-    await driver.executeScript(`
-        const overlay = document.querySelector('.onboarding-a-overlay');
-        if (overlay) { overlay.remove(); }
-    `);
-    await driver.sleep(500);
-});
+const originalOpenView = ViewControl.prototype.openView;
+ViewControl.prototype.openView = async function () {
+    try {
+        const driver = VSBrowser.instance.driver;
+        await driver.executeScript(`
+            const overlay = document.querySelector('.onboarding-a-overlay');
+            if (overlay) { overlay.remove(); }
+        `);
+    } catch {
+        // ignore
+    }
+    return originalOpenView.call(this);
+};
