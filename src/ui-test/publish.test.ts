@@ -281,6 +281,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, RELEASE);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(RELEASE_VERSION_PATTERN).to.equals(statusPattern);
 
@@ -306,6 +307,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, ARCHIVED);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
@@ -334,22 +336,27 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_SHORT_NAME, Key.ENTER);
 
+                await delay(1000);
+
                 let labels = await getLabels();
                 let labelNames: string[] = await getTexts(labels);
                 expect(labelNames).to.be.an('array').with.lengthOf(3);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_LONG_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME]);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -375,6 +382,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(LABEL_NAME);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -394,6 +402,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(VERSION_LABEL);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -508,6 +517,9 @@ describe('Publishing Tests', () => {
                     const treeSection = await sideBar?.getContent().getSection(DOCUMENTS_SECTION);
                     const items: CustomTreeItem[] = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
                     const item = await findAsync(items, async (item) => (await item.getLabel()) === PETS_NAME);
+                    await VSBrowser.instance.driver.executeScript(
+                        `document.querySelectorAll('.monaco-hover').forEach(el => el.remove())`
+                    );
                     await clickCheckbox(item);
 
                     await switchToPublishing();
