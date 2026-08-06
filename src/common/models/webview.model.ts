@@ -23,6 +23,7 @@ export interface WebviewOption {
     name: string;
     disabled: boolean;
     selected: boolean;
+    label?: string;
 }
 
 export interface WebviewPayload<T> {

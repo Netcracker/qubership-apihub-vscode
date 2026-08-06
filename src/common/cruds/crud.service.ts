@@ -1,6 +1,7 @@
 import { BodyInit } from 'undici-types';
 import { Disposable } from 'vscode';
 import { API_V1, API_V2, API_V3, PACKAGES, PAT_HEADER } from '../constants/common.constants';
+import { PUBLISHING_VERSIONS_LIMIT } from '../constants/publishing.constants';
 import { CrudError, CrudResponse, DefaultError, ServerStatusDto } from '../models/common.model';
 import {
     PackageId,
@@ -46,14 +47,19 @@ export class CrudService extends Disposable {
         return this.get(RequestNames.GET_SYSTEM_INFO, this.buildUrl(baseUrl, API_V1, 'system/info'), authorization);
     }
 
-    public getVersions(baseUrl: string, authorization: string, packageId: PackageId): Promise<PublishingVersionDto> {
+    public getVersions(
+        baseUrl: string,
+        authorization: string,
+        packageId: PackageId,
+        statuses: VersionStatus[]
+    ): Promise<PublishingVersionDto> {
         const url = this.buildUrl(
             baseUrl,
             API_V3,
             `${PACKAGES}/${packageId}/versions`,
             new URLSearchParams({
-                status: VersionStatus.RELEASE,
-                limit: '100',
+                status: statuses.join(','),
+                limit: PUBLISHING_VERSIONS_LIMIT,
                 page: '0'
             })
         );
