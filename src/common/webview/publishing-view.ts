@@ -29,6 +29,7 @@ import {
     PUBLISHING_NO_PREVIOUS_VERSION,
     PUBLISHING_NO_PREVIOUS_VERSION_TEXT,
     PUBLISHING_PREVIOUS_RELEASE_VERSION_LABEL,
+    PUBLISHING_PREVIOUS_VERSIONS_LOAD_ERROR,
     PUBLISHING_PREVIOUS_VERSION_LABEL,
     PUBLISHING_RELEASE_PREVIOUS_VERSION_REQUIRED,
     PUBLISHING_STATUSES,
@@ -58,6 +59,9 @@ import { debounce, isMatchingPattern } from '../../utils/common.utils';
 export class PublishingViewProvider extends WebviewBase<PublishingFields> {
     private readonly _publishingViewData: Map<WorkfolderPath, PublishingViewData> = new Map();
     private allowedPreviousVersions: VersionId[] | undefined;
+    // True while the allowed set is being (re)loaded. Publishing stays blocked meanwhile: until the
+    // response arrives the form cannot tell whether the selected previous version is still allowed.
+    private arePreviousVersionsLoading = false;
     private dependentFieldsDisabled = true;
     private readonly updateLabelsDebounced = debounce((data: PublishingViewData, version: VersionId) =>
         this.wrapInProgress(async () => await this.updateLabels(data, version))
@@ -213,6 +217,7 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
                 this.updateVersionPattern(publishingViewData, status);
                 this.updatePreviousVersionWording(status);
                 if (!hasSamePreviousVersionScope(previousStatus, status)) {
+                    this.invalidateAllowedPreviousVersions();
                     this.wrapInProgress(async () => await this.loadPreviousVersions());
                 }
                 break;
@@ -343,15 +348,44 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        const versions = await this.crudService
-            .getVersions(host, token, packageId, getPreviousVersionStatuses(status))
-            .then((dto) => dto.versions.map((version) => splitVersion(version.version).version))
-            .catch(() => [] as VersionId[]);
 
-        const options = Array.from(new Set([PUBLISHING_NO_PREVIOUS_VERSION, ...versions]));
-        this.allowedPreviousVersions = options;
-        this.sendPreviousVersionOptions(options, previousVersion, status);
-        this.updatePreviousVersionValidity(this.getPublishingViewData(this.workfolderService.activeWorkfolderPath));
+        this.setPreviousVersionsLoading(true);
+        try {
+            const dto = await this.crudService.getVersions(
+                host,
+                token,
+                packageId,
+                getPreviousVersionStatuses(status)
+            );
+            const versions = dto.versions.map((version) => splitVersion(version.version).version);
+
+            const options = Array.from(new Set([PUBLISHING_NO_PREVIOUS_VERSION, ...versions]));
+            this.allowedPreviousVersions = options;
+            this.sendPreviousVersionOptions(options, previousVersion, status);
+            this.updatePreviousVersionValidity(
+                this.getPublishingViewData(this.workfolderService.activeWorkfolderPath)
+            );
+        } catch (error) {
+            if ((error as CrudError).status === ABORTED_ERROR_CODE) {
+                return;
+            }
+            this.invalidateAllowedPreviousVersions();
+            window.showErrorMessage(PUBLISHING_PREVIOUS_VERSIONS_LOAD_ERROR);
+        } finally {
+            this.setPreviousVersionsLoading(false);
+        }
+    }
+
+    private invalidateAllowedPreviousVersions(): void {
+        this.allowedPreviousVersions = undefined;
+        this.updatePreviousVersionValidity(
+            this.getPublishingViewData(this.workfolderService.activeWorkfolderPath)
+        );
+    }
+
+    private setPreviousVersionsLoading(loading: boolean): void {
+        this.arePreviousVersionsLoading = loading;
+        this.updatePublishButtonState();
     }
 
 
@@ -380,7 +414,9 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
         const publishingData = this.getPublishingViewData(this.workfolderService.activeWorkfolderPath);
         this.updateWebviewDisable(
             PublishingFields.PUBLISHING_BUTTON,
-            this.dependentFieldsDisabled || this.isPreviousVersionInvalid(publishingData)
+            this.dependentFieldsDisabled ||
+                this.arePreviousVersionsLoading ||
+                this.isPreviousVersionInvalid(publishingData)
         );
     }
 
@@ -480,6 +516,10 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             return;
         }
 
+        // The allowed set is still being loaded, so whether the selection is valid is not known yet.
+        if (this.arePreviousVersionsLoading) {
+            return;
+        }
         if (this.isPreviousVersionInvalid(data)) {
             this.updatePreviousVersionValidity(data);
             return;

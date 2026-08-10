@@ -12,6 +12,9 @@ export const PUBLISHING_PREVIOUS_RELEASE_VERSION_LABEL = 'Previous release versi
 export const PUBLISHING_NO_PREVIOUS_VERSION_TEXT = 'No previous version';
 export const PUBLISHING_NO_PREVIOUS_RELEASE_VERSION_TEXT = 'No previous release version';
 
+export const PUBLISHING_PREVIOUS_VERSIONS_LOAD_ERROR =
+    'Failed to load the list of previous versions. Check the APIHUB connection and try again.';
+
 export const PUBLISHING_RELEASE_PREVIOUS_VERSION_REQUIRED =
     'A release version must have a release previous version';
 export const PUBLISHING_LOADING_OPTION = 'Loading...';

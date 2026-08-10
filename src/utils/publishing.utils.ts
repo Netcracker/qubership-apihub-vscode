@@ -1,12 +1,30 @@
 import { VersionStatus } from '../common/models/publishing.model';
 import { WebviewOption } from '../common/models/webview.model';
 
+export const getPreviousVersionStatuses = (status: VersionStatus): VersionStatus[] => {
+    switch (status) {
+        case VersionStatus.DRAFT:
+            return [VersionStatus.RELEASE, VersionStatus.DRAFT];
+        case VersionStatus.RELEASE:
+        case VersionStatus.ARCHIVED:
+            return [VersionStatus.RELEASE];
+        default:
+            return assertUnreachableStatus(status);
+    }
+};
 
-export const getPreviousVersionStatuses = (status: VersionStatus): VersionStatus[] =>
-    status === VersionStatus.DRAFT ? [VersionStatus.RELEASE, VersionStatus.DRAFT] : [VersionStatus.RELEASE];
+export const hasSamePreviousVersionScope = (one: VersionStatus, another: VersionStatus): boolean => {
+    const oneStatuses = getPreviousVersionStatuses(one);
+    const anotherStatuses = getPreviousVersionStatuses(another);
+    return (
+        oneStatuses.length === anotherStatuses.length &&
+        oneStatuses.every((status) => anotherStatuses.includes(status))
+    );
+};
 
-export const hasSamePreviousVersionScope = (one: VersionStatus, another: VersionStatus): boolean =>
-    (one === VersionStatus.DRAFT) === (another === VersionStatus.DRAFT);
+const assertUnreachableStatus = (status: never): never => {
+    throw new Error(`Unhandled version status: ${status}`);
+};
 
 export const convertOptionsToDto = (
     options: string[],
