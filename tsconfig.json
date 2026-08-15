@@ -1,5 +1,7 @@
 {
 	"compilerOptions": {
+    /* TypeScript 6 defaults "types" to [] rather than every package under typeRoots. */
+    "types": ["node"],
 		"module": "Node16",
 		"target": "ES2022",
 		"outDir": "out",

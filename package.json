@@ -95,7 +95,7 @@
     "nodemon": "^3.1.9",
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
-    "typescript": "^5.7.3",
+    "typescript": "6.0.3",
     "vscode-extension-tester": "^8.23.0",
     "vscode-test": "^1.6.1",
     "webpack": "^5.98.0",
