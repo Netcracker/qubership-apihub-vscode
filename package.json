@@ -65,7 +65,7 @@
     "test:compile": "tsc -p . --outDir out",
     "test:watch": "tsc -watch -p ./",
     "test:unit": "node ./out/test/runTest.js",
-    "test:ui": "extest setup-and-run './out/ui-test/*.test.js' --code_settings settings.json --extensions_dir .test-extensions",
+    "test:ui": "extest setup-and-run './out/ui-test/*.test.js' --code_version 1.131.0 --code_settings settings.json --extensions_dir .test-extensions",
     "test:ui-and-be": "concurrently --kill-others --success first  \"npm run dev:backend\" \"npm run test:ui\"",
     "update-lock-file": "update-lock-file @netcracker"
   },
