@@ -84,9 +84,10 @@ export const clickOption = async (field: WebElement | undefined, name: string): 
     const options = await getSingleSelectOptions(field);
     const option = await findAsync(options, async (option) => (await option.getText()) === name);
     if (!option) {
-        return field?.click();
+        await closeSelect(field);
+        throw new Error(`Option "${name}" was not found. Available options: ${(await getTexts(options)).join(', ')}`);
     }
-    await option?.click();
+    await option.click();
 };
 
 export const findAsync = async <T>(array: T[], predicate: (item: T) => Promise<boolean>): Promise<T | undefined> => {
@@ -110,6 +111,28 @@ export const getTextValue = async (field: WebElement | undefined): Promise<strin
     const shadowRoot = await field?.getShadowRoot();
     const textField = await shadowRoot?.findElement(By.css('input'));
     return (await textField?.getAttribute('value')) ?? undefined;
+};
+
+/**
+ * Waits until the field displays `expected`.
+ *
+ * Changing the publishing status reloads the previous-version list from the backend and re-renders
+ * the combobox once the response lands. The displayed value is written by that same update, so it
+ * is a direct signal that the list has settled — unlike a fixed delay, which either slows the run
+ * down or still loses the race on a slow runner.
+ */
+export const waitForTextValue = async (
+    field: WebElement | undefined,
+    expected: string,
+    timeout: number = 10000
+): Promise<void> => {
+    await field
+        ?.getDriver()
+        .wait(
+            async () => (await getTextValue(field)) === expected,
+            timeout,
+            `Field did not display "${expected}" within ${timeout} ms`
+        );
 };
 
 export const openSelect = async (field: WebElement | undefined): Promise<void> => {
