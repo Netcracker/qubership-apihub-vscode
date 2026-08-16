@@ -109,7 +109,7 @@ export const getTexts = async (fields: WebElement[]): Promise<string[]> => {
 export const getTextValue = async (field: WebElement | undefined): Promise<string | undefined> => {
     const shadowRoot = await field?.getShadowRoot();
     const textField = await shadowRoot?.findElement(By.css('input'));
-    return textField?.getAttribute('value');
+    return (await textField?.getAttribute('value')) ?? undefined;
 };
 
 export const openSelect = async (field: WebElement | undefined): Promise<void> => {
