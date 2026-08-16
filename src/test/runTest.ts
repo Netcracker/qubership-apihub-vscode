@@ -14,8 +14,9 @@ async function main() {
 
 		// Download VS Code, unzip it and run the integration test
 		await runTests({ extensionDevelopmentPath, extensionTestsPath });
-	} catch {
+	} catch (error) {
 		console.error('Failed to run tests');
+		console.error(error);
 		process.exit(1);
 	}
 }
