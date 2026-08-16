@@ -357,7 +357,7 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
                 packageId,
                 getPreviousVersionStatuses(status)
             );
-            const versions = dto.versions.map((version) => splitVersion(version.version).version);
+            const versions = (dto?.versions ?? []).map((version) => splitVersion(version.version).version);
 
             const options = Array.from(new Set([PUBLISHING_NO_PREVIOUS_VERSION, ...versions]));
             this.allowedPreviousVersions = options;
