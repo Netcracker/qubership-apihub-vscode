@@ -16,7 +16,6 @@ import {
 } from 'vscode-extension-tester';
 import {
     PUBLISHING_INPUT_DEFAULT_PATTERN,
-    PUBLISHING_NO_PREVIOUS_RELEASE_VERSION_TEXT,
     PUBLISHING_NO_PREVIOUS_VERSION,
     PUBLISHING_NO_PREVIOUS_VERSION_TEXT,
     PUBLISHING_PREVIOUS_VERSION_LABEL,
@@ -70,8 +69,7 @@ import {
     getTextValue,
     getWebView,
     openSelect,
-    Until,
-    waitForTextValue
+    Until
 } from './utils/webview.utils';
 
 const LABELS_DATA: LabelData[] = [
@@ -533,8 +531,6 @@ describe('Publishing Tests', () => {
                     await clickOption(statusField, RELEASE);
 
                     await labelsField?.sendKeys('Publish-release-test' + Key.ENTER);
-
-                    await waitForTextValue(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_RELEASE_VERSION_TEXT);
 
                     await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 

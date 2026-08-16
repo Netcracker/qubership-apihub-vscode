@@ -79,15 +79,42 @@ export const getSingleSelectOptions = async (field: WebElement | undefined): Pro
     return options;
 };
 
-export const clickOption = async (field: WebElement | undefined, name: string): Promise<void> => {
-    await field?.click();
-    const options = await getSingleSelectOptions(field);
-    const option = await findAsync(options, async (option) => (await option.getText()) === name);
-    if (!option) {
+/**
+ * Selects the option with the given text, waiting for it to appear.
+ *
+ * The wait matters because changing the publishing status reloads the previous-version list from
+ * the backend and replaces the options once the response lands. Reading them once races that
+ * update, and the previous behaviour on a miss — clicking the field again — left the select open,
+ * where it later intercepted a click meant for another element.
+ */
+export const clickOption = async (
+    field: WebElement | undefined,
+    name: string,
+    timeout: number = 10000
+): Promise<void> => {
+    await openSelect(field);
+
+    let availableOptions: string[] = [];
+    let option: WebElement | undefined;
+
+    try {
+        option = await field?.getDriver().wait(async () => {
+            try {
+                const options = await getSingleSelectOptions(field);
+                availableOptions = await getTexts(options);
+                return await findAsync(options, async (option) => (await option.getText()) === name);
+            } catch {
+                return undefined;
+            }
+        }, timeout);
+    } catch {
         await closeSelect(field);
-        throw new Error(`Option "${name}" was not found. Available options: ${(await getTexts(options)).join(', ')}`);
+        throw new Error(
+            `Option "${name}" did not appear within ${timeout} ms. Available options: ${availableOptions.join(', ')}`
+        );
     }
-    await option.click();
+
+    await option?.click();
 };
 
 export const findAsync = async <T>(array: T[], predicate: (item: T) => Promise<boolean>): Promise<T | undefined> => {
@@ -111,28 +138,6 @@ export const getTextValue = async (field: WebElement | undefined): Promise<strin
     const shadowRoot = await field?.getShadowRoot();
     const textField = await shadowRoot?.findElement(By.css('input'));
     return (await textField?.getAttribute('value')) ?? undefined;
-};
-
-/**
- * Waits until the field displays `expected`.
- *
- * Changing the publishing status reloads the previous-version list from the backend and re-renders
- * the combobox once the response lands. The displayed value is written by that same update, so it
- * is a direct signal that the list has settled — unlike a fixed delay, which either slows the run
- * down or still loses the race on a slow runner.
- */
-export const waitForTextValue = async (
-    field: WebElement | undefined,
-    expected: string,
-    timeout: number = 10000
-): Promise<void> => {
-    await field
-        ?.getDriver()
-        .wait(
-            async () => (await getTextValue(field)) === expected,
-            timeout,
-            `Field did not display "${expected}" within ${timeout} ms`
-        );
 };
 
 export const openSelect = async (field: WebElement | undefined): Promise<void> => {
