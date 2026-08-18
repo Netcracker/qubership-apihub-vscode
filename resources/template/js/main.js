@@ -174,7 +174,7 @@ const updateOptions = (fieldName, options) => {
         const optionElement = document.createElement('vscode-option');
         optionElement.value = option.name;
         optionElement.selected = option.selected;
-        optionElement.innerHTML = option.name;
+        optionElement.innerHTML = option.label ?? option.name;
         if (option.disabled) {
             optionElement.setAttribute(DISABLED_ATTRIBUTE, '');
         }

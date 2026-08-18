@@ -55,6 +55,8 @@ export enum PublishingFields {
     VERSION = 'version',
     STATUS = 'status',
     PREVIOUS_VERSION = 'previousVersion',
+    PREVIOUS_VERSION_LABEL = 'previousVersionLabel',
+    PREVIOUS_VERSION_GROUP = 'previousVersionGroup',
     LABELS = 'labels',
     PUBLISHING_BUTTON = 'publishing-button'
 }
