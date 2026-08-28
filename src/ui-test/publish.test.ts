@@ -17,6 +17,8 @@ import {
 import {
     PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_NO_PREVIOUS_VERSION,
+    PUBLISHING_NO_PREVIOUS_VERSION_TEXT,
+    PUBLISHING_PREVIOUS_VERSION_LABEL,
     STATUS_BAR_PUBLISH_MESSAGE
 } from '../common/constants/publishing.constants';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
@@ -75,7 +77,7 @@ const LABELS_DATA: LabelData[] = [
     { label: 'Version:', required: true },
     { label: 'Status:', required: true },
     { label: 'Labels:', required: false },
-    { label: 'Previous release version:', required: true }
+    { label: PUBLISHING_PREVIOUS_VERSION_LABEL, required: true }
 ];
 
 const DRAFT = 'Draft';
@@ -281,6 +283,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, RELEASE);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(RELEASE_VERSION_PATTERN).to.equals(statusPattern);
 
@@ -306,6 +309,7 @@ describe('Publishing Tests', () => {
                 await delay(2000);
 
                 await clickOption(statusField, ARCHIVED);
+                await delay(1000);
                 const statusPattern = await versionField?.getAttribute(PATTERN_ATTRIBUTE);
                 expect(PUBLISHING_INPUT_DEFAULT_PATTERN).to.equals(statusPattern);
 
@@ -334,22 +338,27 @@ describe('Publishing Tests', () => {
                 await labelsField?.sendKeys(LABEL_LONG_NAME, Key.ENTER);
                 await labelsField?.sendKeys(LABEL_SHORT_NAME, Key.ENTER);
 
+                await delay(1000);
+
                 let labels = await getLabels();
                 let labelNames: string[] = await getTexts(labels);
                 expect(labelNames).to.be.an('array').with.lengthOf(3);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_LONG_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME, LABEL_SHORT_NAME]);
 
                 await deleteLabel(labels[1]);
+                await delay(500);
                 labels = await getLabels();
                 labelNames = await getTexts(labels);
                 expect(labelNames).deep.equals([LABEL_NAME]);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -375,6 +384,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(LABEL_NAME);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -394,6 +404,7 @@ describe('Publishing Tests', () => {
                 expect(labelNames[0]).to.be.equals(VERSION_LABEL);
 
                 await deleteLabel(labels[0]);
+                await delay(500);
                 labels = await getLabels();
                 expect(labels).to.be.empty;
             });
@@ -508,6 +519,9 @@ describe('Publishing Tests', () => {
                     const treeSection = await sideBar?.getContent().getSection(DOCUMENTS_SECTION);
                     const items: CustomTreeItem[] = ((await treeSection?.getVisibleItems()) as CustomTreeItem[]) ?? [];
                     const item = await findAsync(items, async (item) => (await item.getLabel()) === PETS_NAME);
+                    await VSBrowser.instance.driver.executeScript(
+                        `document.querySelectorAll('.monaco-hover').forEach(el => el.remove())`
+                    );
                     await clickCheckbox(item);
 
                     await switchToPublishing();
@@ -517,6 +531,7 @@ describe('Publishing Tests', () => {
                     await clickOption(statusField, RELEASE);
 
                     await labelsField?.sendKeys('Publish-release-test' + Key.ENTER);
+
                     await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
                     await publishingButton?.click();
@@ -728,7 +743,7 @@ describe('Publishing Tests', () => {
     const validatePreviousVersionDefaultValue = async (): Promise<void> => {
         try {
             const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
-            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
+            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION_TEXT);
         } catch (error) {
             console.error('Error in Check "Previous Version" test:', error);
             throw error;

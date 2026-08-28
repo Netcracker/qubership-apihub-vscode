@@ -4,11 +4,12 @@ import {
     PublishingConfig,
     PublishingStatus,
     PublishingStatusDto,
+    PublishingVersion,
     PublishingVersionDto,
     PublishingViewPackageIdData
 } from '../../src/common/models/publishing.model';
-import { PACKAGE_ID_NAME, PACKAGES_DATA } from '../data/packages';
-import { VERSIONS } from '../data/versions';
+import { PACKAGE_ID_NAME, PACKAGE_ID_RELEASE_NAME, PACKAGE_ID_VERSIONS_NAME, PACKAGES_DATA } from '../data/packages';
+import { RELEASE_VERSIONS, VERSIONS } from '../data/versions';
 import multer from 'multer';
 import { BUILD_CONFIGS } from '../data/build-config';
 import { PUBLISH_ID } from '../data/publish';
@@ -28,10 +29,16 @@ export function PackageRouter(): PackageRouter {
     return router;
 }
 
+const VERSIONS_BY_PACKAGE: Record<string, PublishingVersion[]> = {
+    [PACKAGE_ID_NAME]: VERSIONS,
+    [PACKAGE_ID_VERSIONS_NAME]: VERSIONS,
+    [PACKAGE_ID_RELEASE_NAME]: RELEASE_VERSIONS
+};
+
 export function getVersions(router: PackageRouter): void {
     router.get('/:packageId/versions/', (req, res) => {
         const packageId = req.params.packageId;
-        res.status(200).json(packageId === PACKAGE_ID_NAME ? ({ versions: VERSIONS } as PublishingVersionDto) : []);
+        res.status(200).json({ versions: VERSIONS_BY_PACKAGE[packageId] ?? [] } as PublishingVersionDto);
     });
 }
 

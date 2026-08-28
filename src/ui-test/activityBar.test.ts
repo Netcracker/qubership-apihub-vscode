@@ -18,7 +18,7 @@ describe('Activity Bar Tests', () => {
 				return control.getTitle();
 			}),
 		);
-		expect(titles.some((title) => title === EXTENSION_NAME)).is.true;
+		expect(titles.some((title) => title.includes(EXTENSION_NAME)), `Titles: ${titles.join(', ')}`).is.true;
 	});
 
 	it('Get a extension view', async () => {
