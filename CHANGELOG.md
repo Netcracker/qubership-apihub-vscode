@@ -1,6 +1,6 @@
 # 1.1.1
 ## Bug fixes
-- docs: update changelog
+- docs: update changelog in [57](https://github.com/Netcracker/qubership-apihub-vscode/pull/57)
 
 # 1.1.0
 ## Features and improvements
