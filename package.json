@@ -96,6 +96,7 @@
     "ts-loader": "^9.5.2",
     "ts-node": "^10.9.2",
     "typescript": "6.0.3",
+    "undici-types": "~7.16.0",
     "vscode-extension-tester": "8.24.0",
     "vscode-test": "^1.6.1",
     "webpack": "^5.98.0",
