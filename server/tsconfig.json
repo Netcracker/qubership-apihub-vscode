@@ -1,7 +1,11 @@
 {
   "compilerOptions": {
     "target": "es6",
-    "module": "commonjs",
+    /* Node runs this server directly, so NodeNext describes it, and it makes the
+      previously-implied resolution explicit. No "type": "module" in this package, so
+      NodeNext still emits CommonJS require() calls - resolution changes, output does not. */
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
     "rootDir": "./../",
     "outDir": "./build",
     "esModuleInterop": true,

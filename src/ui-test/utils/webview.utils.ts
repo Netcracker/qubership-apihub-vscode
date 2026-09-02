@@ -137,6 +137,10 @@ export const getTexts = async (fields: WebElement[]): Promise<string[]> => {
 export const getTextValue = async (field: WebElement | undefined): Promise<string | undefined> => {
     const shadowRoot = await field?.getShadowRoot();
     const textField = await shadowRoot?.findElement(By.css('input'));
+    // selenium-webdriver 4.46 (via vscode-extension-tester 8.24) types getAttribute as
+    // Promise<string | null>; it was Promise<string> before. Normalise the null to keep
+    // this function's declared string | undefined contract - callers compare against
+    // string constants and never distinguish the two.
     return (await textField?.getAttribute('value')) ?? undefined;
 };
 
