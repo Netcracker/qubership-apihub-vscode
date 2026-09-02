@@ -6,9 +6,36 @@
         VERSION: 'version',
         STATUS: 'status',
         PREVIOUS_VERSION: 'previousVersion',
+        PREVIOUS_VERSION_LABEL: 'previousVersionLabel',
+        PREVIOUS_VERSION_GROUP: 'previousVersionGroup',
         LABELS: 'labels',
         PUBLISHING_BUTTON: 'publishing-button'
     };
+
+
+    const LABEL_TEXT_FIELD_TYPE = 'label-text';
+    updateFieldMapper.set(LABEL_TEXT_FIELD_TYPE, (fieldName, value) => {
+        const field = getField(fieldName);
+        if (!field) {
+            return;
+        }
+        field.textContent = value;
+    });
+    typeFieldMapper.set(PublishingFields.PREVIOUS_VERSION_LABEL, LABEL_TEXT_FIELD_TYPE);
+
+    const TITLE_FIELD_TYPE = 'title-text';
+    updateFieldMapper.set(TITLE_FIELD_TYPE, (fieldName, value) => {
+        const field = getField(fieldName);
+        if (!field) {
+            return;
+        }
+        if (value) {
+            field.setAttribute('title', value);
+        } else {
+            field.removeAttribute('title');
+        }
+    });
+    typeFieldMapper.set(PublishingFields.PREVIOUS_VERSION_GROUP, TITLE_FIELD_TYPE);
 
     typeFieldMapper.set(PublishingFields.PACKAGE_ID, FieldTypes.INPUT);
     typeFieldMapper.set(PublishingFields.VERSION, FieldTypes.INPUT);

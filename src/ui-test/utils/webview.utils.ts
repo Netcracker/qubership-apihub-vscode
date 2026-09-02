@@ -79,13 +79,41 @@ export const getSingleSelectOptions = async (field: WebElement | undefined): Pro
     return options;
 };
 
-export const clickOption = async (field: WebElement | undefined, name: string): Promise<void> => {
-    await field?.click();
-    const options = await getSingleSelectOptions(field);
-    const option = await findAsync(options, async (option) => (await option.getText()) === name);
-    if (!option) {
-        return field?.click();
+/**
+ * Selects the option with the given text, waiting for it to appear.
+ *
+ * The wait matters because changing the publishing status reloads the previous-version list from
+ * the backend and replaces the options once the response lands. Reading them once races that
+ * update, and the previous behaviour on a miss — clicking the field again — left the select open,
+ * where it later intercepted a click meant for another element.
+ */
+export const clickOption = async (
+    field: WebElement | undefined,
+    name: string,
+    timeout: number = 10000
+): Promise<void> => {
+    await openSelect(field);
+
+    let availableOptions: string[] = [];
+    let option: WebElement | undefined;
+
+    try {
+        option = await field?.getDriver().wait(async () => {
+            try {
+                const options = await getSingleSelectOptions(field);
+                availableOptions = await getTexts(options);
+                return await findAsync(options, async (option) => (await option.getText()) === name);
+            } catch {
+                return undefined;
+            }
+        }, timeout);
+    } catch {
+        await closeSelect(field);
+        throw new Error(
+            `Option "${name}" did not appear within ${timeout} ms. Available options: ${availableOptions.join(', ')}`
+        );
     }
+
     await option?.click();
 };
 

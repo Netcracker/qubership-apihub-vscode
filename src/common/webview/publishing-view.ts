@@ -10,7 +10,11 @@ import {
 import { splitVersion } from '../../utils/files.utils';
 import { getCodicon, getElements, getJsScript, getNonce, getStyle } from '../../utils/html-content.builder';
 import { capitalize } from '../../utils/path.utils';
-import { convertOptionsToDto } from '../../utils/publishing.utils';
+import {
+    convertOptionsToDto,
+    getPreviousVersionStatuses,
+    hasSamePreviousVersionScope
+} from '../../utils/publishing.utils';
 import {
     ABORTED_ERROR_CODE,
     EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME,
@@ -21,7 +25,13 @@ import {
     PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_JS_PATH,
     PUBLISHING_LOADING_OPTION,
+    PUBLISHING_NO_PREVIOUS_RELEASE_VERSION_TEXT,
     PUBLISHING_NO_PREVIOUS_VERSION,
+    PUBLISHING_NO_PREVIOUS_VERSION_TEXT,
+    PUBLISHING_PREVIOUS_RELEASE_VERSION_LABEL,
+    PUBLISHING_PREVIOUS_VERSIONS_LOAD_ERROR,
+    PUBLISHING_PREVIOUS_VERSION_LABEL,
+    PUBLISHING_RELEASE_PREVIOUS_VERSION_REQUIRED,
     PUBLISHING_STATUSES,
     PUBLISHING_WEBVIEW
 } from '../constants/publishing.constants';
@@ -48,6 +58,11 @@ import { debounce, isMatchingPattern } from '../../utils/common.utils';
 
 export class PublishingViewProvider extends WebviewBase<PublishingFields> {
     private readonly _publishingViewData: Map<WorkfolderPath, PublishingViewData> = new Map();
+    private allowedPreviousVersions: VersionId[] | undefined;
+    // True while the allowed set is being (re)loaded. Publishing stays blocked meanwhile: until the
+    // response arrives the form cannot tell whether the selected previous version is still allowed.
+    private arePreviousVersionsLoading = false;
+    private dependentFieldsDisabled = true;
     private readonly updateLabelsDebounced = debounce((data: PublishingViewData, version: VersionId) =>
         this.wrapInProgress(async () => await this.updateLabels(data, version))
     );
@@ -160,6 +175,7 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
     private restoreLocalFields(workfolderPath: WorkfolderPath): void {
         const configurationFileLike = this.configurationFileService.getConfigurationFile(workfolderPath);
         this.restoreConfigPackageId(workfolderPath, configurationFileLike);
+        this.allowedPreviousVersions = undefined;
         const publishingData = this.getPublishingViewData(workfolderPath);
         const { packageId, version, status, previousVersion, labels } = publishingData;
         this.disableDependentFields(true);
@@ -170,10 +186,10 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
         this.updateWebviewField(PublishingFields.VERSION, version);
         this.updateWebviewField(PublishingFields.STATUS, status);
         this.updateVersionPattern(publishingData, status);
+        this.updatePreviousVersionWording(status);
 
         const options = Array.from(new Set([PUBLISHING_NO_PREVIOUS_VERSION, previousVersion])).filter((value) => !!value);
-        this.updateWebviewOptions(PublishingFields.PREVIOUS_VERSION, convertOptionsToDto(options, previousVersion));
-        this.updateWebviewField(PublishingFields.PREVIOUS_VERSION, previousVersion);
+        this.sendPreviousVersionOptions(options, previousVersion, status);
         this.updateWebviewLabels(labels);
     }
 
@@ -183,6 +199,7 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
         switch (payload.field) {
             case PublishingFields.PACKAGE_ID: {
                 publishingViewData.packageId = payload.value as PackageId;
+                this.allowedPreviousVersions = undefined;
                 this.disableDependentFields(true);
                 this.updatePackageIdDebounced(workfolderPath);
                 break;
@@ -195,12 +212,19 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             }
             case PublishingFields.STATUS: {
                 const status: VersionStatus = payload.value as VersionStatus;
+                const previousStatus = publishingViewData.status;
                 publishingViewData.status = status;
                 this.updateVersionPattern(publishingViewData, status);
+                this.updatePreviousVersionWording(status);
+                if (!hasSamePreviousVersionScope(previousStatus, status)) {
+                    this.invalidateAllowedPreviousVersions();
+                    this.wrapInProgress(async () => await this.loadPreviousVersions());
+                }
                 break;
             }
             case PublishingFields.PREVIOUS_VERSION: {
                 publishingViewData.previousVersion = payload.value as string;
+                this.updatePreviousVersionValidity(publishingViewData);
                 break;
             }
             case PublishingFields.LABELS: {
@@ -217,10 +241,11 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             PublishingFields.VERSION,
             PublishingFields.STATUS,
             PublishingFields.LABELS,
-            PublishingFields.PREVIOUS_VERSION,
-            PublishingFields.PUBLISHING_BUTTON
+            PublishingFields.PREVIOUS_VERSION
         ];
         fields.forEach((field) => this.updateWebviewDisable(field, disable));
+        this.dependentFieldsDisabled = disable;
+        this.updatePublishButtonState();
     }
 
     private disableAllFields(disable: boolean = true): void {
@@ -312,7 +337,9 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
     }
 
     private async loadPreviousVersions(): Promise<void> {
-        const { packageId, previousVersion } = this.getPublishingViewData(this.workfolderService.activeWorkfolderPath);
+        const { packageId, previousVersion, status } = this.getPublishingViewData(
+            this.workfolderService.activeWorkfolderPath
+        );
         if (!packageId) {
             return;
         }
@@ -321,18 +348,114 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
             commands.executeCommand(EXTENSION_ENVIRONMENT_VIEW_VALIDATION_ACTION_NAME);
             return;
         }
-        const options = [PUBLISHING_NO_PREVIOUS_VERSION];
 
-        await this.crudService
-            .getVersions(host, token, packageId)
-            .then((dto) => options.push(...dto.versions.map((version) => splitVersion(version.version).version)))
-            .catch();
+        this.setPreviousVersionsLoading(true);
+        try {
+            const dto = await this.crudService.getVersions(
+                host,
+                token,
+                packageId,
+                getPreviousVersionStatuses(status)
+            );
+            const versions = (dto?.versions ?? []).map((version) => splitVersion(version.version).version);
 
-        this.updateWebviewOptions(PublishingFields.PREVIOUS_VERSION, convertOptionsToDto(options, previousVersion));
+            const options = Array.from(new Set([PUBLISHING_NO_PREVIOUS_VERSION, ...versions]));
+            this.allowedPreviousVersions = options;
+            this.sendPreviousVersionOptions(options, previousVersion, status);
+            this.updatePreviousVersionValidity(
+                this.getPublishingViewData(this.workfolderService.activeWorkfolderPath)
+            );
+        } catch (error) {
+            if ((error as CrudError).status === ABORTED_ERROR_CODE) {
+                return;
+            }
+            this.invalidateAllowedPreviousVersions();
+            window.showErrorMessage(PUBLISHING_PREVIOUS_VERSIONS_LOAD_ERROR);
+        } finally {
+            this.setPreviousVersionsLoading(false);
+        }
+    }
+
+    private invalidateAllowedPreviousVersions(): void {
+        this.allowedPreviousVersions = undefined;
+        this.updatePreviousVersionValidity(
+            this.getPublishingViewData(this.workfolderService.activeWorkfolderPath)
+        );
+    }
+
+    private setPreviousVersionsLoading(loading: boolean): void {
+        this.arePreviousVersionsLoading = loading;
+        this.updatePublishButtonState();
+    }
+
+
+    private isPreviousVersionInvalid({ previousVersion }: PublishingViewData): boolean {
+        if (!previousVersion || previousVersion === PUBLISHING_NO_PREVIOUS_VERSION) {
+            return false;
+        }
+        // Nothing loaded yet: staying silent avoids flagging an error before the options arrive.
+        if (!this.allowedPreviousVersions) {
+            return false;
+        }
+        return !this.allowedPreviousVersions.includes(previousVersion);
+    }
+
+    private updatePreviousVersionValidity(publishingData: PublishingViewData): void {
+        const invalid = this.isPreviousVersionInvalid(publishingData);
+        this.updateWebviewInvalid(PublishingFields.PREVIOUS_VERSION, invalid);
+        this.updateWebviewField(
+            PublishingFields.PREVIOUS_VERSION_GROUP,
+            invalid ? PUBLISHING_RELEASE_PREVIOUS_VERSION_REQUIRED : ''
+        );
+        this.updatePublishButtonState();
+    }
+
+    private updatePublishButtonState(): void {
+        const publishingData = this.getPublishingViewData(this.workfolderService.activeWorkfolderPath);
+        this.updateWebviewDisable(
+            PublishingFields.PUBLISHING_BUTTON,
+            this.dependentFieldsDisabled ||
+                this.arePreviousVersionsLoading ||
+                this.isPreviousVersionInvalid(publishingData)
+        );
+    }
+
+    private sendPreviousVersionOptions(options: string[], previousVersion: VersionId, status: VersionStatus): void {
+        const optionsWithSelected =
+            previousVersion && !options.includes(previousVersion)
+                ? [options[0], previousVersion, ...options.slice(1)]
+                : options;
+
+        this.updateWebviewOptions(
+            PublishingFields.PREVIOUS_VERSION,
+            convertOptionsToDto(optionsWithSelected, previousVersion, this.getNoPreviousVersionLabels(status))
+        );
+        this.updateWebviewField(PublishingFields.PREVIOUS_VERSION, previousVersion);
     }
 
     private updateVersionPattern(publishingData: PublishingViewData, status: VersionStatus): void {
         this.updateWebviewPattern(PublishingFields.VERSION, this.getPattern(publishingData, status));
+    }
+
+    private getPreviousVersionWording(status: VersionStatus): { label: string; noPreviousVersion: string } {
+        return status === VersionStatus.DRAFT
+            ? {
+                  label: PUBLISHING_PREVIOUS_VERSION_LABEL,
+                  noPreviousVersion: PUBLISHING_NO_PREVIOUS_VERSION_TEXT
+              }
+            : {
+                  label: PUBLISHING_PREVIOUS_RELEASE_VERSION_LABEL,
+                  noPreviousVersion: PUBLISHING_NO_PREVIOUS_RELEASE_VERSION_TEXT
+              };
+    }
+
+    private updatePreviousVersionWording(status: VersionStatus): void {
+        const { label } = this.getPreviousVersionWording(status);
+        this.updateWebviewField(PublishingFields.PREVIOUS_VERSION_LABEL, label);
+    }
+
+    private getNoPreviousVersionLabels(status: VersionStatus): Record<string, string> {
+        return { [PUBLISHING_NO_PREVIOUS_VERSION]: this.getPreviousVersionWording(status).noPreviousVersion };
     }
 
     private deleteWebviewLabels(label: string): void {
@@ -390,6 +513,15 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
         }
         if (!previousVersion) {
             this.updateWebviewRequired(PublishingFields.PREVIOUS_VERSION);
+            return;
+        }
+
+        // The allowed set is still being loaded, so whether the selection is valid is not known yet.
+        if (this.arePreviousVersionsLoading) {
+            return;
+        }
+        if (this.isPreviousVersionInvalid(data)) {
+            this.updatePreviousVersionValidity(data);
             return;
         }
 
@@ -469,10 +601,14 @@ export class PublishingViewProvider extends WebviewBase<PublishingFields> {
                         <vscode-label for="${PublishingFields.LABELS}" id="labelForLabels">Labels:</vscode-label>
                         <vscode-textfield id="${PublishingFields.LABELS}" placeholder="↵"></vscode-textfield>
                     </p>
-                    <p>
-                        <vscode-label for="${PublishingFields.PREVIOUS_VERSION}" required>Previous release version:</vscode-label>
-                        <vscode-single-select id="${PublishingFields.PREVIOUS_VERSION}" combobox>
-                            <vscode-option selected>${PUBLISHING_NO_PREVIOUS_VERSION}</vscode-option>
+                    <p id="${PublishingFields.PREVIOUS_VERSION_GROUP}">
+                        <vscode-label
+                            id="${PublishingFields.PREVIOUS_VERSION_LABEL}"
+                            for="${PublishingFields.PREVIOUS_VERSION}"
+                            required
+                        >${PUBLISHING_PREVIOUS_VERSION_LABEL}</vscode-label>
+                        <vscode-single-select title="A release version must have a release previous version" id="${PublishingFields.PREVIOUS_VERSION}" combobox>
+                            <vscode-option selected value="${PUBLISHING_NO_PREVIOUS_VERSION}">${PUBLISHING_NO_PREVIOUS_VERSION_TEXT}</vscode-option>
                         </vscode-single-select>
                     </p>
                     <p>

@@ -35,3 +35,20 @@ export const VERSIONS: PublishingVersion[] = [
         previousVersion: ''
     }
 ];
+
+export const RELEASE_VERSIONS: PublishingVersion[] = [
+    {
+        version: `${VERSION_1}@1`,
+        status: 'release',
+        createdAt: '2025-03-11T10:38:41.00982Z',
+        createdBy: {
+            avatarUrl: '',
+            email: 'userEmail',
+            id: 'userId',
+            name: 'userName',
+            type: 'user'
+        },
+        versionLabels: [],
+        previousVersion: ''
+    }
+];

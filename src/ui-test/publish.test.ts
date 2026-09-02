@@ -17,6 +17,8 @@ import {
 import {
     PUBLISHING_INPUT_DEFAULT_PATTERN,
     PUBLISHING_NO_PREVIOUS_VERSION,
+    PUBLISHING_NO_PREVIOUS_VERSION_TEXT,
+    PUBLISHING_PREVIOUS_VERSION_LABEL,
     STATUS_BAR_PUBLISH_MESSAGE
 } from '../common/constants/publishing.constants';
 import { EnvironmentWebviewFields } from '../common/models/environment.model';
@@ -75,7 +77,7 @@ const LABELS_DATA: LabelData[] = [
     { label: 'Version:', required: true },
     { label: 'Status:', required: true },
     { label: 'Labels:', required: false },
-    { label: 'Previous release version:', required: true }
+    { label: PUBLISHING_PREVIOUS_VERSION_LABEL, required: true }
 ];
 
 const DRAFT = 'Draft';
@@ -529,6 +531,7 @@ describe('Publishing Tests', () => {
                     await clickOption(statusField, RELEASE);
 
                     await labelsField?.sendKeys('Publish-release-test' + Key.ENTER);
+
                     await clickOption(previousReleaseVersion, PUBLISHING_NO_PREVIOUS_VERSION);
 
                     await publishingButton?.click();
@@ -740,7 +743,7 @@ describe('Publishing Tests', () => {
     const validatePreviousVersionDefaultValue = async (): Promise<void> => {
         try {
             const previousReleaseVersionValue = await getTextValue(previousReleaseVersion);
-            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION);
+            expect(previousReleaseVersionValue).is.equals(PUBLISHING_NO_PREVIOUS_VERSION_TEXT);
         } catch (error) {
             console.error('Error in Check "Previous Version" test:', error);
             throw error;
