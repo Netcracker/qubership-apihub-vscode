@@ -10,7 +10,157 @@ on:
       - bugfix/*
     tags:
       - '**'
+  # Rebuilds an existing tag with this version of the workflow and publishes its GitHub release.
+  # A plain re-run of a tag uses the workflow file stored in the tagged commit.
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Existing tag to build and release, for example 1.1.1"
+        required: true
+        type: string
+      skip_tests:
+        description: "Skip tests (for old tags that no longer pass on current runners)"
+        required: false
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+env:
+  BUILD_REF: ${{ github.event_name == 'workflow_dispatch' && format('refs/tags/{0}', inputs.tag) || github.ref }}
 
 jobs:
-  call-frontend-ci-workflow:
-    uses: netcracker/qubership-apihub-ci/.github/workflows/vscode-extension-ci.yaml@main
+  build:
+    strategy:
+      matrix:
+        os: [ macos-latest, ubuntu-latest, windows-latest ]
+    runs-on: ${{ matrix.os }}
+    permissions:
+      contents: read
+      packages: read
+    outputs:
+      package_version: ${{ steps.get_version.outputs.package_version }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ env.BUILD_REF }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          registry-url: 'https://npm.pkg.github.com/'
+
+      - name: Install dependencies
+        run: npm ci
+        timeout-minutes: 10
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # Updates internal dependencies specified via dist tag to their latest versions.
+      # Tag builds keep the lock file as committed so that a release is reproducible.
+      - name: Update dependencies
+        if: ${{ !startsWith(env.BUILD_REF, 'refs/tags/') }}
+        run: npm run update-lock-file --if-present
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Calculate prerelease suffix
+        id: calculate_prerelease_suffix
+        shell: bash
+        run: |
+          PRERELEASE_SUFFIX=$(echo "$BUILD_REF" | sed 's@^refs/tags/.*@@;s@^refs/heads/@@;s@^develop$@dev@;s@^release$@next@;s@^main$@@;s@/@-@g;')
+          echo "PRERELEASE_SUFFIX: $PRERELEASE_SUFFIX"
+          echo "prerelease_suffix=$PRERELEASE_SUFFIX" >> "$GITHUB_OUTPUT"
+
+      - name: Bump version (dev branches only)
+        if: steps.calculate_prerelease_suffix.outputs.prerelease_suffix != ''
+        shell: bash
+        run: |
+          CURRENT_VERSION=$(jq -r '.version' package.json)
+          RELEASE_VERSION=$(echo "$CURRENT_VERSION" | sed -E 's/(-[^+]+)?(\+[^+]+)?$//')
+          TIMESTAMP=$(date -u '+%Y%m%d%H%M%S')
+          NEW_VERSION="${RELEASE_VERSION}-${{ steps.calculate_prerelease_suffix.outputs.prerelease_suffix }}.${TIMESTAMP}"
+          echo "NEW_VERSION: $NEW_VERSION"
+          npm version "${NEW_VERSION}" --no-git-tag-version
+
+      - name: Get package version
+        id: get_version
+        shell: bash
+        run: echo "package_version=$(jq -r '.version' package.json)" >> "$GITHUB_OUTPUT"
+
+      - name: Build the package
+        shell: bash
+        run: |
+          if [[ "$BUILD_REF" == refs/tags/* ]]; then
+            GITHUB_BRANCH="main"
+          else
+            GITHUB_BRANCH="${BUILD_REF#refs/heads/}"
+          fi
+          echo "GITHUB_BRANCH: $GITHUB_BRANCH"
+          npx vsce package --githubBranch "$GITHUB_BRANCH"
+
+      # Grants access to the test resources, see
+      # https://github.com/redhat-developer/vscode-extension-tester-example/blob/ac13a9d622127d04c667a138984cd9814b04d502/.github/workflows/main.yml#L39
+      - name: Allow unprivileged user namespace (ubuntu)
+        if: ${{ runner.os == 'Linux' && !inputs.skip_tests }}
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+
+      - name: Run tests Linux
+        if: ${{ runner.os == 'Linux' && !inputs.skip_tests }}
+        run: xvfb-run -a npm test
+
+      - name: Run tests non-Linux
+        if: ${{ runner.os != 'Linux' && !inputs.skip_tests }}
+        run: npm test
+
+      - name: Upload Artifact
+        uses: actions/upload-artifact@v7
+        if: runner.os == 'Linux'
+        with:
+          name: extension
+          path: "*.vsix"
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    needs: build
+    if: ${{ startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download Artifact
+        uses: actions/download-artifact@v8
+        with:
+          name: extension
+
+      - name: Create or update GitHub release
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+          TAG: ${{ env.BUILD_REF }}
+        run: |
+          TAG="${TAG#refs/tags/}"
+          if gh release view "$TAG" > /dev/null 2>&1; then
+            echo "Release $TAG exists, uploading assets"
+            gh release upload "$TAG" ./*.vsix --clobber
+            exit 0
+          fi
+
+          # Only the highest stable version is marked as latest, so rebuilding an old tag keeps the latest release.
+          HIGHEST_TAG=$(git ls-remote --tags --refs "https://github.com/${GH_REPO}.git" \
+            | sed 's@.*refs/tags/@@' | grep -E '^v?[0-9]+\.[0-9]+\.[0-9]+$' | sort -V | tail -n 1)
+          ARGS=(--title "$TAG" --generate-notes --verify-tag)
+          if [[ "$TAG" == *-* ]]; then
+            ARGS+=(--prerelease --latest=false)
+          elif [[ "$TAG" == "$HIGHEST_TAG" ]]; then
+            ARGS+=(--latest)
+          else
+            ARGS+=(--latest=false)
+          fi
+          echo "Creating release $TAG with: ${ARGS[*]}"
+          gh release create "$TAG" ./*.vsix "${ARGS[@]}"
